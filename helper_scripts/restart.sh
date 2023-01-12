@@ -7,4 +7,4 @@ pid=$(forever list | grep "index.js" | awk '{print $7}')
 forever stop $pid
 
 # Start the server
-forever start ../public/scripts/index.js
+forever start ../index.js
