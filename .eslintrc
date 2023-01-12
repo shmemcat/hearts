@@ -1,0 +1,19 @@
+{
+   "parserOptions": {
+      "ecmaVersion": "latest",
+      "sourceType": "module",
+      "ecmaFeatures": {
+         "jsx": true
+      }
+   },
+   "plugins": [
+      "react"
+   ],
+   "rules": {
+      "no-unused-vars": "off",
+      "quotes": [
+         2,
+         "double"
+      ]
+   }
+}
