@@ -70,7 +70,10 @@ const Scoring = () => {
          <p>The aggregate total of all scores for each hand must be a multiple of 26. The game is played to 100 points.
             When a player takes all 13 hearts and the queen of spades in one hand, instead of losing 26 points,
             that player scores zero and each of his opponents score an additional 26 points.
-            This is colloquially referred to as “Shooting the Moon”.</p>
+            This is colloquially referred to as <span id="shoot-the-moon"
+               onMouseOver={(e) => party.confetti(e.target, { count: party.variation.range(20, 100), })} style={{ color: tan, fontWeight: 700 }}>
+               “Shooting the Moon”
+            </span>.</p>
       </div>
    );
 };
