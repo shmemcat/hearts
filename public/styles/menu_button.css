@@ -1,0 +1,22 @@
+.menu-button {
+   background-color: var(--lightpink);
+   border-style: none;
+   font-family: appFont;
+   font-weight: 600;
+   font-size: 14px;
+   letter-spacing: 5px;
+   text-align: center;
+   text-transform: uppercase;
+   border-radius: 8px;
+   width: 225px;
+   height: 35px;
+}
+
+.menu-button:not(:disabled):hover {
+   background-color: var(--hoverpink);
+   cursor: pointer;
+}
+
+.menu-button:disabled {
+   color: rgba(16, 16, 16, 0.3)
+}
