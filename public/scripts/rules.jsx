@@ -4,7 +4,8 @@ const Rules = (props) => {
    const [state, setState] = React.useState("overview");
 
    return (
-      <div className="rules-body-container">
+      <div className="body-container">
+         {/* Button Menu */}
          <div className="button-container" style={{ marginTop: "90px" }}>
             <Button name="Overview" onClickDo={() => setState("overview")} />
             <Button name="Deal & Passing" onClickDo={() => setState("deal-passing")} />
@@ -12,7 +13,8 @@ const Rules = (props) => {
             <Button name="Scoring" onClickDo={() => setState("scoring")} />
             <Button name="Back" onClickDo={() => { window.location.href = "/index.html"; }} />
          </div>
-         <div className="rules-body" style={{ marginTop: "90px" }}>
+         {/* Rules body with different states */}
+         <div className="text-body" style={{ marginTop: "90px" }}>
             {state === "overview" && <Overview />}
             {state === "deal-passing" && <DealPassing />}
             {state === "play" && <Play />}
@@ -22,6 +24,7 @@ const Rules = (props) => {
    );
 };
 
+/* React Component for Overview */
 const Overview = () => {
    return (
       <div>
@@ -33,6 +36,7 @@ const Overview = () => {
    );
 };
 
+/* React Component for Deal & Passing */
 const DealPassing = () => {
    return (
       <div>
@@ -48,6 +52,7 @@ const DealPassing = () => {
    );
 };
 
+/* React Component for Play */
 const Play = () => {
    return (
       <div>
@@ -60,6 +65,7 @@ const Play = () => {
    );
 };
 
+/* React Component for Scoring, including a confetti surprise */
 const Scoring = () => {
    return (
       <div>
@@ -70,10 +76,10 @@ const Scoring = () => {
          <p>The aggregate total of all scores for each hand must be a multiple of 26. The game is played to 100 points.
             When a player takes all 13 hearts and the queen of spades in one hand, instead of losing 26 points,
             that player scores zero and each of his opponents score an additional 26 points.
-            This is colloquially referred to as <span id="shoot-the-moon"
-               onMouseOver={(e) => party.confetti(e.target, { count: party.variation.range(20, 100), })} style={{ color: tan, fontWeight: 700 }}>
+            This is colloquially referred to as <h3 id="shoot-the-moon"
+               onMouseOver={(e) => party.confetti(e.target, { count: party.variation.range(20, 100), })}>
                “Shooting the Moon”
-            </span>.</p>
+            </h3>.</p>
       </div>
    );
 };
@@ -81,13 +87,13 @@ const Scoring = () => {
 const domContainer = document.querySelector("#rules_container");
 const root = ReactDOM.createRoot(domContainer);
 root.render(
-   <div id="rules" className="rules-container">
+   <div id="rules" className="container">
       {/* Logo */}
       <div>
          <img src="static_assets/images/HeartsLogo.svg" style={{ marginTop: "50px" }} />
          <h1 style={{ marginTop: "-180px", marginLeft: "0px" }}>RULES</h1>
       </div>
 
-      {/* Button Menu */}
+      {/* Button Menu & Rules Flexbox */}
       <Rules />
    </div>);

@@ -14,20 +14,20 @@
    gap: 12px;
 }
 
-.rules-container {
+.container {
    display: flex;
    align-items: center;
    justify-content: center;
    flex-direction: column;
 }
 
-.rules-body-container {
+.body-container {
    display: flex;
    width: 900px;
    gap: 30px;
 }
 
-.rules-body {
+.text-body {
    flex-grow: 4;
    font-size: 16px;
    letter-spacing: 2px;

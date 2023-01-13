@@ -49,3 +49,22 @@ h2 {
    font-weight: 700;
    margin: 0px;
 }
+
+h3 {
+   display: inline;
+   font-family: "appFont";
+   font-size: 16px;
+   margin: 0px;
+   font-weight: 700px;
+   color: tan
+}
+
+.caption {
+   top: 10px;
+   left: 10px;
+   width: 100%;
+   letter-spacing: 1pt;
+   text-align: center;
+   padding: 5px;
+   font-size: 0.8em;
+}
