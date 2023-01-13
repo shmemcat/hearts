@@ -1,6 +1,7 @@
 .menu-button {
    background-color: var(--lightpink);
    border-style: none;
+   color: black;
    font-family: appFont;
    font-weight: 600;
    font-size: 14px;
