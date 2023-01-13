@@ -5,7 +5,7 @@ const root = ReactDOM.createRoot(domContainer);
 root.render(
    <div id="index" className="index-container">
       {/* Logo */}
-      <div style={{ width: "100%" }}>
+      <div>
          <img src="static_assets/images/HeartsLogo.svg" style={{ marginTop: "-50px", display: "block", marginLeft: "auto", marginRight: "auto" }} />
          <h1 style={{ marginTop: "-180px" }}>HEARTS</h1>
       </div>
