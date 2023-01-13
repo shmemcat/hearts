@@ -9,6 +9,8 @@
 }
 
 .button-container {
+   margin-top: 10px;
+   margin-left: 200px;
    display: flex;
    flex-direction: column;
    gap: 12px;
@@ -22,6 +24,14 @@
 }
 
 .body-container {
+   margin-top: 90px;
+   display: flex;
+   width: 900px;
+   gap: 30px;
+}
+
+.about-body-container {
+   margin-top: 90px;
    display: flex;
    width: 900px;
    gap: 30px;
@@ -30,5 +40,44 @@
 .text-body {
    flex-grow: 4;
    font-size: 16px;
-   letter-spacing: 2px;
+   letter-spacing: 1.5px;
+}
+
+/* for mobile */
+@media only screen and (max-width: 768px) {
+   .body-container {
+      margin-top: 100px;
+      display: flex;
+      width: 400px;
+      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
+   }
+
+   .about-body-container {
+      margin-top: 100px;
+      display: flex;
+      width: 400px;
+      justify-content: center;
+      flex-direction: column-reverse;
+      gap: 0px;
+   }
+
+   .button-container {
+      margin-top: 30px;
+      margin-left: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
+   }
+
+   .text-body {
+      margin: 20px;
+      text-align: center;
+      flex-grow: 4;
+      font-size: 16px;
+      letter-spacing: 1.5px;
+   }
 }

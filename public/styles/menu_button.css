@@ -20,3 +20,13 @@
 .menu-button:disabled {
    color: rgba(16, 16, 16, 0.3)
 }
+
+/* for mobile */
+@media only screen and (max-width: 768px) {
+   .menu-button {
+      font-weight: 600;
+      font-size: 12px;
+      width: 175px;
+      height: 25px;
+   }
+}

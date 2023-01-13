@@ -7,12 +7,12 @@ root.render(
       {/* Logo */}
       <div>
          <img src="static_assets/images/HeartsLogo.svg" style={{ marginTop: "50px" }} />
-         <h1 style={{ marginTop: "-180px", marginLeft: "-4px" }}>ABOUT</h1>
+         <h1 style={{ marginTop: "-180px" }}>ABOUT</h1>
       </div>
 
       {/* Button Menu */}
-      <div className="body-container" >
-         <div className="text-body" style={{ marginTop: "90px" }}>
+      <div className="about-body-container" >
+         <div className="text-body">
             <p style={{ margin: "0px" }}>
                Welcome to my <h3>Hearts</h3> app! My name is <h3>Emily Tran</h3>, I'm a software engineer developing this web application while learning JavaScript and React.
                Eventually, you'll be able to play Hearts games locally with AI and with friends.
@@ -32,8 +32,8 @@ root.render(
                <Button name="Back" onClickDo={() => { window.location.href = "/index.html"; }} />
             </p>
          </div>
-         <div style={{ marginTop: "90px", display: "flex", flexDirection: "column", position: "relative" }}>
-            <img src="static_assets/images/Flourish.jpeg" style={{ height: "200px", borderRadius: "10px", float: "right", marginLeft: "15px", marginBottom: "5px" }} />
+         <div style={{ display: "flex", flexDirection: "column", position: "relative" }}>
+            <img src="static_assets/images/Flourish.jpeg" style={{ width: "300px", borderRadius: "10px", float: "right", marginBottom: "5px", display: "block", marginLeft: "auto", marginRight: "auto" }} />
             <div className="caption">Image courtesy of kardify.com</div>
          </div>
       </div>

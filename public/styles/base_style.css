@@ -38,6 +38,8 @@ body {
 
 h1 {
    font-family: "appFont";
+   margin-right: -.2em;
+   text-align: center;
    color: black;
    font-size: 50pt;
    letter-spacing: 13pt;
@@ -67,4 +69,15 @@ h3 {
    text-align: center;
    padding: 5px;
    font-size: 0.8em;
+}
+
+/* for mobile */
+@media only screen and (max-width: 768px) {
+   h1 {
+      font-family: "appFont";
+      color: black;
+      text-align: center;
+      font-size: 40pt;
+      letter-spacing: 13pt;
+   }
 }

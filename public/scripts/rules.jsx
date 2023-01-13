@@ -6,7 +6,7 @@ const Rules = (props) => {
    return (
       <div className="body-container">
          {/* Button Menu */}
-         <div className="button-container" style={{ marginTop: "90px" }}>
+         <div className="button-container" style={{ margin: "0" }}>
             <Button name="Overview" onClickDo={() => setState("overview")} />
             <Button name="Deal & Passing" onClickDo={() => setState("deal-passing")} />
             <Button name="The Play" onClickDo={() => setState("play")} />
@@ -14,7 +14,7 @@ const Rules = (props) => {
             <Button name="Back" onClickDo={() => { window.location.href = "/index.html"; }} />
          </div>
          {/* Rules body with different states */}
-         <div className="text-body" style={{ marginTop: "90px" }}>
+         <div className="text-body">
             {state === "overview" && <Overview />}
             {state === "deal-passing" && <DealPassing />}
             {state === "play" && <Play />}
@@ -89,9 +89,9 @@ const root = ReactDOM.createRoot(domContainer);
 root.render(
    <div id="rules" className="container">
       {/* Logo */}
-      <div>
-         <img src="static_assets/images/HeartsLogo.svg" style={{ marginTop: "50px" }} />
-         <h1 style={{ marginTop: "-180px", marginLeft: "0px" }}>RULES</h1>
+      <div style={{ width: "100%" }}>
+         <img src="static_assets/images/HeartsLogo.svg" style={{ marginTop: "50px", display: "block", marginLeft: "auto", marginRight: "auto" }} />
+         <h1 style={{ marginTop: "-180px" }}>RULES</h1>
       </div>
 
       {/* Button Menu & Rules Flexbox */}
