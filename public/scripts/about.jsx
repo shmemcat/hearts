@@ -21,7 +21,7 @@ root.render(
             </span>
             <span style={{ display: "block", marginTop: "1em" }}>
                The design of this application is based on the beautiful <h3>Art of Play</h3> playing cards design, <h3>Flourish</h3>.
-               Flourish is a delightful bakery themed set, which instantly inspired me with it's whimsical yet balanced design.
+               Flourish is a delightful bakery themed set, which instantly inspired me with its whimsical yet balanced design.
                I'm looking forward to making this app a proper tribute to this fantastic deck.
             </span>
             <p>
