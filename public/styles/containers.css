@@ -1,8 +1,8 @@
 /* Containers */
 
 .index-container {
+   margin-top: 25vh;
    display: flex;
-   height: 100vh;
    align-items: center;
    justify-content: center;
    flex-direction: column;
@@ -45,9 +45,16 @@
 
 /* for mobile */
 @media only screen and (max-width: 768px) {
+   .button-container {
+      margin-top: 30px;
+      margin-left: 130px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+   }
+
    .body-container {
       margin-top: 100px;
-      display: flex;
       width: 400px;
       justify-content: center;
       flex-direction: column;
@@ -56,28 +63,14 @@
 
    .about-body-container {
       margin-top: 100px;
-      display: flex;
       width: 400px;
       justify-content: center;
       flex-direction: column-reverse;
       gap: 0px;
    }
 
-   .button-container {
-      margin-top: 30px;
-      margin-left: 130px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 10px;
-   }
-
    .text-body {
       margin: 20px;
       text-align: center;
-      flex-grow: 4;
-      font-size: 16px;
-      letter-spacing: 1.5px;
    }
 }
