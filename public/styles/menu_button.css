@@ -14,6 +14,22 @@
    height: 35px;
 }
 
+.menu-button-selected {
+   background-color: var(--hoverpink);
+   border-style: none;
+   color: black;
+   font-family: appFont;
+   font-weight: 700;
+   font-size: 14px;
+   letter-spacing: 5px;
+   text-indent: 0.5em;
+   text-align: center;
+   text-transform: uppercase;
+   border-radius: 8px;
+   width: 225px;
+   height: 35px;
+}
+
 .menu-button:not(:disabled):hover {
    background-color: var(--hoverpink);
    cursor: pointer;
@@ -21,10 +37,6 @@
 
 .menu-button:disabled {
    color: rgba(16, 16, 16, 0.3)
-}
-
-.menu-button.selected {
-   background-color: var(--hoverpink);
 }
 
 /* for mobile */

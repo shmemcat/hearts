@@ -3,14 +3,19 @@
 const Rules = (props) => {
    const [state, setState] = React.useState("overview");
 
+   // if the button's text blurb is showing, set the button to "selected"
+   const isSelected = (buttonType) => {
+      return state === buttonType;
+   };
+
    return (
       <div className="body-container">
          {/* Button Menu */}
          <div className="button-container" style={{ margin: "0" }}>
-            <Button name="Overview" onClickDo={() => setState("overview")} />
-            <Button name="Deal & Passing" onClickDo={() => setState("deal-passing")} />
-            <Button name="The Play" onClickDo={() => setState("play")} />
-            <Button name="Scoring" onClickDo={() => setState("scoring")} />
+            <Button name="Overview" selected={isSelected("overview")} onClickDo={() => setState("overview")} />
+            <Button name="Deal & Passing" selected={isSelected("deal-passing")} onClickDo={() => setState("deal-passing")} />
+            <Button name="The Play" selected={isSelected("play")} onClickDo={() => setState("play")} />
+            <Button name="Scoring" selected={isSelected("scoring")} onClickDo={() => setState("scoring")} />
             <Button name="Back" onClickDo={() => { window.location.href = "/index.html"; }} />
          </div>
          {/* Rules body with different states */}
