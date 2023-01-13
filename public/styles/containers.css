@@ -63,7 +63,7 @@
 
    .about-body-container {
       margin-top: 100px;
-      width: 400px;
+      width: 95vw;
       justify-content: center;
       flex-direction: column-reverse;
       gap: 0px;

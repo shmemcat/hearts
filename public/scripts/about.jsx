@@ -15,7 +15,7 @@ root.render(
          <div className="text-body">
             <p style={{ margin: "0px" }}>
                Welcome to my <h3>Hearts</h3> app! My name is <h3>Emily Tran</h3>, I'm a software engineer developing this web application while learning JavaScript and React.
-               Eventually, you'll be able to play Hearts games locally with AI and with friends.
+               Eventually, you'll be able to play Hearts games locally with AI and online with friends.
                This has been a fun project to work on; it's been a decade and a half since I've been immersed into web development (as you can imagine, a lot's changed since then)
                so learning an array of new technologies has been a exceptionally fun challenge.
             </p>
