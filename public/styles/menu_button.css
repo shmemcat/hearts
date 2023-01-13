@@ -46,4 +46,10 @@
       width: 175px;
       height: 25px;
    }
+
+   .menu-button-selected {
+      font-size: 12px;
+      width: 175px;
+      height: 25px;
+   }
 }
