@@ -17,7 +17,7 @@ root.render(
                Welcome to my <h3>Hearts</h3> app! My name is <h3>Emily Tran</h3>, I'm a software engineer developing this web application while learning JavaScript and React.
                Eventually, you'll be able to play Hearts games locally with AI and online with friends.
                This has been a fun project to work on; it's been a decade and a half since I've been immersed into web development (as you can imagine, a lot's changed since then)
-               so learning an array of new technologies has been a exceptionally fun challenge.
+               so learning an array of new technologies has been an exceptionally fun challenge.
             </span>
             <span style={{ display: "block", marginTop: "1em" }}>
                The design of this application is based on the beautiful <h3>Art of Play</h3> playing cards design, <h3>Flourish</h3>.
