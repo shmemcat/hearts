@@ -55,9 +55,25 @@
    padding-bottom: 60px;
 }
 
+.content-border-container-menu {
+   width: 1030px;
+   margin: 0 auto;
+   border-radius: 20px;
+   background-color: #FFF3F3;
+   padding: 35px;
+   box-sizing: border-box;
+   margin-top: 6vh;
+   margin-bottom: 20px;
+   padding-bottom: 120px;
+}
+
 /* for re-sized desktop */
 @media only screen and (min-width: 769px) and (max-width: 1085px) {
    .content-border-container {
+      width: 95vw;
+   }
+
+   .content-border-container-menu {
       width: 95vw;
    }
 
@@ -102,10 +118,12 @@
    }
 
    .content-border-container {
-      width: 50vh;
-      margin-top: 10px;
-      margin-bottom: 10px;
-      padding-bottom: 0px;
-      padding: 30px;
+      width: 100vw;
+      background-color: transparent;
+   }
+
+   .content-border-container-menu {
+      width: 100vw;
+      background-color: transparent;
    }
 }

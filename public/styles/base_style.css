@@ -32,6 +32,7 @@ html {
    font-family: "appFont";
    color: var(--darkbrown);
    --bgpink: #FEE6E6;
+   --contentpink: #FFF3F3;
    --lightpink: #F7B3C8;
    --hoverpink: #C48397;
    --darkpink: #FE99C1;
@@ -43,7 +44,6 @@ html {
 
 body {
    background-color: var(--bgpink);
-   background-size: 1000px;
 }
 
 h1 {
@@ -88,5 +88,9 @@ h3 {
       text-align: center;
       font-size: 40pt;
       letter-spacing: 13pt;
+   }
+
+   body {
+      background-color: var(--contentpink);
    }
 }

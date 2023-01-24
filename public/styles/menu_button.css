@@ -12,6 +12,7 @@
    border-radius: 8px;
    width: 225px;
    height: 35px;
+   box-shadow: inset -2px -2px 0px rgba(196, 131, 151, .5);
 }
 
 .menu-button-selected {
@@ -28,11 +29,13 @@
    border-radius: 8px;
    width: 225px;
    height: 35px;
+   box-shadow: inset -2px -2px 0px rgba(136, 87, 102, 0.5);
 }
 
 .menu-button:not(:disabled):hover {
    background-color: var(--hoverpink);
    cursor: pointer;
+   box-shadow: inset -2px -2px 0px rgba(136, 87, 102, 0.5);
 }
 
 .menu-button:disabled {
@@ -46,7 +49,6 @@
       letter-spacing: 4px;
       font-weight: 700;
       width: 175px;
-      height: 25px;
    }
 
    .menu-button-selected {
@@ -54,6 +56,5 @@
       letter-spacing: 4px;
       font-weight: 700;
       width: 175px;
-      height: 25px;
    }
 }
