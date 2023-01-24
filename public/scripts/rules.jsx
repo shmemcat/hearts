@@ -96,7 +96,7 @@ root.render(
       <div id="rules" className="container">
          {/* Logo */}
          <div>
-            <img src="static_assets/images/HeartsLogo.svg" style={{ marginTop: "3vh", display: "block", marginLeft: "auto", marginRight: "auto" }} />
+            <img src="static_assets/images/HeartsLogo.svg" style={{ marginTop: "30px", display: "block", marginLeft: "auto", marginRight: "auto" }} />
             <h1 style={{ marginTop: "-180px" }}>RULES</h1>
          </div>
 

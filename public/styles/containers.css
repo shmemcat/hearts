@@ -44,20 +44,34 @@
 }
 
 .content-border-container {
-   width: 1000px;
+   width: 1030px;
    margin: 0 auto;
    border-radius: 20px;
    background-color: #FFF3F3;
-   padding: 20px;
+   padding: 35px;
    box-sizing: border-box;
    margin-top: 20px;
    margin-bottom: 20px;
    padding-bottom: 60px;
 }
 
+/* for re-sized desktop */
+@media only screen and (min-width: 769px) and (max-width: 1085px) {
+   .content-border-container {
+      width: 95vw;
+   }
+
+   .rules-body-container {
+      width: 85vw;
+   }
+
+   .about-body-container {
+      width: 85vw;
+   }
+}
 
 /* for mobile */
-@media only screen and (max-width: 1010px) {
+@media only screen and (max-width: 768px) {
    .button-container {
       margin-top: 30px;
       margin-left: 130px;

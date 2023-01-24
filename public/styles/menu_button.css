@@ -40,7 +40,7 @@
 }
 
 /* for mobile */
-@media only screen and (max-width: 1010px) {
+@media only screen and (max-width: 768px) {
    .menu-button {
       font-size: 12px;
       letter-spacing: 4px;

@@ -83,7 +83,7 @@ h3 {
 }
 
 /* for mobile */
-@media only screen and (max-width: 1010px) {
+@media only screen and (max-width: 768px) {
    h1 {
       text-align: center;
       font-size: 40pt;

@@ -7,7 +7,7 @@ root.render(
       <div id="about" className="container">
          {/* Logo */}
          <div>
-            <img src="static_assets/images/HeartsLogo.svg" style={{ marginTop: "3vh" }} />
+            <img src="static_assets/images/HeartsLogo.svg" style={{ marginTop: "30px" }} />
             <h1 style={{ marginTop: "-180px" }}>ABOUT</h1>
          </div>
 
