@@ -57,7 +57,7 @@
 
 
 /* for mobile */
-@media only screen and (max-width: 768px) {
+@media only screen and (max-width: 1010px) {
    .button-container {
       margin-top: 30px;
       margin-left: 130px;
@@ -76,7 +76,7 @@
 
    .about-body-container {
       margin-top: 110px;
-      width: 95vw;
+      width: 400px;
       justify-content: center;
       flex-direction: column-reverse;
       gap: 5px;
