@@ -9,6 +9,13 @@
 
 @font-face {
    font-family: "appFont";
+   src: url(../static_assets/fonts/TerminalDosis-SemiBold.ttf);
+   font-weight: 600;
+   font-style: normal;
+}
+
+@font-face {
+   font-family: "appFont";
    src: url(../static_assets/fonts/TerminalDosis-Bold.ttf);
    font-weight: 700;
    font-style: normal;
@@ -16,23 +23,26 @@
 
 @font-face {
    font-family: "appFont";
-   src: url(../static_assets/fonts/TerminalDosis-SemiBold.ttf);
-   font-weight: 600;
+   src: url(../static_assets/fonts/TerminalDosis-ExtraBold.ttf);
+   font-weight: 900;
    font-style: normal;
 }
 
 html {
    font-family: "appFont";
+   color: var(--darkbrown);
+   --bgpink: #FEE6E6;
    --lightpink: #F7B3C8;
    --hoverpink: #C48397;
    --darkpink: #FE99C1;
    --tan: #DBA167;
    --black: #2e2e2e;
+   --darkbrown: #59514F;
    --white: #FFFFFF;
 }
 
 body {
-   background-image: url("../static_assets/images/canvas-texture-seamless.jpg");
+   background-color: var(--bgpink);
    background-size: 1000px;
 }
 
@@ -40,9 +50,10 @@ h1 {
    font-family: "appFont";
    margin-right: -.2em;
    text-align: center;
-   color: black;
+   color: var(--darkbrown);
    font-size: 50pt;
    letter-spacing: 13pt;
+   font-weight: 700;
 }
 
 h2 {
@@ -57,7 +68,7 @@ h3 {
    font-family: "appFont";
    font-size: 16px;
    margin: 0px;
-   font-weight: 700px;
+   font-weight: 700;
    color: tan
 }
 
@@ -74,8 +85,6 @@ h3 {
 /* for mobile */
 @media only screen and (max-width: 768px) {
    h1 {
-      font-family: "appFont";
-      color: black;
       text-align: center;
       font-size: 40pt;
       letter-spacing: 13pt;

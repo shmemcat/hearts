@@ -1,9 +1,9 @@
 .menu-button {
    background-color: var(--lightpink);
    border-style: none;
-   color: black;
+   color: var(--darkbrown);
    font-family: appFont;
-   font-weight: 700;
+   font-weight: 900;
    font-size: 14px;
    letter-spacing: 5px;
    text-indent: 0.5em;
@@ -17,9 +17,9 @@
 .menu-button-selected {
    background-color: var(--hoverpink);
    border-style: none;
-   color: black;
+   color: var(--darkbrown);
    font-family: appFont;
-   font-weight: 700;
+   font-weight: 900;
    font-size: 14px;
    letter-spacing: 5px;
    text-indent: 0.5em;
@@ -44,6 +44,7 @@
    .menu-button {
       font-size: 12px;
       letter-spacing: 4px;
+      font-weight: 700;
       width: 175px;
       height: 25px;
    }
@@ -51,6 +52,7 @@
    .menu-button-selected {
       font-size: 12px;
       letter-spacing: 4px;
+      font-weight: 700;
       width: 175px;
       height: 25px;
    }

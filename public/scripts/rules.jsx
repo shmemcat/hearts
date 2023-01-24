@@ -9,7 +9,7 @@ const Rules = (props) => {
    };
 
    return (
-      <div className="body-container">
+      <div className="rules-body-container">
          {/* Button Menu */}
          <div className="button-container" style={{ margin: "0" }}>
             <Button name="Overview" selected={isSelected("overview")} onClickDo={() => setState("overview")} />
@@ -92,13 +92,15 @@ const Scoring = () => {
 const domContainer = document.querySelector("#rules_container");
 const root = ReactDOM.createRoot(domContainer);
 root.render(
-   <div id="rules" className="container">
-      {/* Logo */}
-      <div>
-         <img src="static_assets/images/HeartsLogo.svg" style={{ marginTop: "50px", display: "block", marginLeft: "auto", marginRight: "auto" }} />
-         <h1 style={{ marginTop: "-180px" }}>RULES</h1>
-      </div>
+   <div className="content-border-container">
+      <div id="rules" className="container">
+         {/* Logo */}
+         <div>
+            <img src="static_assets/images/HeartsLogo.svg" style={{ marginTop: "3vh", display: "block", marginLeft: "auto", marginRight: "auto" }} />
+            <h1 style={{ marginTop: "-180px" }}>RULES</h1>
+         </div>
 
-      {/* Button Menu & Rules Flexbox */}
-      <Rules />
+         {/* Button Menu & Rules Flexbox */}
+         <Rules />
+      </div>
    </div>);
