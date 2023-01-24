@@ -3,7 +3,7 @@
 const domContainer = document.querySelector("#main_container");
 const root = ReactDOM.createRoot(domContainer);
 root.render(
-   <div className="content-border-container" style={{ marginTop: "10vh", paddingBottom: "120px" }}>
+   <div className="content-border-container" style={{ marginTop: "6vh", paddingBottom: "120px" }}>
       <div id="index" className="index-container">
          {/* Logo */}
          <div>
