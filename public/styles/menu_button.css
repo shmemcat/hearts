@@ -28,7 +28,7 @@
    cursor: not-allowed;
 }
 
-.menu-button:hover:active {
+.menu-button:not(:disabled):hover:active {
    background-color: var(--hoverpink);
    box-shadow: inset 3px 3px 0px rgba(136, 87, 102, 0.5);
 }
@@ -53,7 +53,7 @@ button:disabled .button-shine {
    background-color: rgba(255, 234, 243, 0.25);
 }
 
-button:hover:active .button-shine {
+button:not(:disabled):hover:active .button-shine {
    transition: 0ms;
    background-color: rgba(0, 0, 0, 0);
 }
@@ -78,7 +78,7 @@ button:disabled .button-shine-small {
    background-color: rgba(255, 234, 243, 0.25);
 }
 
-button:hover:active .button-shine-small {
+button:not(:disabled):hover:active .button-shine-small {
    background-color: rgba(0, 0, 0, 0);
 }
 
