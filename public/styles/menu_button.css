@@ -59,6 +59,7 @@ button:not(:disabled):hover:active .button-shine {
 }
 
 /* Button Shine Small */
+/*
 .button-shine-small {
    position: absolute;
    margin-top: 3.3px;
@@ -81,6 +82,7 @@ button:disabled .button-shine-small {
 button:not(:disabled):hover:active .button-shine-small {
    background-color: rgba(0, 0, 0, 0);
 }
+*/
 
 /* Rules Buttons */
 .rules-button {
