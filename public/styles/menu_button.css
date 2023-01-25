@@ -1,3 +1,4 @@
+/* Menu Buttons */
 .menu-button {
    background-color: var(--lightpink);
    border-style: none;
@@ -12,11 +13,79 @@
    border-radius: 8px;
    width: 225px;
    height: 35px;
-   box-shadow: inset -2px -2px 0px rgba(196, 131, 151, .5);
+   box-shadow: inset -3px -3px 0px rgba(196, 131, 151, .4);
 }
 
-.menu-button-selected {
+.menu-button:not(:disabled):hover {
    background-color: var(--hoverpink);
+   cursor: pointer;
+   box-shadow: inset -3px -3px 0px rgba(136, 87, 102, 0.5);
+}
+
+.menu-button:disabled {
+   color: rgba(16, 16, 16, 0.3);
+   box-shadow: inset -3px -3px 0px rgba(136, 87, 102, 0.1);
+   cursor: not-allowed;
+}
+
+.menu-button:hover:active {
+   background-color: var(--hoverpink);
+   box-shadow: inset 3px 3px 0px rgba(136, 87, 102, 0.5);
+}
+
+/* Button Shine */
+.button-shine {
+   position: absolute;
+   margin-top: -6.3px;
+   margin-left: -3.7px;
+   transform: rotate(-25deg);
+   width: 12px;
+   height: 7px;
+   border-radius: 100%;
+   background-color: rgba(255, 234, 243, 0.6);
+}
+
+button:not(:disabled):hover .button-shine {
+   background-color: rgba(221, 166, 192, 0.6);
+}
+
+button:disabled .button-shine {
+   background-color: rgba(255, 234, 243, 0.25);
+}
+
+button:hover:active .button-shine {
+   transition: 0ms;
+   background-color: rgba(0, 0, 0, 0);
+}
+
+/* Button Shine Small */
+.button-shine-small {
+   position: absolute;
+   margin-top: 3.3px;
+   margin-left: -3.5px;
+   transform: rotate(10deg);
+   width: 4px;
+   height: 5px;
+   border-radius: 100%;
+   background-color: rgba(255, 234, 243, 0.6);
+}
+
+button:not(:disabled):hover .button-shine-small {
+   background-color: rgba(221, 166, 192, 0.6);
+}
+
+button:disabled .button-shine-small {
+   background-color: rgba(255, 234, 243, 0.25);
+}
+
+button:hover:active .button-shine-small {
+   background-color: rgba(0, 0, 0, 0);
+}
+
+/* Rules Buttons */
+.rules-button {
+   background-color: transparent;
+   width: 200px;
    border-style: none;
    color: var(--darkbrown);
    font-family: appFont;
@@ -24,22 +93,26 @@
    font-size: 14px;
    letter-spacing: 5px;
    text-indent: 0.5em;
-   text-align: center;
+   text-align: right;
    text-transform: uppercase;
-   border-radius: 8px;
-   width: 225px;
-   height: 35px;
-   box-shadow: inset -2px -2px 0px rgba(136, 87, 102, 0.5);
 }
 
-.menu-button:not(:disabled):hover {
-   background-color: var(--hoverpink);
-   cursor: pointer;
-   box-shadow: inset -2px -2px 0px rgba(136, 87, 102, 0.5);
+.rules-button-selected {
+   background-color: transparent;
+   width: 200px;
+   border-style: none;
+   color: var(--tan);
+   font-family: appFont;
+   font-weight: 900;
+   font-size: 14px;
+   letter-spacing: 5px;
+   text-indent: 0.5em;
+   text-align: right;
+   text-transform: uppercase;
 }
 
-.menu-button:disabled {
-   color: rgba(16, 16, 16, 0.3)
+.rules-button:hover {
+   color: var(--hoverpink);
 }
 
 /* for mobile */
@@ -56,5 +129,25 @@
       letter-spacing: 4px;
       font-weight: 700;
       width: 175px;
+   }
+
+   .rules-button {
+      text-align: center;
+   }
+
+   .rules-button-selected {
+      text-align: center;
+   }
+
+   .button-shine {
+      margin-top: -6.9px;
+      margin-left: -3.7px;
+   }
+
+   .button-shine-small {
+      width: 4px;
+      height: 5px;
+      margin-top: 3px;
+      margin-left: -3.4px;
    }
 }

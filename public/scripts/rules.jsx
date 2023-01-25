@@ -12,18 +12,21 @@ const Rules = (props) => {
       <div className="rules-body-container">
          {/* Button Menu */}
          <div className="button-container" style={{ margin: "0" }}>
-            <Button name="Overview" selected={isSelected("overview")} onClickDo={() => setState("overview")} />
-            <Button name="Deal & Passing" selected={isSelected("deal-passing")} onClickDo={() => setState("deal-passing")} />
-            <Button name="The Play" selected={isSelected("play")} onClickDo={() => setState("play")} />
-            <Button name="Scoring" selected={isSelected("scoring")} onClickDo={() => setState("scoring")} />
-            <Button name="Back" onClickDo={() => { window.location.href = "/index.html"; }} />
+            <RulesButton name="Overview" selected={isSelected("overview")} onClickDo={() => setState("overview")} />
+            <RulesButton name="Deal & Passing" selected={isSelected("deal-passing")} onClickDo={() => setState("deal-passing")} />
+            <RulesButton name="The Play" selected={isSelected("play")} onClickDo={() => setState("play")} />
+            <RulesButton name="Scoring" selected={isSelected("scoring")} onClickDo={() => setState("scoring")} />
          </div>
+         <div className="rules-divider"></div>
          {/* Rules body with different states */}
-         <div className="text-body">
+         <div className="rules-text-body">
             {state === "overview" && <Overview />}
             {state === "deal-passing" && <DealPassing />}
             {state === "play" && <Play />}
             {state === "scoring" && <Scoring />}
+            <div style={{ marginTop: "30px" }}>
+               <Button name="Back" onClickDo={() => { window.location.href = "/index.html"; }} />
+            </div>
          </div>
       </div>
    );
