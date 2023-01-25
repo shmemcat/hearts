@@ -101,7 +101,7 @@ button:hover:active .button-shine-small {
    background-color: transparent;
    width: 200px;
    border-style: none;
-   color: var(--tan);
+   color: var(--hoverpink);
    font-family: appFont;
    font-weight: 900;
    font-size: 14px;
@@ -112,7 +112,7 @@ button:hover:active .button-shine-small {
 }
 
 .rules-button:hover {
-   color: var(--hoverpink);
+   color: var(--tan);
 }
 
 /* for mobile */
