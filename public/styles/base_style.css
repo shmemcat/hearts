@@ -46,6 +46,11 @@ body {
    background-color: var(--bgpink);
 }
 
+::selection {
+   background-color: rgba(196, 131, 151, 0.6);
+   color: var(--darkbrown);
+}
+
 h1 {
    font-family: "appFont";
    margin-right: -.2em;
