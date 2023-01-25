@@ -8,14 +8,6 @@
    flex-direction: column;
 }
 
-.button-container {
-   margin-top: 10px;
-   margin-left: 200px;
-   display: flex;
-   flex-direction: column;
-   gap: 12px;
-}
-
 .container {
    display: flex;
    align-items: center;
@@ -23,38 +15,12 @@
    flex-direction: column;
 }
 
-.rules-body-container {
-   margin-top: 100px;
+.button-container {
+   margin-top: 10px;
+   margin-left: 200px;
    display: flex;
-   width: 900px;
-   gap: 20px;
-}
-
-.rules-divider {
-   background-color: var(--lightpink);
-   width: 6px;
-   border-radius: 10px;
-}
-
-.about-body-container {
-   margin-top: 100px;
-   display: flex;
-   width: 900px;
-   gap: 40px;
-}
-
-.about-text-body {
-   flex-grow: 4;
-   font-size: 16px;
-   letter-spacing: 1.5px;
-   margin-left: 10px;
-}
-
-.rules-text-body {
-   flex-grow: 4;
-   font-size: 16px;
-   letter-spacing: 1.5px;
-   margin-left: 10px;
+   flex-direction: column;
+   gap: 12px;
 }
 
 .content-border-container {
@@ -79,6 +45,51 @@
    margin-top: 6vh;
    margin-bottom: 20px;
    padding-bottom: 120px;
+}
+
+/* Rules */
+
+.rules-button-container {
+   width: 300px;
+   padding: 10px;
+   padding-top: 20px;
+   background-color: var(--bgpink);
+   border-radius: 20px;
+   margin-top: 10px;
+   margin-left: 200px;
+   display: flex;
+   flex-direction: column;
+   gap: 12px;
+}
+
+.rules-body-container {
+   margin-top: 100px;
+   display: flex;
+   width: 900px;
+   gap: 30px;
+}
+
+/* About */
+
+.about-body-container {
+   margin-top: 100px;
+   display: flex;
+   width: 900px;
+   gap: 40px;
+}
+
+.about-text-body {
+   flex-grow: 4;
+   font-size: 16px;
+   letter-spacing: 1.5px;
+   margin-left: 10px;
+}
+
+.rules-text-body {
+   flex-grow: 4;
+   font-size: 16px;
+   letter-spacing: 1.5px;
+   margin-left: 10px;
 }
 
 /* for re-sized desktop */
@@ -110,19 +121,21 @@
       gap: 10px;
    }
 
+   .rules-button-container {
+      width: 250px;
+      margin-top: 30px;
+      margin-left: 130px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+   }
+
    .rules-body-container {
       margin-top: 110px;
       width: 90vw;
       justify-content: center;
       align-items: center;
       flex-direction: column;
-   }
-
-   .rules-divider {
-      background-color: var(--lightpink);
-      width: 250px;
-      height: 3px;
-      border-radius: 10px;
    }
 
    .about-body-container {

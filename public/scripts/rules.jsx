@@ -11,13 +11,12 @@ const Rules = (props) => {
    return (
       <div className="rules-body-container">
          {/* Button Menu */}
-         <div className="button-container" style={{ margin: "0" }}>
+         <div className="rules-button-container" style={{ margin: "0" }}>
             <RulesButton name="Overview" selected={isSelected("overview")} onClickDo={() => setState("overview")} />
             <RulesButton name="Deal & Passing" selected={isSelected("deal-passing")} onClickDo={() => setState("deal-passing")} />
             <RulesButton name="The Play" selected={isSelected("play")} onClickDo={() => setState("play")} />
             <RulesButton name="Scoring" selected={isSelected("scoring")} onClickDo={() => setState("scoring")} />
          </div>
-         <div className="rules-divider"></div>
          {/* Rules body with different states */}
          <div className="rules-text-body">
             {state === "overview" && <Overview />}
