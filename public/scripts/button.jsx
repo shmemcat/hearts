@@ -10,7 +10,7 @@ const Button = (props) => {
          onClick={props.onClickDo}
          className={className}
          disabled={props.disabled}
-      ><ButtonShine /><ButtonShineSmall />{props.name}
+      ><ButtonShine />{props.name}
       </button >
    );
 };
@@ -19,9 +19,11 @@ const ButtonShine = () => {
    return (<div className="button-shine"></div>);
 };
 
+/*
 const ButtonShineSmall = () => {
    return (<div className="button-shine-small"></div>);
 };
+*/
 
 const RulesButton = (props) => {
    const [isHovered, setIsHovered] = React.useState(false);
