@@ -1,4 +1,5 @@
 const lightpink = "#F7B3C8";
+const hoverpink = "#C48397";
 const darkpink = "#FE99C1";
 const tan = "#DBA167";
 const black = "#2e2e2e";

@@ -117,6 +117,33 @@ button:not(:disabled):hover:active .button-shine-small {
    color: var(--tan);
 }
 
+/* Piping Bag */
+.piping-bag {
+   position: absolute;
+   transform: scaleY(.9);
+   margin-top: -1px;
+   margin-left: -40px;
+}
+
+button[data-selected="false"]:not(:disabled):hover .piping-bag {
+   fill: var(--tan);
+   animation: hover-bounce 1s linear infinite;
+}
+
+@keyframes hover-bounce {
+   0% {
+      transform: translateX(-2px) scaleY(.9);
+   }
+
+   50% {
+      transform: translateX(2px) scaleY(.9);
+   }
+
+   100% {
+      transform: translateX(-2px) scaleY(.9);
+   }
+}
+
 /* for mobile */
 @media only screen and (max-width: 768px) {
    .menu-button {

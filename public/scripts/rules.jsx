@@ -11,7 +11,7 @@ const Rules = (props) => {
    return (
       <div className="rules-body-container">
          {/* Button Menu */}
-         <div className="rules-button-container" style={{ margin: "0" }}>
+         <div className="rules-button-container">
             <RulesButton name="Overview" selected={isSelected("overview")} onClickDo={() => setState("overview")} />
             <RulesButton name="Deal & Passing" selected={isSelected("deal-passing")} onClickDo={() => setState("deal-passing")} />
             <RulesButton name="The Play" selected={isSelected("play")} onClickDo={() => setState("play")} />
@@ -23,7 +23,7 @@ const Rules = (props) => {
             {state === "deal-passing" && <DealPassing />}
             {state === "play" && <Play />}
             {state === "scoring" && <Scoring />}
-            <div style={{ marginTop: "30px" }}>
+            <div>
                <Button name="Back" onClickDo={() => { window.location.href = "/index.html"; }} />
             </div>
          </div>
@@ -80,13 +80,13 @@ const Scoring = () => {
          <p>At the end of each hand, players count the number of hearts they have taken as well as the queen of spades, if applicable.
             Hearts count as one point each and the queen counts 13 points. </p>
          <p style={{ marginLeft: "30px" }}>Each heart - 1 point <br /> The Queen of Spades - 13 points </p>
-         <span>The aggregate total of all scores for each hand must be a multiple of 26. The game is played to 100 points.
+         <span><p>The aggregate total of all scores for each hand must be a multiple of 26. The game is played to 100 points.
             When a player takes all 13 hearts and the queen of spades in one hand, instead of losing 26 points,
             that player scores zero and each of his opponents score an additional 26 points.
             This is colloquially referred to as <h3 id="shoot-the-moon"
                onMouseOver={(e) => party.confetti(e.target, { count: party.variation.range(20, 100), })}>
                “Shooting the Moon”
-            </h3>.</span>
+            </h3>.</p></span>
       </div>
    );
 };
