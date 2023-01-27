@@ -1,6 +1,7 @@
 {
   "type": "module",
   "dependencies": {
+    "@fortawesome/fontawesome-pro": "^6.2.1",
     "express": "^4.18.2"
   },
   "devDependencies": {
