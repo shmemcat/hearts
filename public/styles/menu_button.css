@@ -121,7 +121,6 @@ button:not(:disabled):hover:active .button-shine-small {
 .piping-bag {
    position: absolute;
    transform: scaleY(.9);
-   margin-top: -1px;
    margin-left: -40px;
 }
 
