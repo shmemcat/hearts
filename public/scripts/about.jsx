@@ -27,7 +27,7 @@ root.render(
                   I'm looking forward to making this app a proper tribute to this fantastic deck.
                </span>
                <p>
-                  For as long as I can remember, my mom played Hearts on Yahoo Games growing up. She's excellent at it, and playing with her and her brothers is nothing short of punishing.
+                  For as long as I can remember, my mom played Hearts on Yahoo Games when I was growing up. She's excellent at it, and playing with her and her brothers is nothing short of punishing.
                   My mom mentioned on more than one occasion how the Hearts apps she's always used have the tendency to be <span style={{ fontSize: "12px" }}>*ahem*</span> homely, so I'd love to create for her an aesthetically pleasing experience of her favorite card game.
                </p>
                <span>
