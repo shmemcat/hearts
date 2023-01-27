@@ -1,6 +1,6 @@
 "use strict";
 
-const Rules = (props) => {
+const Rules = () => {
    const [state, setState] = React.useState("overview");
 
    // if the button's text blurb is showing, set the button to "selected"
@@ -12,10 +12,10 @@ const Rules = (props) => {
       <div className="rules-body-container">
          {/* Button Menu */}
          <div className="rules-button-container">
-            <RulesButton name="Overview" selected={isSelected("overview")} onClickDo={() => setState("overview")} />
-            <RulesButton name="Deal & Passing" selected={isSelected("deal-passing")} onClickDo={() => setState("deal-passing")} />
-            <RulesButton name="The Play" selected={isSelected("play")} onClickDo={() => setState("play")} />
-            <RulesButton name="Scoring" selected={isSelected("scoring")} onClickDo={() => setState("scoring")} />
+            <RulesButton name="Overview" selected={isSelected("overview")} onClick={() => setState("overview")} />
+            <RulesButton name="Deal & Passing" selected={isSelected("deal-passing")} onClick={() => setState("deal-passing")} />
+            <RulesButton name="The Play" selected={isSelected("play")} onClick={() => setState("play")} />
+            <RulesButton name="Scoring" selected={isSelected("scoring")} onClick={() => setState("scoring")} />
          </div>
          {/* Rules body with different states */}
          <div className="rules-text-body">
@@ -24,7 +24,7 @@ const Rules = (props) => {
             {state === "play" && <Play />}
             {state === "scoring" && <Scoring />}
             <div>
-               <Button name="Back" onClickDo={() => { window.location.href = "/index.html"; }} />
+               <Button name="Back" onClick={() => { window.location.href = "/index.html"; }} />
             </div>
          </div>
       </div>

@@ -31,7 +31,7 @@ root.render(
                </p>
                <span>
                   <br></br>
-                  <Button name="Back" onClickDo={() => { window.location.href = "/index.html"; }} />
+                  <Button name="Back" onClick={() => { window.location.href = "/index.html"; }} />
                </span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", position: "relative" }}>

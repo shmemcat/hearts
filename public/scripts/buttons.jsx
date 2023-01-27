@@ -1,13 +1,11 @@
 "use strict";
 
 const Button = (props) => {
-   const [clicked, setClicked] = React.useState(false);
-
    let className = "menu-button";
 
    return (
       <button
-         onClick={props.onClickDo}
+         onClick={props.onClick}
          className={className}
          disabled={props.disabled}
       ><ButtonShine />{props.name}
@@ -39,7 +37,7 @@ const RulesButton = (props) => {
          data-selected={props.selected}
          onMouseEnter={() => setIsHovered(true)}
          onMouseLeave={() => setIsHovered(false)}
-         onClick={props.onClickDo}
+         onClick={props.onClick}
          className={className}
          disabled={props.disabled}
       >{(isHovered || props.selected) && <PipingBag isHovered={isHovered && !props.selected} />}{props.name}

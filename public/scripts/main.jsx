@@ -16,8 +16,8 @@ root.render(
             <Button name="Log In" disabled />
             <Button name="Create Game" disabled />
             <Button name="Join Game" disabled />
-            <Button name="Rules" onClickDo={() => { window.location.href = "/rules.html"; }} />
-            <Button name="About" onClickDo={() => { window.location.href = "/about.html"; }} />
+            <Button name="Rules" onClick={() => { window.location.href = "/rules.html"; }} />
+            <Button name="About" onClick={() => { window.location.href = "/about.html"; }} />
          </div>
       </div>
    </div>);;
