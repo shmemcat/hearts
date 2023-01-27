@@ -84,7 +84,7 @@ const Scoring = () => {
             When a player takes all 13 hearts and the queen of spades in one hand, instead of losing 26 points,
             that player scores zero and each of his opponents score an additional 26 points.
             This is colloquially referred to as <h3 id="shoot-the-moon"
-               onMouseOver={(e) => party.confetti(e.target, { count: party.variation.range(20, 100), })}>
+               onMouseOver={(e) => party.confetti(e.target, { count: party.variation.range(20, 100), })} style={{ whiteSpace: "nowrap" }}>
                “Shooting the Moon”
             </h3>.</p></span>
       </div>

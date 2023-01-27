@@ -5,7 +5,7 @@
    color: var(--darkbrown);
    font-family: appFont;
    font-weight: 900;
-   font-size: 14px;
+   font-size: 13px;
    letter-spacing: 5px;
    text-indent: 0.5em;
    text-align: center;
@@ -92,7 +92,7 @@ button:not(:disabled):hover:active .button-shine-small {
    color: var(--darkbrown);
    font-family: appFont;
    font-weight: 900;
-   font-size: 14px;
+   font-size: 13px;
    letter-spacing: 5px;
    text-indent: 0.5em;
    text-align: right;
@@ -106,7 +106,7 @@ button:not(:disabled):hover:active .button-shine-small {
    color: var(--hoverpink);
    font-family: appFont;
    font-weight: 900;
-   font-size: 14px;
+   font-size: 13px;
    letter-spacing: 5px;
    text-indent: 0.5em;
    text-align: right;
@@ -120,7 +120,8 @@ button:not(:disabled):hover:active .button-shine-small {
 /* Piping Bag */
 .piping-bag {
    position: absolute;
-   transform: scaleY(.9);
+   transform: scaleY(.8);
+   margin-top: -1px;
    margin-left: -40px;
 }
 
@@ -131,15 +132,15 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag {
 
 @keyframes hover-bounce {
    0% {
-      transform: translateX(-2px) scaleY(.9);
+      transform: translateX(-2px) scaleY(.8);
    }
 
    50% {
-      transform: translateX(2px) scaleY(.9);
+      transform: translateX(2px) scaleY(.8);
    }
 
    100% {
-      transform: translateX(-2px) scaleY(.9);
+      transform: translateX(-2px) scaleY(.8);
    }
 }
 
@@ -148,7 +149,7 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag {
    .menu-button {
       font-size: 12px;
       letter-spacing: 4px;
-      font-weight: 700;
+      font-weight: 900;
       width: 175px;
    }
 
@@ -160,10 +161,12 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag {
    }
 
    .rules-button {
+      height: 20px;
       text-align: center;
    }
 
    .rules-button-selected {
+      height: 20px;
       text-align: center;
    }
 
