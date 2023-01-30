@@ -2,28 +2,28 @@
 
 @font-face {
    font-family: "appFont";
-   src: url(../static_assets/fonts/TerminalDosis-Regular.ttf);
+   src: url(/fonts/TerminalDosis-Regular.ttf);
    font-weight: 400;
    font-style: normal;
 }
 
 @font-face {
    font-family: "appFont";
-   src: url(../static_assets/fonts/TerminalDosis-SemiBold.ttf);
+   src: url(/fonts/TerminalDosis-SemiBold.ttf);
    font-weight: 600;
    font-style: normal;
 }
 
 @font-face {
    font-family: "appFont";
-   src: url(../static_assets/fonts/TerminalDosis-Bold.ttf);
+   src: url(/fonts/TerminalDosis-Bold.ttf);
    font-weight: 700;
    font-style: normal;
 }
 
 @font-face {
    font-family: "appFont";
-   src: url(../static_assets/fonts/TerminalDosis-ExtraBold.ttf);
+   src: url(/fonts/TerminalDosis-ExtraBold.ttf);
    font-weight: 900;
    font-style: normal;
 }
@@ -31,15 +31,15 @@
 html {
    font-family: "appFont";
    color: var(--darkbrown);
-   --bgpink: #FEE6E6;
-   --contentpink: #FFF3F3;
-   --lightpink: #F7B3C8;
-   --hoverpink: #C48397;
-   --darkpink: #FE99C1;
-   --tan: #DBA167;
+   --bgpink: #fee6e6;
+   --contentpink: #fff3f3;
+   --lightpink: #f7b3c8;
+   --hoverpink: #c48397;
+   --darkpink: #fe99c1;
+   --tan: #dba167;
    --black: #2e2e2e;
-   --darkbrown: #59514F;
-   --white: #FFFFFF;
+   --darkbrown: #59514f;
+   --white: #ffffff;
 }
 
 body {
@@ -51,7 +51,7 @@ body {
    color: var(--darkbrown);
 }
 
-a {
+.link {
    position: relative;
    overflow: hidden;
    color: var(--hoverpink);
@@ -60,9 +60,9 @@ a {
    z-index: 1;
 }
 
-a::after {
+.link::after {
    content: "";
-   background: rgba(236, 64, 122, 0.20);
+   background: rgba(236, 64, 122, 0.2);
    position: absolute;
    left: 8px;
    bottom: -3px;
@@ -74,7 +74,7 @@ a::after {
    pointer-events: none;
 }
 
-a:hover:after {
+.link:hover:after {
    left: 0;
    bottom: -2px;
    width: 100%;
@@ -83,7 +83,7 @@ a:hover:after {
 
 h1 {
    font-family: "appFont";
-   margin-right: -.2em;
+   margin-right: -0.2em;
    text-align: center;
    color: var(--darkbrown);
    font-size: 50pt;

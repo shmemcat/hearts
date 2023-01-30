@@ -27,7 +27,7 @@
    width: 1030px;
    margin: 0 auto;
    border-radius: 20px;
-   background-color: #FFF3F3;
+   background-color: #fff3f3;
    padding: 35px;
    box-sizing: border-box;
    margin-top: 20px;
@@ -39,7 +39,7 @@
    width: 1030px;
    margin: 0 auto;
    border-radius: 20px;
-   background-color: #FFF3F3;
+   background-color: #fff3f3;
    padding: 35px;
    box-sizing: border-box;
    margin-top: 6vh;
@@ -59,7 +59,7 @@
 .rules-button-container {
    display: flex;
    flex-direction: column;
-   align-items: end;
+   align-items: flex-end;
    min-width: 220px;
    padding: 10px;
    padding-top: 20px;
