@@ -1,10 +1,13 @@
 #!/bin/bash
 
-# Get the process ID of the script we want to stop
-pid=$(forever list | grep "index.js" | awk '{print $7}')
+# stop the server
+pm2 stop 0
 
-# Stop the script
-forever stop $pid
+# catch up with package changes
+npm install
 
-# Start the server
-forever start index.js
+# build the app
+npm run build
+
+# start the server
+pm2 start npm -- start
