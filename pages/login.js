@@ -1,6 +1,8 @@
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
+import React from "react";
+
 import containers from "@/styles/containers.module.css";
 import buttons from "@/styles/buttons.module.css";
 import { Button } from "@/components/buttons.jsx";
@@ -13,20 +15,20 @@ export default function Home() {
    return (
       <>
          <Head>
-            <title>Hearts ♥</title>
+            <title>Login | Hearts ♥</title>
             <meta name="description" content="Hearts web application" />
             <meta
                name="viewport"
                content="width=device-width, initial-scale=1"
             />
          </Head>
-         <main className={containers["content-border-container-menu"]}>
+         <div className={containers["content-border-container"]}>
             <div className={containers.nav}>
                <Link href="/login">
                   <FontAwesomeIcon icon={farUser} className={buttons.icon} />
                </Link>
             </div>
-            <div id="index" className={containers["index-container"]}>
+            <div className={containers["container"]}>
                {/* Logo */}
                <div>
                   <Image
@@ -35,28 +37,34 @@ export default function Home() {
                      width="250"
                      height="250"
                      style={{
-                        marginTop: "-100px",
+                        marginTop: "30px",
                         display: "block",
                         marginLeft: "auto",
                         marginRight: "auto",
                      }}
                   />
-                  <h1 style={{ marginTop: "-180px" }}>HEARTS</h1>
+                  <h1 style={{ marginTop: "-180px" }}>LOGIN</h1>
                </div>
-
-               {/* Button Menu */}
-               <div className={containers["button-container"]}>
-                  <Button name="Create Game" disabled />
-                  <Button name="Join Game" disabled />
-                  <Link href="/rules">
-                     <Button name="Rules" />
-                  </Link>
-                  <Link href="/about">
-                     <Button name="About" />
-                  </Link>
+               <div
+                  style={{
+                     display: "flex",
+                     marginTop: "100px",
+                     width: "900px",
+                     alignItems: "center",
+                     justifyContent: "center",
+                     flexDirection: "column",
+                     gap: "35px",
+                  }}
+               >
+                  <div>Coming soon!</div>
+                  <div>
+                     <Link href="/">
+                        <Button name="Home" />
+                     </Link>
+                  </div>
                </div>
             </div>
-         </main>
+         </div>
       </>
    );
 }

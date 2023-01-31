@@ -13,7 +13,7 @@
    border-radius: 8px;
    width: 225px;
    height: 35px;
-   box-shadow: inset -3px -3px 0px rgba(196, 131, 151, .4);
+   box-shadow: inset -3px -3px 0px rgba(196, 131, 151, 0.4);
 }
 
 .menu-button:not(:disabled):hover {
@@ -120,7 +120,7 @@ button:not(:disabled):hover:active .button-shine-small {
 /* Piping Bag */
 .piping-bag {
    position: absolute;
-   transform: scaleY(.8);
+   transform: scaleY(0.8);
    margin-top: -1px;
    margin-left: -40px;
 }
@@ -132,16 +132,26 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag {
 
 @keyframes hover-bounce {
    0% {
-      transform: translateX(-2px) scaleY(.8);
+      transform: translateX(-2px) scaleY(0.8);
    }
 
    50% {
-      transform: translateX(2px) scaleY(.8);
+      transform: translateX(2px) scaleY(0.8);
    }
 
    100% {
-      transform: translateX(-2px) scaleY(.8);
+      transform: translateX(-2px) scaleY(0.8);
    }
+}
+
+/* Icons */
+
+.icon {
+   color: var(--lightpink);
+}
+
+.icon:hover {
+   color: var(--hoverpink);
 }
 
 /* for mobile */

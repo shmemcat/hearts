@@ -8,6 +8,11 @@
    flex-direction: column;
 }
 
+.nav {
+   display: flex;
+   justify-content: right;
+}
+
 .container {
    display: flex;
    align-items: center;

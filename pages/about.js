@@ -4,7 +4,12 @@ import Link from "next/link";
 import React from "react";
 
 import containers from "@/styles/containers.module.css";
+import buttons from "@/styles/buttons.module.css";
 import { Button } from "@/components/buttons.jsx";
+
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faUser as fasUser } from "@fortawesome/pro-solid-svg-icons";
+import { faUser as farUser } from "@fortawesome/pro-regular-svg-icons";
 
 export default function Home() {
    return (
@@ -18,6 +23,11 @@ export default function Home() {
             />
          </Head>
          <div className={containers["content-border-container"]}>
+            <div className={containers.nav}>
+               <Link href="/login">
+                  <FontAwesomeIcon icon={farUser} className={buttons.icon} />
+               </Link>
+            </div>
             <div id="about" className={containers["container"]}>
                {/* Logo */}
                <div>
