@@ -23,7 +23,7 @@ export const UserButton = (props) => {
 
 export const NightModeButton = () => {
    const [state, setState] = React.useState(fasMoon);
-   const [animation, setAnimation] = React.useState(false);
+   const [animation, setAnimation] = React.useState(0);
 
    const onClickHandler = () => {
       setState(state === fasMoon ? fasSunBright : fasMoon);
@@ -45,7 +45,7 @@ export const NightModeButton = () => {
 
 export const SoundButton = () => {
    const [state, setState] = React.useState(fasMusicNote);
-   const [animation, setAnimation] = React.useState(false);
+   const [animation, setAnimation] = React.useState(0);
 
    const onClickHandler = () => {
       setState(state === fasMusicNote ? fasMusicNoteSlash : fasMusicNote);
