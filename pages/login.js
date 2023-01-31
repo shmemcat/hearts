@@ -5,12 +5,10 @@ import { useRouter } from "next/router";
 import React from "react";
 
 import containers from "@/styles/containers.module.css";
-import buttons from "@/styles/buttons.module.css";
 import { Button } from "@/components/buttons.jsx";
-
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser as fasUser } from "@fortawesome/pro-solid-svg-icons";
-import { faUser as farUser } from "@fortawesome/pro-regular-svg-icons";
+import { UserButton } from "@/components/navbar.jsx";
+import { NightModeButton } from "@/components/navbar.jsx";
+import { SoundButton } from "@/components/navbar.jsx";
 
 export default function Home() {
    const router = useRouter();
@@ -27,8 +25,10 @@ export default function Home() {
          <div className={containers["content-border-container"]}>
             <div className={containers.nav}>
                <Link href="/login">
-                  <FontAwesomeIcon icon={farUser} className={buttons.icon} />
+                  <UserButton loggedIn={false} />
                </Link>
+               <NightModeButton />
+               <SoundButton />
             </div>
             <div className={containers["container"]}>
                {/* Logo */}

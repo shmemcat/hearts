@@ -11,6 +11,8 @@
 .nav {
    display: flex;
    justify-content: right;
+   flex-direction: row-reverse;
+   gap: 25px;
 }
 
 .container {
@@ -117,8 +119,14 @@
    }
 }
 
-/* for mobile */
+/* for mobile and mobile-sized windows */
 @media only screen and (max-width: 768px) {
+   .nav {
+      position: absolute;
+      top: 30px;
+      right: 40px;
+   }
+
    .button-container {
       margin-top: 30px;
       margin-left: 130px;

@@ -5,13 +5,11 @@ import React from "react";
 import party from "party-js";
 
 import containers from "@/styles/containers.module.css";
-import buttons from "@/styles/buttons.module.css";
 import { RulesButton } from "@/components/buttons.jsx";
 import { Button } from "@/components/buttons.jsx";
-
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser as fasUser } from "@fortawesome/pro-solid-svg-icons";
-import { faUser as farUser } from "@fortawesome/pro-regular-svg-icons";
+import { UserButton } from "@/components/navbar.jsx";
+import { NightModeButton } from "@/components/navbar.jsx";
+import { SoundButton } from "@/components/navbar.jsx";
 
 export default function Home() {
    return (
@@ -27,8 +25,10 @@ export default function Home() {
          <div className={containers["content-border-container"]}>
             <div className={containers.nav}>
                <Link href="/login">
-                  <FontAwesomeIcon icon={farUser} className={buttons.icon} />
+                  <UserButton loggedIn={false} />
                </Link>
+               <NightModeButton />
+               <SoundButton />
             </div>
             <div id="rules" className={containers["container"]}>
                {/* Logo */}
@@ -182,7 +182,7 @@ const Scoring = () => {
             Each heart - 1 point <br /> The Queen of Spades - 13 points{" "}
          </p>
          <span>
-            <p>
+            <span>
                The aggregate total of all scores for each hand must be a
                multiple of 26. The game is played to 100 points. When a player
                takes all 13 hearts and the queen of spades in one hand, instead
@@ -201,7 +201,7 @@ const Scoring = () => {
                   “Shooting the Moon”
                </h3>
                .
-            </p>
+            </span>
          </span>
       </main>
    );

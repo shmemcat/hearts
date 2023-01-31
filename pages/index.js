@@ -4,10 +4,9 @@ import Link from "next/link";
 import containers from "@/styles/containers.module.css";
 import buttons from "@/styles/buttons.module.css";
 import { Button } from "@/components/buttons.jsx";
-
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser as fasUser } from "@fortawesome/pro-solid-svg-icons";
-import { faUser as farUser } from "@fortawesome/pro-regular-svg-icons";
+import { UserButton } from "@/components/navbar.jsx";
+import { NightModeButton } from "@/components/navbar.jsx";
+import { SoundButton } from "@/components/navbar.jsx";
 
 export default function Home() {
    return (
@@ -23,8 +22,10 @@ export default function Home() {
          <main className={containers["content-border-container-menu"]}>
             <div className={containers.nav}>
                <Link href="/login">
-                  <FontAwesomeIcon icon={farUser} className={buttons.icon} />
+                  <UserButton loggedIn={false} />
                </Link>
+               <NightModeButton />
+               <SoundButton />
             </div>
             <div id="index" className={containers["index-container"]}>
                {/* Logo */}

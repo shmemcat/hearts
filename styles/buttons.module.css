@@ -125,9 +125,22 @@ button:not(:disabled):hover:active .button-shine-small {
    margin-left: -40px;
 }
 
+.piping-bag-right {
+   visibility: hidden;
+   position: absolute;
+   transform: rotate(180deg) scaleY(0.8);
+   margin-top: -2.5px;
+   margin-left: 1px;
+}
+
 button[data-selected="false"]:not(:disabled):hover .piping-bag {
    fill: var(--tan);
    animation: hover-bounce 1s linear infinite;
+}
+
+button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
+   fill: var(--tan);
+   animation: hover-bounce-right 1s linear infinite;
 }
 
 @keyframes hover-bounce {
@@ -144,17 +157,33 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag {
    }
 }
 
+@keyframes hover-bounce-right {
+   0% {
+      transform: translateX(2px) rotate(180deg) scaleY(0.8);
+   }
+
+   50% {
+      transform: translateX(-2px) rotate(180deg) scaleY(0.8);
+   }
+
+   100% {
+      transform: translateX(2px) rotate(180deg) scaleY(0.8);
+   }
+}
+
 /* Icons */
 
 .icon {
    color: var(--lightpink);
+   width: 18px;
+   height: 18px;
 }
 
 .icon:hover {
    color: var(--hoverpink);
 }
 
-/* for mobile */
+/* for mobile and mobile-sized windows */
 @media only screen and (max-width: 768px) {
    .menu-button {
       font-size: 12px;
@@ -190,5 +219,40 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag {
       height: 5px;
       margin-top: 3px;
       margin-left: -3.4px;
+   }
+
+   .piping-bag-right {
+      visibility: visible;
+   }
+
+   .icon {
+      width: 20px;
+      height: 20px;
+   }
+}
+
+/* for touch screens */
+@media (hover: none) {
+   .icon:hover {
+      color: var(--lightpink);
+   }
+
+   button[data-selected="false"]:not(:disabled):hover .piping-bag {
+      fill: none;
+      animation: none;
+   }
+
+   .menu-button:not(:disabled):hover {
+      background-color: var(--lightpink);
+      cursor: default;
+      box-shadow: inset -3px -3px 0px rgba(196, 131, 151, 0.4);
+   }
+
+   button:not(:disabled):hover .button-shine {
+      background-color: rgba(221, 166, 192, 0.6);
+   }
+
+   .rules-button:hover {
+      color: var(--hoverpink);
    }
 }
