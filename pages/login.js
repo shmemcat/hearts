@@ -1,6 +1,7 @@
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import React from "react";
 
 import containers from "@/styles/containers.module.css";
@@ -12,6 +13,7 @@ import { faUser as fasUser } from "@fortawesome/pro-solid-svg-icons";
 import { faUser as farUser } from "@fortawesome/pro-regular-svg-icons";
 
 export default function Home() {
+   const router = useRouter();
    return (
       <>
          <Head>
@@ -58,9 +60,7 @@ export default function Home() {
                >
                   <div>Coming soon!</div>
                   <div>
-                     <Link href="/">
-                        <Button name="Home" />
-                     </Link>
+                     <Button name="Back" onClick={() => router.back()} />
                   </div>
                </div>
             </div>

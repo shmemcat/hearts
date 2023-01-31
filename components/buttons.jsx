@@ -4,7 +4,11 @@ import colors from "@/styles/design_tokens.js";
 
 export const Button = (props) => {
    return (
-      <button className={button["menu-button"]} disabled={props.disabled}>
+      <button
+         className={button["menu-button"]}
+         disabled={props.disabled}
+         onClick={props.onClick}
+      >
          <ButtonShine />
          {props.name}
       </button>
