@@ -183,6 +183,32 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
    color: var(--hoverpink);
 }
 
+.icon[clicked="1"] {
+   animation: icon-select-bounce 0.4s linear;
+}
+
+@keyframes icon-select-bounce {
+   0% {
+      transform: scaleY(1) scaleX(1);
+      transform-origin: center;
+   }
+
+   10% {
+      transform: scaleY(0.7) scaleX(0.7);
+      transform-origin: center;
+   }
+
+   60% {
+      transform: scaleY(1.1) scaleX(1.1);
+      transform-origin: center;
+   }
+
+   100% {
+      transform: scaleY(1) scaleX(1);
+      transform-origin: center;
+   }
+}
+
 /* for mobile and mobile-sized windows */
 @media only screen and (max-width: 768px) {
    .menu-button {
