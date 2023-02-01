@@ -52,7 +52,7 @@ export const NightModeButton = () => {
          <FontAwesomeIcon
             onClick={() => onClickHandler()}
             className={buttons.icon}
-            icon={resolvedTheme === "dark" ? fasSunBright : fasMoon}
+            icon={resolvedTheme === "dark" ? fasMoon : fasSunBright}
             clicked={animation}
             onAnimationEnd={() => setAnimation(0)}
          />
