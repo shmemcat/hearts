@@ -38,9 +38,6 @@ export default function Home() {
                {/* Logo */}
                <div className={containers["title-container"]}>
                   <HeartsLogo
-                     alt="Hearts Logo"
-                     width="250"
-                     height="250"
                      style={{
                         marginTop: "30px",
                         display: "block",

@@ -22,9 +22,15 @@
    flex-direction: column;
 }
 
-.button-container {
+.menu-button-container {
    margin-top: 10px;
    margin-left: 200px;
+   display: flex;
+   flex-direction: column;
+   gap: 12px;
+}
+
+.button-container {
    display: flex;
    flex-direction: column;
    gap: 12px;
@@ -144,12 +150,11 @@
       right: 40px;
    }
 
-   .button-container {
+   .menu-button-container {
       margin-top: 30px;
       margin-left: 130px;
       align-items: center;
       justify-content: center;
-      gap: 10px;
    }
 
    .body-container {

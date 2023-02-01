@@ -38,9 +38,6 @@ export default function Home() {
                {/* Logo and Title */}
                <div className={containers["title-container"]}>
                   <HeartsLogo
-                     alt="Hearts Logo"
-                     width="250"
-                     height="250"
                      style={{
                         marginTop: "30px",
                         display: "block",
@@ -57,13 +54,7 @@ export default function Home() {
                {/* Body */}
                <div className={containers["body-container"]}>
                   <div>Coming soon!</div>
-                  <div
-                     style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "10px",
-                     }}
-                  >
+                  <div className={containers["button-container"]}>
                      <Button name="Back" onClick={() => router.back()} />
                   </div>
                </div>

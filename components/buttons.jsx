@@ -8,6 +8,8 @@ export const Button = (props) => {
          className={button["menu-button"]}
          disabled={props.disabled}
          onClick={props.onClick}
+         role="button"
+         aria-label={props.name}
       >
          <ButtonShine />
          {props.name}
@@ -28,6 +30,8 @@ export const RulesButton = (props) => {
          onMouseLeave={() => setIsHovered(false)}
          onClick={props.onClick}
          style={{ userSelect: "none" }}
+         role="button"
+         aria-label={props.name}
          className={
             props.selected
                ? button["rules-button-selected"]

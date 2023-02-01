@@ -34,9 +34,6 @@ export default function Home() {
                {/* Logo and Title */}
                <div style={{ display: "flex", flexDirection: "column" }}>
                   <HeartsLogo
-                     alt="Hearts Logo"
-                     width="250"
-                     height="250"
                      style={{
                         marginTop: "-100px",
                         display: "block",
@@ -51,7 +48,7 @@ export default function Home() {
                </div>
 
                {/* Button Menu */}
-               <div className={containers["button-container"]}>
+               <div className={containers["menu-button-container"]}>
                   <Link href="/game/create">
                      <Button name="Create Game" />
                   </Link>
