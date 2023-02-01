@@ -13,7 +13,7 @@ export default function Home() {
       <>
          {/* Header */}
          <Head>
-            <title>Hearts ♥</title>
+            <title>Hearts</title>
             <meta name="description" content="Hearts web application" />
             <meta
                name="viewport"
@@ -33,6 +33,7 @@ export default function Home() {
                {/* Logo and Title */}
                <div style={{ display: "flex", flexDirection: "column" }}>
                   <HeartsLogo
+                     alt="Hearts Logo"
                      width="250"
                      height="250"
                      style={{

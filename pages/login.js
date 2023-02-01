@@ -17,7 +17,7 @@ export default function Home() {
       <>
          {/* Header */}
          <Head>
-            <title>Login | Hearts ♥</title>
+            <title>Login | Hearts</title>
             <meta name="description" content="Hearts web application" />
             <meta
                name="viewport"
@@ -37,6 +37,7 @@ export default function Home() {
                {/* Logo and Title */}
                <div className={containers["title-container"]}>
                   <HeartsLogo
+                     alt="Hearts Logo"
                      width="250"
                      height="250"
                      style={{

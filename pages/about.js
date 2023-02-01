@@ -15,7 +15,7 @@ export default function Home() {
       <>
          {/* Header */}
          <Head>
-            <title>About | Hearts ♥</title>
+            <title>About | Hearts</title>
             <meta name="description" content="Hearts web application" />
             <meta
                name="viewport"
@@ -35,6 +35,7 @@ export default function Home() {
                {/* Logo */}
                <div className={containers["title-container"]}>
                   <HeartsLogo
+                     alt="Hearts Logo"
                      width="250"
                      height="250"
                      style={{
@@ -108,7 +109,7 @@ export default function Home() {
                      }}
                   >
                      <Image
-                        alt="Flourish Playing Cards"
+                        alt="Flourish Playing Cards Image"
                         src="/images/Flourish.jpeg"
                         width="300"
                         height="200"

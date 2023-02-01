@@ -19,9 +19,12 @@ export const UserButton = (props) => {
    };
 
    return (
-      <div>
+      <div
+         role="button"
+         aria-label="Login/User Settings"
+         onClick={() => onClickHandler()}
+      >
          <FontAwesomeIcon
-            onClick={() => onClickHandler()}
             className={buttons.icon}
             icon={props.loggedIn ? fasUser : farUser}
             clicked={animation}
@@ -48,9 +51,12 @@ export const NightModeButton = () => {
    };
 
    return (
-      <div>
+      <div
+         role="button"
+         aria-label="Toggle between light and dark mode"
+         onClick={() => onClickHandler()}
+      >
          <FontAwesomeIcon
-            onClick={() => onClickHandler()}
             className={buttons.icon}
             icon={resolvedTheme === "dark" ? fasMoon : fasSunBright}
             clicked={animation}
@@ -70,9 +76,12 @@ export const SoundButton = () => {
    };
 
    return (
-      <div>
+      <div
+         role="button"
+         aria-label="Toggle sound on or off"
+         onClick={() => onClickHandler()}
+      >
          <FontAwesomeIcon
-            onClick={() => onClickHandler()}
             className={buttons.icon}
             icon={state}
             clicked={animation}
