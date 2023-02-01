@@ -50,6 +50,7 @@ html {
    --texthighlight: hsl(12, 6%, 33%);
    --white: hsl(0, 0%, 100%);
    --mediumpink: hsl(0, 100%, 94%);
+   --buttontextdisabled: hsla(0, 0%, 6%, 0.3);
    --buttonshine: hsla(334, 100%, 96%, 0.6);
    --buttonshinehover: hsla(332, 45%, 76%, 0.6);
    --buttonshinedisabled: hsla(334, 100%, 96%, 0.251);
