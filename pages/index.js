@@ -14,6 +14,7 @@ export default function Home() {
          {/* Header */}
          <Head>
             <title>Hearts</title>
+            <link rel="icon" href="/images/favicon.ico" />
             <meta name="description" content="Hearts web application" />
             <meta
                name="viewport"
