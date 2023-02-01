@@ -13,6 +13,7 @@ import { SoundButton } from "@/components/navbar.jsx";
 export default function Home() {
    return (
       <>
+         {/* Header */}
          <Head>
             <title>About | Hearts ♥</title>
             <meta name="description" content="Hearts web application" />
@@ -21,6 +22,7 @@ export default function Home() {
                content="width=device-width, initial-scale=1"
             />
          </Head>
+         {/* Navigation Bar */}
          <div className={containers["content-border-container"]}>
             <div className={containers.nav}>
                <Link href="/login">
@@ -48,7 +50,7 @@ export default function Home() {
                   </h1>
                </div>
 
-               {/* Button Menu */}
+               {/* Body */}
                <main className={containers["about-body-container"]}>
                   <div className={containers["about-text-body"]}>
                      <span style={{ margin: "0px" }}>

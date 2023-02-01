@@ -15,6 +15,7 @@ export default function Home() {
    const router = useRouter();
    return (
       <>
+         {/* Header */}
          <Head>
             <title>Login | Hearts ♥</title>
             <meta name="description" content="Hearts web application" />
@@ -24,6 +25,7 @@ export default function Home() {
             />
          </Head>
          <div className={containers["content-border-container"]}>
+            {/* Navigation Bar */}
             <div className={containers.nav}>
                <Link href="/login">
                   <UserButton loggedIn={false} />
@@ -32,7 +34,7 @@ export default function Home() {
                <SoundButton />
             </div>
             <div className={containers["container"]}>
-               {/* Logo */}
+               {/* Logo and Title */}
                <div style={{ display: "flex", flexDirection: "column" }}>
                   <HeartsLogo
                      width="250"
@@ -49,6 +51,8 @@ export default function Home() {
                      LOGIN
                   </h1>
                </div>
+
+               {/* Body */}
                <div
                   style={{
                      display: "flex",

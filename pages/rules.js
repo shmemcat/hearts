@@ -15,6 +15,7 @@ import { SoundButton } from "@/components/navbar.jsx";
 export default function Home() {
    return (
       <>
+         {/* Header */}
          <Head>
             <title>Rules | Hearts ♥</title>
             <meta name="description" content="Hearts web application" />
@@ -23,6 +24,7 @@ export default function Home() {
                content="width=device-width, initial-scale=1"
             />
          </Head>
+         {/* Navigation Bar */}
          <div className={containers["content-border-container"]}>
             <div className={containers.nav}>
                <Link href="/login">
@@ -58,6 +60,7 @@ export default function Home() {
    );
 }
 
+/* Rules React Component to handle states */
 const Rules = () => {
    const [state, setState] = React.useState("overview");
 
