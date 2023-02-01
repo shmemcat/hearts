@@ -35,7 +35,7 @@ export default function Home() {
             </div>
             <div id="rules" className={containers["container"]}>
                {/* Logo */}
-               <div style={{ display: "flex", flexDirection: "column" }}>
+               <div className={containers["title-container"]}>
                   <HeartsLogo
                      width="250"
                      height="250"

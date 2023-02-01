@@ -35,7 +35,7 @@ export default function Home() {
             </div>
             <div className={containers["container"]}>
                {/* Logo and Title */}
-               <div style={{ display: "flex", flexDirection: "column" }}>
+               <div className={containers["title-container"]}>
                   <HeartsLogo
                      width="250"
                      height="250"
@@ -53,17 +53,7 @@ export default function Home() {
                </div>
 
                {/* Body */}
-               <div
-                  style={{
-                     display: "flex",
-                     marginTop: "100px",
-                     width: "90vw",
-                     alignItems: "center",
-                     justifyContent: "center",
-                     flexDirection: "column",
-                     gap: "35px",
-                  }}
-               >
+               <div className={containers["body-container"]}>
                   <div>Coming soon!</div>
                   <div
                      style={{
