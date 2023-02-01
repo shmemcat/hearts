@@ -3,7 +3,6 @@
 /* Variables */
 
 html {
-   font-family: var(--appFont);
    color: var(--text);
    --background: #fee6e6;
    --contentbox: #fff3f3;
@@ -61,7 +60,6 @@ html {
 }
 
 body {
-   font-family: var(--appFont);
    background-color: var(--background);
    font-size: 16px;
    letter-spacing: 1.5px;
@@ -103,7 +101,6 @@ body {
 }
 
 h1 {
-   font-family: var(--appFont);
    margin-right: -0.2em;
    text-align: center;
    color: var(--header);
@@ -113,7 +110,6 @@ h1 {
 }
 
 h2 {
-   font-family: var(--appFont);
    font-size: 16px;
    font-weight: 700;
    margin: 0px;
@@ -121,7 +117,6 @@ h2 {
 
 h3 {
    display: inline;
-   font-family: var(--appFont);
    font-size: 16px;
    margin: 0px;
    font-weight: 700;

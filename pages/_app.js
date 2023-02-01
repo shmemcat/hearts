@@ -11,13 +11,10 @@ config.autoAddCss = false;
 export default function App({ Component, pageProps }) {
    return (
       <>
-         <style jsx global>{`
-            :root {
-               --appFont: ${terminalDosis.style.fontFamily};
-            }
-         `}</style>
          <ThemeProvider>
-            <Component {...pageProps} />
+            <div className={terminalDosis.className}>
+               <Component {...pageProps} />
+            </div>
          </ThemeProvider>
       </>
    );
