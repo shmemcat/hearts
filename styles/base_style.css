@@ -2,11 +2,40 @@
 
 /* Variables */
 
+@font-face {
+   font-family: "appFont";
+   src: url(/fonts/TerminalDosis-Regular.ttf);
+   font-weight: 400;
+   font-style: normal;
+}
+
+@font-face {
+   font-family: "appFont";
+   src: url(/fonts/TerminalDosis-SemiBold.ttf);
+   font-weight: 600;
+   font-style: normal;
+}
+
+@font-face {
+   font-family: "appFont";
+   src: url(/fonts/TerminalDosis-Bold.ttf);
+   font-weight: 700;
+   font-style: normal;
+}
+
+@font-face {
+   font-family: "appFont";
+   src: url(/fonts/TerminalDosis-ExtraBold.ttf);
+   font-weight: 900;
+   font-style: normal;
+}
+
 html {
+   font-family: "appFont";
    color: var(--text);
    --background: #fee6e6;
    --contentbox: #fff3f3;
-   --lightpink: rgb(247, 181, 202);
+   --lightpink: hsl(341, 81%, 84%);
    --heartslogo: hsl(341, 81%, 84%);
    --hoverpink: hsl(342, 36%, 64%);
    --darkpink: hsl(336, 98%, 80%);
@@ -101,6 +130,7 @@ body {
 }
 
 h1 {
+   font-family: "appFont";
    margin-right: -0.2em;
    text-align: center;
    color: var(--header);
@@ -110,6 +140,7 @@ h1 {
 }
 
 h2 {
+   font-family: "appFont";
    font-size: 16px;
    font-weight: 700;
    margin: 0px;
@@ -117,6 +148,7 @@ h2 {
 
 h3 {
    display: inline;
+   font-family: "appFont";
    font-size: 16px;
    margin: 0px;
    font-weight: 700;
