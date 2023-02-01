@@ -5,6 +5,7 @@ import React from "react";
 
 import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons.jsx";
+import { HeartsLogo } from "@/components/heartslogo.jsx";
 import { UserButton } from "@/components/navbar.jsx";
 import { NightModeButton } from "@/components/navbar.jsx";
 import { SoundButton } from "@/components/navbar.jsx";
@@ -30,13 +31,16 @@ export default function Home() {
             </div>
             <div id="about" className={containers["container"]}>
                {/* Logo */}
-               <div>
-                  <Image
-                     alt="Hearts Logo"
-                     src="/images/HeartsLogo.svg"
+               <div style={{ display: "flex", flexDirection: "column" }}>
+                  <HeartsLogo
                      width="250"
                      height="250"
-                     style={{ marginTop: "30px" }}
+                     style={{
+                        marginTop: "30px",
+                        display: "block",
+                        marginLeft: "auto",
+                        marginRight: "auto",
+                     }}
                   />
                   <h1 style={{ marginTop: "-180px" }}>ABOUT</h1>
                </div>

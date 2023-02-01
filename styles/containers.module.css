@@ -34,7 +34,7 @@
    width: 1030px;
    margin: 0 auto;
    border-radius: 20px;
-   background-color: #fff3f3;
+   background-color: var(--contentbox);
    padding: 35px;
    box-sizing: border-box;
    margin-top: 20px;
@@ -46,7 +46,7 @@
    width: 1030px;
    margin: 0 auto;
    border-radius: 20px;
-   background-color: #fff3f3;
+   background-color: var(--contentbox);
    padding: 35px;
    box-sizing: border-box;
    margin-top: 6vh;
@@ -70,7 +70,7 @@
    min-width: 220px;
    padding: 10px;
    padding-top: 20px;
-   background-color: #ffe1e1;
+   background-color: var(--mediumpink);
    border-radius: 20px;
    gap: 12px;
 }
@@ -173,6 +173,7 @@
 
    .content-border-container {
       width: 90vw;
+      padding-bottom: 10px;
       background-color: transparent;
    }
 

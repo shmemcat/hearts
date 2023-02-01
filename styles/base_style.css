@@ -1,3 +1,5 @@
+@import "colors.module.css";
+
 /* Variables */
 
 @font-face {
@@ -30,31 +32,75 @@
 
 html {
    font-family: "appFont";
-   color: var(--darkbrown);
-   --bgpink: #fee6e6;
-   --contentpink: #fff3f3;
-   --lightpink: #f7b3c8;
-   --hoverpink: #c48397;
-   --darkpink: #fe99c1;
-   --tan: #dba167;
-   --black: #2e2e2e;
-   --darkbrown: #59514f;
-   --white: #ffffff;
+   color: var(--text);
+   --background: #fee6e6;
+   --contentbox: #fff3f3;
+   --lightpink: hsl(341, 81%, 84%);
+   --heartslogo: hsl(341, 81%, 84%);
+   --hoverpink: hsl(342, 36%, 64%);
+   --darkpink: hsl(336, 98%, 80%);
+   --tan: hsl(30, 62%, 63%);
+   --black: hsl(0, 0%, 18%);
+   --darkbrown: hsl(12, 6%, 33%);
+   --header: hsl(12, 6%, 33%);
+   --buttontext: hsl(12, 6%, 33%);
+   --rulesbuttontext: hsl(12, 6%, 33%);
+   --rulesbuttonselected: hsl(342, 36%, 64%);
+   --text: hsl(12, 6%, 33%);
+   --texthighlight: hsl(12, 6%, 33%);
+   --white: hsl(0, 0%, 100%);
+   --mediumpink: hsl(0, 100%, 94%);
+   --buttonshine: hsla(334, 100%, 96%, 0.6);
+   --buttonshinehover: hsla(332, 45%, 76%, 0.6);
+   --buttonshinedisabled: hsla(334, 100%, 96%, 0.251);
+   --buttonboxshadow: hsla(342, 36%, 64%, 0.4);
+   --buttonboxshadowhover: hsla(342, 22%, 44%, 0.5);
+   --buttonboxshadowdisabled: hsla(342, 22%, 44%, 0.1);
+   --selectionbgcolor: hsla(342, 36%, 64%, 0.6);
+   --link: hsl(342, 36%, 64%);
+   --linkbox: hsla(340, 82%, 59%, 0.2);
+}
+
+[data-theme="dark"] {
+   --background: hsl(231, 13%, 11%);
+   --contentbox: hsl(232, 15%, 19%);
+   --header: hsl(341, 81%, 84%);
+   --lightpink: hsl(342, 36%, 64%);
+   --heartslogo: hsl(231, 16%, 29%);
+   --buttontext: hsl(231, 13%, 11%);
+   --text: hsl(341, 81%, 84%);
+   --texthighlight: hsl(336, 21%, 25%);
+   --tan: hsl(335, 19%, 45%);
+   --mediumpink: hsl(240, 14%, 15%);
+   --hoverpink: hsl(335, 23%, 35%);
+   --rulesbuttontext: hsl(231, 16%, 35%);
+   --rulesbuttonselected: hsl(341, 81%, 84%);
+   --buttonshine: hsla(332, 50%, 87%, 0.6);
+   --buttonshinehover: hsla(332, 30%, 60%, 0.6);
+   --buttonshinedisabled: hsla(332, 45%, 80%, 0.3);
+   --buttonboxshadow: hsla(342, 30%, 30%, 0.5);
+   --buttonboxshadowhover: hsla(344, 25%, 18%, 0.5);
+   --buttonboxshadowdisabled: hsla(342, 22%, 44%, 0.2);
+   --selectionbgcolor: hsla(341, 81%, 84%, 0.6);
+   --link: hsl(0, 60%, 90%);
+   --linkbox: hsla(342, 36%, 64%, 0.5);
 }
 
 body {
-   background-color: var(--bgpink);
+   background-color: var(--background);
+   font-size: 16px;
+   letter-spacing: 1.5px;
 }
 
 ::selection {
-   background-color: rgba(196, 131, 151, 0.6);
-   color: var(--darkbrown);
+   background-color: var(--selectionbgcolor);
+   color: var(--texthighlight);
 }
 
 .link {
    position: relative;
    overflow: hidden;
-   color: var(--hoverpink);
+   color: var(--link);
    font-weight: 700;
    text-decoration: none;
    z-index: 1;
@@ -62,7 +108,7 @@ body {
 
 .link::after {
    content: "";
-   background: rgba(236, 64, 122, 0.2);
+   background: var(--linkbox);
    position: absolute;
    left: 8px;
    bottom: -3px;
@@ -85,7 +131,7 @@ h1 {
    font-family: "appFont";
    margin-right: -0.2em;
    text-align: center;
-   color: var(--darkbrown);
+   color: var(--header);
    font-size: 50pt;
    letter-spacing: 15pt;
    font-weight: 700;
@@ -126,6 +172,6 @@ h3 {
    }
 
    body {
-      background-color: var(--contentpink);
+      background-color: var(--contentbox);
    }
 }

@@ -1,6 +1,7 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import "@fortawesome/fontawesome-svg-core/styles.css";
+import { useTheme } from "next-themes";
 
 import { faUser as fasUser } from "@fortawesome/pro-solid-svg-icons";
 import { faUser as farUser } from "@fortawesome/pro-regular-svg-icons";
@@ -22,11 +23,18 @@ export const UserButton = (props) => {
 };
 
 export const NightModeButton = () => {
-   const [state, setState] = React.useState(fasMoon);
    const [animation, setAnimation] = React.useState(0);
+   const { theme, setTheme } = useTheme();
+   const [mounted, setMounted] = React.useState(false);
+
+   React.useEffect(() => {
+      setMounted(true);
+   }, []);
+
+   if (!mounted) return <></>;
 
    const onClickHandler = () => {
-      setState(state === fasMoon ? fasSunBright : fasMoon);
+      setTheme(theme === "dark" ? "light" : "dark");
       setAnimation(1);
    };
 
@@ -35,7 +43,7 @@ export const NightModeButton = () => {
          <FontAwesomeIcon
             onClick={() => onClickHandler()}
             className={buttons.icon}
-            icon={state}
+            icon={theme === "dark" ? fasSunBright : fasMoon}
             clicked={animation}
             onAnimationEnd={() => setAnimation(0)}
          />

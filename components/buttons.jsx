@@ -52,7 +52,7 @@ export const RulesButton = (props) => {
 };
 
 const PipingBag = (props) => {
-   const fillColor = props.isHovered ? colors.tan : colors.hoverpink;
+   const fillColor = props.isHovered ? colors.tan : colors.rulesbuttonselected;
 
    return (
       <span className={button["piping-bag"]}>
@@ -75,7 +75,7 @@ const PipingBag = (props) => {
 };
 
 const PipingBagRight = (props) => {
-   const fillColor = props.isHovered ? colors.tan : colors.hoverpink;
+   const fillColor = props.isHovered ? colors.tan : colors.rulesbuttonselected;
 
    return (
       <span className={button["piping-bag-right"]}>

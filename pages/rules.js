@@ -6,6 +6,7 @@ import party from "party-js";
 
 import containers from "@/styles/containers.module.css";
 import { RulesButton } from "@/components/buttons.jsx";
+import { HeartsLogo } from "@/components/heartslogo.jsx";
 import { Button } from "@/components/buttons.jsx";
 import { UserButton } from "@/components/navbar.jsx";
 import { NightModeButton } from "@/components/navbar.jsx";
@@ -32,10 +33,8 @@ export default function Home() {
             </div>
             <div id="rules" className={containers["container"]}>
                {/* Logo */}
-               <div>
-                  <Image
-                     alt="Hearts Logo"
-                     src="/images/HeartsLogo.svg"
+               <div style={{ display: "flex", flexDirection: "column" }}>
+                  <HeartsLogo
                      width="250"
                      height="250"
                      style={{

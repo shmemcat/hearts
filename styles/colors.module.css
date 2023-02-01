@@ -1,0 +1,11 @@
+/* Color Variables */
+
+@value tan: var(--tan);
+@value rulesbuttonselected: var(--rulesbuttonselected);
+@value heartslogo: var(--heartslogo);
+
+.colors {
+   --tan: var(--tan);
+   --rulesbuttonselected: var(--rulesbuttonselected);
+   --heartslogo: var(--heartslogo);
+}

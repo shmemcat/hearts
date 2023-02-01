@@ -2,7 +2,7 @@
 .menu-button {
    background-color: var(--lightpink);
    border-style: none;
-   color: var(--darkbrown);
+   color: var(--buttontext);
    font-family: appFont;
    font-weight: 900;
    font-size: 13px;
@@ -13,24 +13,24 @@
    border-radius: 8px;
    width: 225px;
    height: 35px;
-   box-shadow: inset -3px -3px 0px rgba(196, 131, 151, 0.4);
+   box-shadow: inset -3px -3px 0px var(--buttonboxshadow);
 }
 
 .menu-button:not(:disabled):hover {
    background-color: var(--hoverpink);
    cursor: pointer;
-   box-shadow: inset -3px -3px 0px rgba(136, 87, 102, 0.5);
+   box-shadow: inset -3px -3px 0px var(--buttonboxshadowhover);
 }
 
 .menu-button:disabled {
    color: rgba(16, 16, 16, 0.3);
-   box-shadow: inset -3px -3px 0px rgba(136, 87, 102, 0.1);
+   box-shadow: inset -3px -3px 0px var(--buttonboxshadowdisabled);
    cursor: not-allowed;
 }
 
 .menu-button:not(:disabled):hover:active {
    background-color: var(--hoverpink);
-   box-shadow: inset 3px 3px 0px rgba(136, 87, 102, 0.5);
+   box-shadow: inset 3px 3px 0px var(--buttonboxshadowhover);
 }
 
 /* Button Shine */
@@ -42,15 +42,15 @@
    width: 12px;
    height: 7px;
    border-radius: 100%;
-   background-color: rgba(255, 234, 243, 0.6);
+   background-color: var(--buttonshine);
 }
 
 button:not(:disabled):hover .button-shine {
-   background-color: rgba(221, 166, 192, 0.6);
+   background-color: var(--buttonshinehover);
 }
 
 button:disabled .button-shine {
-   background-color: rgba(255, 234, 243, 0.25);
+   background-color: var(--buttonshinedisabled);
 }
 
 button:not(:disabled):hover:active .button-shine {
@@ -89,7 +89,7 @@ button:not(:disabled):hover:active .button-shine-small {
    background-color: transparent;
    width: 200px;
    border-style: none;
-   color: var(--darkbrown);
+   color: var(--rulesbuttontext);
    font-family: appFont;
    font-weight: 900;
    font-size: 13px;
@@ -103,7 +103,7 @@ button:not(:disabled):hover:active .button-shine-small {
    background-color: transparent;
    width: 200px;
    border-style: none;
-   color: var(--hoverpink);
+   color: var(--rulesbuttonselected);
    font-family: appFont;
    font-weight: 900;
    font-size: 13px;
@@ -119,6 +119,7 @@ button:not(:disabled):hover:active .button-shine-small {
 
 /* Piping Bag */
 .piping-bag {
+   fill: var(--rulesbuttonselected);
    position: absolute;
    transform: scaleY(0.8);
    margin-top: -1px;
@@ -126,6 +127,7 @@ button:not(:disabled):hover:active .button-shine-small {
 }
 
 .piping-bag-right {
+   fill: var(--rulesbuttonselected);
    visibility: hidden;
    position: absolute;
    transform: scaleX(-1) scaleY(0.8);

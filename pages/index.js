@@ -2,7 +2,7 @@ import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import containers from "@/styles/containers.module.css";
-import buttons from "@/styles/buttons.module.css";
+import { HeartsLogo } from "@/components/heartslogo.jsx";
 import { Button } from "@/components/buttons.jsx";
 import { UserButton } from "@/components/navbar.jsx";
 import { NightModeButton } from "@/components/navbar.jsx";
@@ -29,10 +29,8 @@ export default function Home() {
             </div>
             <div id="index" className={containers["index-container"]}>
                {/* Logo */}
-               <div>
-                  <Image
-                     alt="Hearts Logo"
-                     src="/images/HeartsLogo.svg"
+               <div style={{ display: "flex", flexDirection: "column" }}>
+                  <HeartsLogo
                      width="250"
                      height="250"
                      style={{
