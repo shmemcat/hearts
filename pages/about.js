@@ -64,7 +64,9 @@ export default function Home() {
                         challenge. Check out my{" "}
                         <a
                            className="link"
+                           target="_blank"
                            href="https://github.com/shmemcat/hearts"
+                           rel="noreferrer"
                         >
                            github
                         </a>{" "}

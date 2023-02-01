@@ -12,11 +12,20 @@ import { faMusicNoteSlash as fasMusicNoteSlash } from "@fortawesome/pro-solid-sv
 import buttons from "@/styles/buttons.module.css";
 
 export const UserButton = (props) => {
+   const [animation, setAnimation] = React.useState(0);
+
+   const onClickHandler = () => {
+      setAnimation(1);
+   };
+
    return (
       <div>
          <FontAwesomeIcon
+            onClick={() => onClickHandler()}
             className={buttons.icon}
             icon={props.loggedIn ? fasUser : farUser}
+            clicked={animation}
+            onAnimationEnd={() => setAnimation(0)}
          />
       </div>
    );

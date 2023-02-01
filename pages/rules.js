@@ -117,7 +117,7 @@ const Overview = () => {
          </p>
          <p>
             The object of the game is to be the player with the lowest score at
-            the end of the game. When one player hits 100 points, the game ends;
+            the end of the game. When one player hits 100 points, the game ends
             and the player with the lowest score wins.
          </p>
       </main>
@@ -200,9 +200,8 @@ const Scoring = () => {
                   }
                   style={{ whiteSpace: "nowrap" }}
                >
-                  “Shooting the Moon”
+                  “Shooting the Moon.”
                </h3>
-               .
             </span>
          </span>
       </main>

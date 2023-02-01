@@ -61,8 +61,17 @@ export default function Home() {
                   }}
                >
                   <div>Coming soon!</div>
-                  <div>
+                  <div
+                     style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
+                     }}
+                  >
                      <Button name="Back" onClick={() => router.back()} />
+                     <Link href="/">
+                        <Button name="Home" />
+                     </Link>
                   </div>
                </div>
             </div>
