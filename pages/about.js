@@ -40,9 +40,12 @@ export default function Home() {
                         display: "block",
                         marginLeft: "auto",
                         marginRight: "auto",
+                        userSelect: "none",
                      }}
                   />
-                  <h1 style={{ marginTop: "-180px" }}>ABOUT</h1>
+                  <h1 style={{ marginTop: "-180px", userSelect: "none" }}>
+                     ABOUT
+                  </h1>
                </div>
 
                {/* Button Menu */}
