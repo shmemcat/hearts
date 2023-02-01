@@ -152,6 +152,10 @@
       gap: 10px;
    }
 
+   .body-container {
+      margin-top: 20px;
+   }
+
    .rules-body-container {
       margin-top: 20px;
       width: 90vw;
