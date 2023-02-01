@@ -53,16 +53,16 @@ export default function Home() {
                <main className={containers["about-body-container"]}>
                   <div className={containers["about-text-body"]}>
                      <span style={{ margin: "0px" }}>
-                        Welcome to my <h3>Hearts</h3> web app! My name is{" "}
-                        <h3>Emily Tran</h3>, I'm a software engineer developing
-                        this web application while learning JavaScript and
-                        React. Eventually, you'll be able to play Hearts games
-                        locally with AI and online with friends. This has been a
-                        fun project to work on; it's been a decade and a half
-                        since I've been immersed in web development (as you can
-                        imagine, a lot's changed since then) so learning an
-                        array of new technologies has been an exceptionally fun
-                        challenge. Check out my{" "}
+                        Welcome to my <p className="bold">Hearts</p> web app! My
+                        name is <p className="bold">Emily Tran</p>, I'm a
+                        software engineer developing this web application while
+                        learning JavaScript and React. Eventually, you'll be
+                        able to play Hearts games locally with AI and online
+                        with friends. This has been a fun project to work on;
+                        it's been a decade and a half since I've been immersed
+                        in web development (as you can imagine, a lot's changed
+                        since then) so learning an array of new technologies has
+                        been an exceptionally fun challenge. Check out my{" "}
                         <a
                            className="link"
                            target="_blank"
@@ -75,11 +75,12 @@ export default function Home() {
                      </span>
                      <span style={{ display: "block", marginTop: "1em" }}>
                         The design of this application is based on the beautiful{" "}
-                        <h3>Art of Play</h3> playing cards design,{" "}
-                        <h3>Flourish</h3>. Flourish is a delightful bakery
-                        themed set, which instantly inspired me with its
-                        whimsical yet balanced design. I'm looking forward to
-                        making this app a proper tribute to this fantastic deck.
+                        <p className="bold">Art of Play</p> playing cards
+                        design, <p className="bold">Flourish</p>. Flourish is a
+                        delightful bakery themed set, which instantly inspired
+                        me with its whimsical yet balanced design. I'm looking
+                        forward to making this app a proper tribute to this
+                        fantastic deck.
                      </span>
                      <p>
                         For as long as I can remember, my mom played Hearts on

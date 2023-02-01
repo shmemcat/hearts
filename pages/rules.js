@@ -186,25 +186,25 @@ const Scoring = () => {
             Each heart - 1 point <br /> The Queen of Spades - 13 points{" "}
          </p>
          <span>
-            <span>
-               The aggregate total of all scores for each hand must be a
-               multiple of 26. The game is played to 100 points. When a player
-               takes all 13 hearts and the queen of spades in one hand, instead
-               of losing 26 points, that player scores zero and each of his
-               opponents score an additional 26 points. This is colloquially
-               referred to as{" "}
-               <h3
-                  id="shoot-the-moon"
-                  onMouseOver={(e) =>
-                     party.confetti(e.target, {
-                        count: party.variation.range(20, 100),
-                     })
-                  }
-                  style={{ whiteSpace: "nowrap" }}
-               >
-                  “Shooting the Moon.”
-               </h3>
-            </span>
+            The aggregate total of all scores for each hand must be a multiple
+            of 26. The game is played to 100 points. When a player takes all 13
+            hearts and the queen of spades in one hand, instead of losing 26
+            points, that player scores zero and each of his opponents score an
+            additional 26 points. This is colloquially referred to as{" "}
+            <p
+               className="bold"
+               id="shoot-the-moon"
+               onMouseOver={(e) =>
+                  party.confetti(e.target, {
+                     count: party.variation.range(20, 100),
+                  })
+               }
+               style={{ whiteSpace: "nowrap" }}
+            >
+               {" "}
+               “Shooting the Moon.”
+            </p>
+            <p></p>
          </span>
       </main>
    );

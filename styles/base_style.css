@@ -129,6 +129,15 @@ body {
    height: 100%;
 }
 
+.bold {
+   display: inline;
+   font-family: "appFont";
+   font-size: 16px;
+   margin: 0px;
+   font-weight: 700;
+   color: var(--tan);
+}
+
 h1 {
    font-family: "appFont";
    margin-right: -0.2em;
@@ -144,15 +153,6 @@ h2 {
    font-size: 16px;
    font-weight: 700;
    margin: 0px;
-}
-
-h3 {
-   display: inline;
-   font-family: "appFont";
-   font-size: 16px;
-   margin: 0px;
-   font-weight: 700;
-   color: var(--tan);
 }
 
 .caption {
