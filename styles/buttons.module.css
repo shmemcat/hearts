@@ -3,7 +3,7 @@
    background-color: var(--lightpink);
    border-style: none;
    color: var(--buttontext);
-   font-family: appFont;
+   font-family: "appFont";
    font-weight: 900;
    font-size: 13px;
    letter-spacing: 5px;
@@ -64,7 +64,7 @@ button:not(:disabled):hover:active .button-shine {
    width: 200px;
    border-style: none;
    color: var(--rulesbuttontext);
-   font-family: appFont;
+   font-family: "appFont";
    font-weight: 900;
    font-size: 13px;
    letter-spacing: 5px;
@@ -78,7 +78,7 @@ button:not(:disabled):hover:active .button-shine {
    width: 200px;
    border-style: none;
    color: var(--rulesbuttonselected);
-   font-family: appFont;
+   font-family: "appFont";
    font-weight: 900;
    font-size: 13px;
    letter-spacing: 5px;
