@@ -55,34 +55,8 @@ button:disabled .button-shine {
 
 button:not(:disabled):hover:active .button-shine {
    transition: 0ms;
-   background-color: rgba(0, 0, 0, 0);
+   background-color: var(--transparent);
 }
-
-/* Button Shine Small */
-/*
-.button-shine-small {
-   position: absolute;
-   margin-top: 3.3px;
-   margin-left: -3.5px;
-   transform: rotate(10deg);
-   width: 4px;
-   height: 5px;
-   border-radius: 100%;
-   background-color: rgba(255, 234, 243, 0.6);
-}
-
-button:not(:disabled):hover .button-shine-small {
-   background-color: rgba(221, 166, 192, 0.6);
-}
-
-button:disabled .button-shine-small {
-   background-color: rgba(255, 234, 243, 0.25);
-}
-
-button:not(:disabled):hover:active .button-shine-small {
-   background-color: rgba(0, 0, 0, 0);
-}
-*/
 
 /* Rules Buttons */
 .rules-button {
@@ -266,18 +240,23 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
    }
 
    button[data-selected="false"]:not(:disabled):hover .piping-bag {
-      fill: none;
+      fill: var(--rulesbuttonselected);
+      animation: none;
+   }
+
+   button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
+      fill: var(--rulesbuttonselected);
       animation: none;
    }
 
    .menu-button:not(:disabled):hover {
       background-color: var(--lightpink);
       cursor: default;
-      box-shadow: inset -3px -3px 0px rgba(196, 131, 151, 0.4);
+      box-shadow: inset -3px -3px 0px var(--buttonboxshadow);
    }
 
    button:not(:disabled):hover .button-shine {
-      background-color: rgba(221, 166, 192, 0.6);
+      background-color: var(--buttonshine);
    }
 
    .rules-button:hover {

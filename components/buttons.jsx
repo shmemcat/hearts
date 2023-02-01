@@ -19,12 +19,6 @@ const ButtonShine = () => {
    return <div className={button["button-shine"]}></div>;
 };
 
-/*
-const ButtonShineSmall = () => {
-   return (<div className="button-shine-small"></div>);
-};
-*/
-
 export const RulesButton = (props) => {
    const [isHovered, setIsHovered] = React.useState(false);
    return (
@@ -33,6 +27,7 @@ export const RulesButton = (props) => {
          onMouseEnter={() => setIsHovered(true)}
          onMouseLeave={() => setIsHovered(false)}
          onClick={props.onClick}
+         style={{ userSelect: "none" }}
          className={
             props.selected
                ? button["rules-button-selected"]

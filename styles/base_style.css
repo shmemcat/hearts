@@ -60,6 +60,7 @@ html {
    --selectionbgcolor: hsla(342, 36%, 64%, 0.6);
    --link: hsl(342, 36%, 64%);
    --linkbox: hsla(340, 82%, 59%, 0.2);
+   --transparent: hsla(0, 0%, 0%, 0);
 }
 
 [data-theme="dark"] {
