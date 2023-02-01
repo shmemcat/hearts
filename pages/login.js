@@ -53,7 +53,7 @@ export default function Home() {
                   style={{
                      display: "flex",
                      marginTop: "100px",
-                     width: "900px",
+                     width: "90vw",
                      alignItems: "center",
                      justifyContent: "center",
                      flexDirection: "column",
