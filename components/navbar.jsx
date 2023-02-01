@@ -24,7 +24,7 @@ export const UserButton = (props) => {
 
 export const NightModeButton = () => {
    const [animation, setAnimation] = React.useState(0);
-   const { theme, setTheme } = useTheme();
+   const { resolvedTheme, setTheme } = useTheme();
    const [mounted, setMounted] = React.useState(false);
 
    React.useEffect(() => {
@@ -34,7 +34,7 @@ export const NightModeButton = () => {
    if (!mounted) return <></>;
 
    const onClickHandler = () => {
-      setTheme(theme === "dark" ? "light" : "dark");
+      setTheme(resolvedTheme === "dark" ? "light" : "dark");
       setAnimation(1);
    };
 
@@ -43,7 +43,7 @@ export const NightModeButton = () => {
          <FontAwesomeIcon
             onClick={() => onClickHandler()}
             className={buttons.icon}
-            icon={theme === "dark" ? fasSunBright : fasMoon}
+            icon={resolvedTheme === "dark" ? fasSunBright : fasMoon}
             clicked={animation}
             onAnimationEnd={() => setAnimation(0)}
          />
