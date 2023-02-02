@@ -65,6 +65,7 @@ html {
    --inputbox: hsl(0, 0%, 100%);
    --inputboxborder: hsl(341, 60%, 84%);
    --radiobutton: hsl(342, 36%, 64%);
+   --warningicon: hsl(341, 81%, 84%);
 }
 
 [data-theme="dark"] {
@@ -93,6 +94,7 @@ html {
    --inputbox: hsl(231, 16%, 29%);
    --inputboxborder: hsl(231, 16%, 29%);
    --radiobutton: hsl(212, 60%, 80%);
+   --warningicon: hsl(341, 81%, 84%);
 }
 
 body {

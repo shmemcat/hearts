@@ -19,7 +19,12 @@ export const LoginWarning = () => {
          <div>
             <p>
                <h2>
-                  <FontAwesomeIcon icon={fasExclamationCircle} shake /> Pssst
+                  <FontAwesomeIcon
+                     icon={fasExclamationCircle}
+                     style={{ color: "var(--warningicon)" }}
+                     shake
+                  />{" "}
+                  Pssst
                </h2>
             </p>
             <p>We noticed you're not signed in!</p>
