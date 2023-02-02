@@ -8,7 +8,7 @@
    flex-direction: column;
 }
 
-.nav {
+.navright {
    display: flex;
    justify-content: right;
    flex-direction: row-reverse;

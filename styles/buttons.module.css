@@ -155,6 +155,10 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
    height: 18px;
 }
 
+#nav-home:hover .icon {
+   color: var(--hoverpink);
+}
+
 .icon:hover {
    color: var(--hoverpink);
 }

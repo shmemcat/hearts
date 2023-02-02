@@ -3,9 +3,7 @@ import Link from "next/link";
 import containers from "@/styles/containers.module.css";
 import { HeartsLogo } from "@/components/heartslogo.jsx";
 import { Button } from "@/components/buttons.jsx";
-import { UserButton } from "@/components/navbar.jsx";
-import { NightModeButton } from "@/components/navbar.jsx";
-import { SoundButton } from "@/components/navbar.jsx";
+import { Navbar } from "@/components/navbar.jsx";
 
 export default function Home() {
    return (
@@ -22,11 +20,7 @@ export default function Home() {
          </Head>
          <main className={containers["content-border-container-menu"]}>
             {/* Navigation Bar */}
-            <div className={containers.nav}>
-               <UserButton />
-               <NightModeButton />
-               <SoundButton />
-            </div>
+            <Navbar />
             <div id="index" className={containers["index-container"]}>
                {/* Logo and Title */}
                <div style={{ display: "flex", flexDirection: "column" }}>

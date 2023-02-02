@@ -135,6 +135,38 @@ body {
    font-family: "appFont";
 }
 
+.navhearts {
+   font-family: "appFont";
+   color: var(--header);
+   letter-spacing: 5pt;
+   font-weight: 700;
+   text-decoration: none;
+}
+
+#nav-home:hover .navhearts {
+   color: var(--hoverpink);
+}
+
+.navtext {
+   font-family: "appFont";
+   color: var(--header);
+   text-decoration: none;
+}
+
+#nav-home:hover .navtext {
+   color: var(--hoverpink);
+}
+
+.icon {
+   color: var(--lightpink);
+   width: 18px;
+   height: 18px;
+}
+
+#nav-home:hover .icon {
+   color: var(--hoverpink);
+}
+
 .bold {
    display: inline;
    font-family: "appFont";

@@ -1,18 +1,14 @@
 import Head from "next/head";
 import Link from "next/link";
 import React from "react";
-import { useRouter } from "next/router";
 import { useSession, signIn, signOut } from "next-auth/react";
 
 import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons.jsx";
 import { HeartsLogo } from "@/components/heartslogo.jsx";
-import { UserButton } from "@/components/navbar.jsx";
-import { NightModeButton } from "@/components/navbar.jsx";
-import { SoundButton } from "@/components/navbar.jsx";
+import { Navbar } from "@/components/navbar.jsx";
 
 export default function Home() {
-   const router = useRouter();
    return (
       <>
          {/* Header */}
@@ -27,11 +23,7 @@ export default function Home() {
          </Head>
          <div className={containers["content-border-container"]}>
             {/* Navigation Bar */}
-            <div className={containers.nav}>
-               <UserButton />
-               <NightModeButton />
-               <SoundButton />
-            </div>
+            <Navbar />
             <div className={containers["container"]}>
                {/* Logo and Title */}
                <div className={containers["title-container"]}>

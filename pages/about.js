@@ -6,9 +6,7 @@ import React from "react";
 import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons.jsx";
 import { HeartsLogo } from "@/components/heartslogo.jsx";
-import { UserButton } from "@/components/navbar.jsx";
-import { NightModeButton } from "@/components/navbar.jsx";
-import { SoundButton } from "@/components/navbar.jsx";
+import { Navbar } from "@/components/navbar.jsx";
 
 export default function Home() {
    return (
@@ -23,13 +21,9 @@ export default function Home() {
                content="width=device-width, initial-scale=1"
             />
          </Head>
-         {/* Navigation Bar */}
          <div className={containers["content-border-container"]}>
-            <div className={containers.nav}>
-               <UserButton />
-               <NightModeButton />
-               <SoundButton />
-            </div>
+            {/* Navigation Bar */}
+            <Navbar />
             <div id="about" className={containers["container"]}>
                {/* Logo */}
                <div className={containers["title-container"]}>

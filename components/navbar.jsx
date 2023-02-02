@@ -1,9 +1,10 @@
 import React from "react";
 import Link from "next/link";
 import buttons from "@/styles/buttons.module.css";
-import { useRouter } from "next/router";
+import containers from "@/styles/containers.module.css";
 import { useTheme } from "next-themes";
 import { useSession, signIn, signOut } from "next-auth/react";
+import { useRouter } from "next/router";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import "@fortawesome/fontawesome-svg-core/styles.css";
@@ -13,38 +14,72 @@ import { faMoon as fasMoon } from "@fortawesome/pro-solid-svg-icons";
 import { faSunBright as fasSunBright } from "@fortawesome/pro-solid-svg-icons";
 import { faMusicNote as fasMusicNote } from "@fortawesome/pro-solid-svg-icons";
 import { faMusicNoteSlash as fasMusicNoteSlash } from "@fortawesome/pro-solid-svg-icons";
+import { faHeart as fasHeart } from "@fortawesome/pro-solid-svg-icons";
 
-export const UserButton = (props) => {
+export const Navbar = () => {
+   const router = useRouter();
+   return (
+      <div
+         style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+         }}
+      >
+         {router.pathname === "/" ? (
+            <div></div>
+         ) : (
+            <Link href="/" style={{ textDecoration: "none" }}>
+               <div
+                  id="nav-home"
+                  style={{ display: "flex", gap: "15px", alignItems: "center" }}
+               >
+                  <FontAwesomeIcon className="icon" icon={fasHeart} />{" "}
+                  <span className="navhearts">HEARTS</span>
+               </div>
+            </Link>
+         )}
+         <div className={containers.navright}>
+            <UserButton />
+            <NightModeButton />
+            <SoundButton />
+         </div>
+      </div>
+   );
+};
+
+const UserButton = () => {
    const [animation, setAnimation] = React.useState(0);
    const { data: session } = useSession();
-   const router = useRouter();
 
    const onClickHandler = () => {
       setAnimation(1);
    };
 
    return (
-      <div style={{ display: "flex", gap: "10px" }}>
-         <div
-            role="button"
-            aria-label="Login/User Settings"
-            onClick={() => onClickHandler()}
-         >
-            <Link href="/user">
+      <Link href="/user" style={{ textDecoration: "none" }}>
+         <div id="nav-home" style={{ display: "flex", gap: "10px" }}>
+            <div
+               role="button"
+               aria-label="Login/User Settings"
+               onClick={() => onClickHandler()}
+            >
                <FontAwesomeIcon
-                  className={buttons.icon}
+                  className="icon"
                   icon={session ? fasUser : farUser}
                   clicked={animation}
                   onAnimationEnd={() => setAnimation(0)}
                />
-            </Link>
+            </div>
+            <div className="navtext">
+               {session ? session.user.name : "Guest"}
+            </div>
          </div>
-         <div className="text">{session ? session.user.name : "Guest"}</div>
-      </div>
+      </Link>
    );
 };
 
-export const NightModeButton = () => {
+const NightModeButton = () => {
    const [animation, setAnimation] = React.useState(0);
    const { resolvedTheme, setTheme } = useTheme();
    const [mounted, setMounted] = React.useState(false);
@@ -76,7 +111,7 @@ export const NightModeButton = () => {
    );
 };
 
-export const SoundButton = () => {
+const SoundButton = () => {
    const [state, setState] = React.useState(fasMusicNote);
    const [animation, setAnimation] = React.useState(0);
 
