@@ -1,7 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
 import React from "react";
-import { useSession, signIn, signOut } from "next-auth/react";
 
 import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons.jsx";
@@ -13,7 +12,7 @@ export default function Home() {
       <>
          {/* Header */}
          <Head>
-            <title>User | Hearts</title>
+            <title>404 | Hearts</title>
             <link rel="icon" href="/images/favicon.ico" />
             <meta name="description" content="Hearts web application" />
             <meta
@@ -36,45 +35,20 @@ export default function Home() {
                         userSelect: "none",
                      }}
                   />
-                  <h1 style={{ marginTop: "-180px" }}>USER</h1>
+                  <h1 style={{ marginTop: "-180px" }}>404</h1>
                </div>
 
                {/* Body */}
-               <UserInfo />
+               <div className={containers["body-container"]}>
+                  <div>Page not found!</div>
+                  <div className={containers["button-container"]}>
+                     <Link href="/">
+                        <Button name="Home" />
+                     </Link>
+                  </div>
+               </div>
             </div>
          </div>
       </>
    );
 }
-
-const UserInfo = () => {
-   const { data: session, status } = useSession();
-
-   if (session) {
-      return (
-         <div className={containers["body-container"]}>
-            <div>Welcome {session.user.name}!</div>
-
-            <div className={containers["button-container"]}>
-               <Button name="Sign Out" onClick={() => signOut()} />
-               <Link href="/">
-                  <Button name="Home" />
-               </Link>
-            </div>
-         </div>
-      );
-   } else {
-      return (
-         <div className={containers["body-container"]}>
-            <div>Please sign in!</div>
-
-            <div className={containers["button-container"]}>
-               <Button name="Sign In" onClick={() => signIn()} />
-               <Link href="/">
-                  <Button name="Home" />
-               </Link>
-            </div>
-         </div>
-      );
-   }
-};
