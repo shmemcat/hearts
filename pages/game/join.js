@@ -1,12 +1,13 @@
 import Head from "next/head";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import React from "react";
+import { useRouter } from "next/router";
 
 import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons.jsx";
 import { HeartsLogo } from "@/components/heartslogo.jsx";
 import { Navbar } from "@/components/navbar.jsx";
+import { LoginWarning } from "@/components/loginwarning.jsx";
 
 export default function Home() {
    const router = useRouter();
@@ -72,11 +73,17 @@ export default function Home() {
                         />
                      </div>
                   </div>
+                  <br></br>
+                  <LoginWarning />
                   <div
                      className={containers["button-container"]}
-                     style={{ paddingTop: "40px" }}
+                     style={{ paddingTop: "20px" }}
                   >
-                     <Button name="Back" onClick={() => router.back()} />
+                     <Button
+                        name="Back"
+                        style={{ width: "120px" }}
+                        onClick={() => router.back()}
+                     />
                   </div>
                </div>
             </div>

@@ -71,7 +71,7 @@
    font-family: "appFont";
    display: flex;
    margin-top: 50px;
-   width: 90vw;
+   width: 85vw;
    align-items: center;
    justify-content: center;
    flex-direction: column;
@@ -122,6 +122,20 @@
    font-size: 16px;
    letter-spacing: 1.5px;
    margin-left: 10px;
+}
+
+/* Create Game */
+
+.create-button-container {
+   display: flex;
+   background-color: var(--mediumpink);
+   padding: 30px;
+   padding-left: 50px;
+   padding-right: 50px;
+   align-items: center;
+   justify-content: center;
+   border-radius: 20px;
+   gap: 20px;
 }
 
 /* for re-sized desktop */
@@ -217,5 +231,9 @@
       width: 90vw;
       padding-top: 25px;
       background-color: transparent;
+   }
+
+   .create-button-container {
+      flex-direction: column;
    }
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import buttons from "@/styles/buttons.module.css";
 import containers from "@/styles/containers.module.css";
 import { useTheme } from "next-themes";
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";

@@ -106,7 +106,7 @@ button:not(:disabled):hover:active .button-shine {
    position: absolute;
    transform: scaleX(-1) scaleY(0.8);
    margin-top: -1px;
-   margin-left: 1px;
+   margin-left: 1.5px;
 }
 
 button[data-selected="false"]:not(:disabled):hover .piping-bag {

@@ -5,8 +5,10 @@ import React from "react";
 
 import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons.jsx";
+import { SelectionButton } from "@/components/buttons.jsx";
 import { HeartsLogo } from "@/components/heartslogo.jsx";
 import { Navbar } from "@/components/navbar.jsx";
+import { LoginWarning } from "@/components/loginwarning";
 
 export default function Home() {
    const router = useRouter();
@@ -41,13 +43,39 @@ export default function Home() {
                </div>
 
                {/* Body */}
-               <div className={containers["body-container"]}>
-                  <div>Coming soon!</div>
-                  <div
-                     className={containers["button-container"]}
-                     style={{ paddingTop: "40px" }}
-                  >
-                     <Button name="Back" onClick={() => router.back()} />
+               <div
+                  className={containers["body-container"]}
+                  style={{ gap: "20px" }}
+               >
+                  <h2>Game Type</h2>
+                  <div className={containers["create-button-container"]}>
+                     <Button
+                        name="Versus AI"
+                        active={true}
+                        style={{ width: "150px" }}
+                     />
+                     <Button name="Online" style={{ width: "150px" }} />
+                  </div>
+                  <h2>AI Difficulty</h2>
+                  <div className={containers["create-button-container"]}>
+                     <Button name="Easy" style={{ width: "110px" }} />
+                     <Button name="Medium" style={{ width: "110px" }} />
+                     <Button name="My Mom" style={{ width: "110px" }} />
+                  </div>
+                  <div style={{ paddingTop: "15px" }}>
+                     <Button
+                        name="Create Game!"
+                        big
+                        style={{ height: "50px" }}
+                     />
+                  </div>
+                  <LoginWarning />
+                  <div className={containers["button-container"]}>
+                     <Button
+                        name="Back"
+                        style={{ width: "120px" }}
+                        onClick={() => router.back()}
+                     />
                   </div>
                </div>
             </div>
