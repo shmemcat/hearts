@@ -37,9 +37,7 @@ export default function Home() {
                         userSelect: "none",
                      }}
                   />
-                  <h1 style={{ marginTop: "-180px", userSelect: "none" }}>
-                     RULES
-                  </h1>
+                  <h1 style={{ marginTop: "-180px" }}>RULES</h1>
                </div>
 
                {/* Button Menu & Rules Flexbox */}

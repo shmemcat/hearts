@@ -36,9 +36,7 @@ export default function Home() {
                         userSelect: "none",
                      }}
                   />
-                  <h1 style={{ marginTop: "-180px", userSelect: "none" }}>
-                     ABOUT
-                  </h1>
+                  <h1 style={{ marginTop: "-180px" }}>ABOUT</h1>
                </div>
 
                {/* Body */}

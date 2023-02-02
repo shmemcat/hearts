@@ -37,9 +37,7 @@ export default function Home() {
                         userSelect: "none",
                      }}
                   />
-                  <h1 style={{ marginTop: "-180px", userSelect: "none" }}>
-                     JOIN GAME
-                  </h1>
+                  <h1 style={{ marginTop: "-180px" }}>JOIN GAME</h1>
                </div>
 
                {/* Body */}

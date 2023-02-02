@@ -37,9 +37,7 @@ export default function Home() {
                         userSelect: "none",
                      }}
                   />
-                  <h1 style={{ marginTop: "-180px", userSelect: "none" }}>
-                     CREATE GAME
-                  </h1>
+                  <h1 style={{ marginTop: "-180px" }}>CREATE GAME</h1>
                </div>
 
                {/* Body */}

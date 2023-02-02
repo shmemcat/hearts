@@ -12,7 +12,7 @@
    display: flex;
    justify-content: right;
    flex-direction: row-reverse;
-   gap: 25px;
+   gap: 20px;
 }
 
 .container {
@@ -162,6 +162,10 @@
       justify-content: center;
    }
 
+   .title-container {
+      padding-top: 15px;
+   }
+
    .body-container {
       margin-top: 20px;
    }
@@ -204,12 +208,14 @@
 
    .content-border-container {
       width: 90vw;
+      padding-top: 25px;
       padding-bottom: 10px;
       background-color: transparent;
    }
 
    .content-border-container-menu {
       width: 90vw;
+      padding-top: 25px;
       background-color: transparent;
    }
 }
