@@ -2,19 +2,22 @@ import "@/styles/reset_css.css";
 import "@/styles/base_style.css";
 import localFont from "@next/font/local";
 import { ThemeProvider } from "next-themes";
+import { SessionProvider } from "next-auth/react";
 
 /* Fontawesome */
 import { config } from "@fortawesome/fontawesome-svg-core";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 config.autoAddCss = false;
 
-export default function App({ Component, pageProps }) {
+export default function App({ Component, pageProps, session }) {
    return (
       <>
          <ThemeProvider>
-            <div className={terminalDosis.className}>
-               <Component {...pageProps} />
-            </div>
+            <SessionProvider session={session}>
+               <div className={terminalDosis.className}>
+                  <Component {...pageProps} />
+               </div>
+            </SessionProvider>
          </ThemeProvider>
       </>
    );

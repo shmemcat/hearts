@@ -1,8 +1,9 @@
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import React from "react";
+import { useRouter } from "next/router";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons.jsx";
@@ -17,7 +18,7 @@ export default function Home() {
       <>
          {/* Header */}
          <Head>
-            <title>Login | Hearts</title>
+            <title>User | Hearts</title>
             <link rel="icon" href="/images/favicon.ico" />
             <meta name="description" content="Hearts web application" />
             <meta
@@ -28,9 +29,7 @@ export default function Home() {
          <div className={containers["content-border-container"]}>
             {/* Navigation Bar */}
             <div className={containers.nav}>
-               <Link href="/login">
-                  <UserButton loggedIn={false} />
-               </Link>
+               <UserButton />
                <NightModeButton />
                <SoundButton />
             </div>
@@ -47,22 +46,52 @@ export default function Home() {
                      }}
                   />
                   <h1 style={{ marginTop: "-180px", userSelect: "none" }}>
-                     LOGIN
+                     USER
                   </h1>
                </div>
 
                {/* Body */}
-               <div className={containers["body-container"]}>
-                  <div>Coming soon!</div>
-                  <div className={containers["button-container"]}>
-                     <Button name="Back" onClick={() => router.back()} />
-                     <Link href="/">
-                        <Button name="Home" />
-                     </Link>
-                  </div>
-               </div>
+               <UserInfo />
             </div>
          </div>
       </>
    );
 }
+
+const UserInfo = () => {
+   const { data: session, status } = useSession();
+
+   if (session) {
+      return (
+         <div className={containers["body-container"]}>
+            <div>
+               <p>Welcome {session.user.email}!</p>
+            </div>
+
+            <div className={containers["button-container"]}>
+               <Button name="Sign Out" onClick={() => signOut()} />
+               <Button name="Back" onClick={() => router.back()} />
+               <Link href="/">
+                  <Button name="Home" />
+               </Link>
+            </div>
+         </div>
+      );
+   } else {
+      return (
+         <div className={containers["body-container"]}>
+            <div>
+               <p>Please sign in!</p>
+            </div>
+
+            <div className={containers["button-container"]}>
+               <Button name="Sign In" onClick={() => signIn()} />
+               <Button name="Back" onClick={() => router.back()} />
+               <Link href="/">
+                  <Button name="Home" />
+               </Link>
+            </div>
+         </div>
+      );
+   }
+};

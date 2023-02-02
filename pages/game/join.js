@@ -28,9 +28,7 @@ export default function Home() {
          <div className={containers["content-border-container"]}>
             {/* Navigation Bar */}
             <div className={containers.nav}>
-               <Link href="/login">
-                  <UserButton loggedIn={false} />
-               </Link>
+               <UserButton />
                <NightModeButton />
                <SoundButton />
             </div>
