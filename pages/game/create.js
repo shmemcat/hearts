@@ -59,11 +59,9 @@ export default function Home() {
                   </div>
                   <LoginWarning />
                   <div className={containers["button-container"]}>
-                     <Button
-                        name="Back"
-                        style={{ width: "120px" }}
-                        onClick={() => router.back()}
-                     />
+                     <Link href="/">
+                        <Button name="Back" style={{ width: "120px" }} />
+                     </Link>
                   </div>
                </div>
             </div>

@@ -109,6 +109,11 @@ body {
    color: var(--texthighlight);
 }
 
+::placeholder {
+   color: var(--text);
+   opacity: 0.5;
+}
+
 /* Scrollbar CSS */
 /* Firefox */
 * {

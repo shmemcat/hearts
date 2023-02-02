@@ -61,7 +61,11 @@ export default function Home() {
                            type="text"
                            name="lobby_code"
                            placeholder="Lobby Code"
-                           style={{ height: "26px" }}
+                           style={{
+                              width: "160px",
+                              height: "26px",
+                              fontWeight: "600",
+                           }}
                         />
                      </form>
                      <div>
@@ -79,11 +83,9 @@ export default function Home() {
                      className={containers["button-container"]}
                      style={{ paddingTop: "20px" }}
                   >
-                     <Button
-                        name="Back"
-                        style={{ width: "120px" }}
-                        onClick={() => router.back()}
-                     />
+                     <Link href="/">
+                        <Button name="Back" style={{ width: "150px" }} />
+                     </Link>
                   </div>
                </div>
             </div>
