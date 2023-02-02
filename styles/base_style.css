@@ -101,6 +101,28 @@ body {
    color: var(--texthighlight);
 }
 
+/* Scrollbar CSS */
+/* Firefox */
+* {
+   scrollbar-width: auto;
+   scrollbar-color: var(--heartslogo) var(--background);
+}
+
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+   width: 14px;
+}
+
+*::-webkit-scrollbar-track {
+   background: var(--background);
+}
+
+*::-webkit-scrollbar-thumb {
+   background-color: var(--heartslogo);
+   border-radius: 10px;
+   border: 3px solid var(--background);
+}
+
 .link {
    font-family: "appFont";
    position: relative;
@@ -210,6 +232,25 @@ h2 {
 @media only screen and (max-width: 768px) {
    html {
       overflow-y: none;
+   }
+
+   ::selection {
+      background-color: var(--selectionbgcolor);
+      color: var(--texthighlight);
+   }
+
+   /* Scrollbar CSS */
+   /* Firefox */
+   * {
+      scrollbar-color: var(--heartslogo) var(--contentbox);
+   }
+
+   *::-webkit-scrollbar-track {
+      background: var(--contentbox);
+   }
+
+   *::-webkit-scrollbar-thumb {
+      border: 3px solid var(--contentbox);
    }
 
    h1 {
