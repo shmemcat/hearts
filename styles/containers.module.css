@@ -68,6 +68,7 @@
 }
 
 .body-container {
+   font-family: "appFont";
    display: flex;
    margin-top: 50px;
    width: 90vw;

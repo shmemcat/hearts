@@ -39,7 +39,7 @@ export const UserButton = (props) => {
                />
             </Link>
          </div>
-         <div>{session ? session.user.name : "Guest"}</div>
+         <div className="text">{session ? session.user.name : "Guest"}</div>
       </div>
    );
 };

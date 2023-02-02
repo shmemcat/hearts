@@ -131,21 +131,8 @@ body {
    height: 100%;
 }
 
-.navlink {
+.text {
    font-family: "appFont";
-   position: relative;
-   overflow: hidden;
-   color: var(--lightpink);
-   font-weight: 500;
-   text-decoration: none;
-}
-
-.navlink:hover {
-   position: relative;
-   overflow: hidden;
-   color: var(--hoverpink);
-   font-weight: 500;
-   text-decoration: none;
 }
 
 .bold {
