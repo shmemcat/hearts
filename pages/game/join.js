@@ -42,8 +42,40 @@ export default function Home() {
 
                {/* Body */}
                <div className={containers["body-container"]}>
-                  <div>Coming soon!</div>
-                  <div className={containers["button-container"]}>
+                  <h2>Enter the lobby code</h2>
+                  <p>
+                     The game host can provide you with a code, or simply visit
+                     the game lobby link.
+                  </p>
+                  <br></br>
+                  <div
+                     style={{
+                        display: "flex",
+                        gap: "20px",
+                        alignItems: "center",
+                     }}
+                  >
+                     <form>
+                        <input
+                           type="text"
+                           name="lobby_code"
+                           placeholder="Lobby Code"
+                           style={{ height: "26px" }}
+                        />
+                     </form>
+                     <div>
+                        <Button
+                           name="Join"
+                           disabled
+                           small
+                           style={{ width: "100px", height: "30px" }}
+                        />
+                     </div>
+                  </div>
+                  <div
+                     className={containers["button-container"]}
+                     style={{ paddingTop: "40px" }}
+                  >
                      <Button name="Back" onClick={() => router.back()} />
                   </div>
                </div>

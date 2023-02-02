@@ -55,7 +55,10 @@ const UserInfo = () => {
          <div className={containers["body-container"]}>
             <div>Welcome {session.user.name}!</div>
 
-            <div className={containers["button-container"]}>
+            <div
+               className={containers["button-container"]}
+               style={{ paddingTop: "40px" }}
+            >
                <Button name="Sign Out" onClick={() => signOut()} />
                <Link href="/">
                   <Button name="Home" />
@@ -68,7 +71,10 @@ const UserInfo = () => {
          <div className={containers["body-container"]}>
             <div>Please sign in!</div>
 
-            <div className={containers["button-container"]}>
+            <div
+               className={containers["button-container"]}
+               style={{ paddingTop: "40px" }}
+            >
                <Button name="Sign In" onClick={() => signIn()} />
                <Link href="/">
                   <Button name="Home" />

@@ -102,7 +102,7 @@ const Rules = () => {
 const Overview = () => {
    return (
       <main>
-         <h2>Overview</h2>
+         <h3>Overview</h3>
          <p>
             Hearts is a trick-taking card game where the players avoid points.
          </p>
@@ -119,7 +119,7 @@ const Overview = () => {
 const DealPassing = () => {
    return (
       <main>
-         <h2>Deal & Passing</h2>
+         <h3>Deal & Passing</h3>
          <p>Each player is dealt 13 cards.</p>
          <p>
             On the first hand, after the deal, each player passes any three
@@ -144,7 +144,7 @@ const DealPassing = () => {
 const Play = () => {
    return (
       <main>
-         <h2>The Play</h2>
+         <h3>The Play</h3>
          <p>
             Play is clockwise. The player holding the 2 of clubs after the pass
             makes the opening lead.
@@ -165,7 +165,7 @@ const Play = () => {
 const Scoring = () => {
    return (
       <main>
-         <h2>Card Values & Scoring</h2>
+         <h3>Card Values & Scoring</h3>
          <p>
             At the end of each hand, players count the number of hearts they
             have taken as well as the queen of spades, if applicable. Hearts

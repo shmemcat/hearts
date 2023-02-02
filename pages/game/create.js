@@ -43,7 +43,10 @@ export default function Home() {
                {/* Body */}
                <div className={containers["body-container"]}>
                   <div>Coming soon!</div>
-                  <div className={containers["button-container"]}>
+                  <div
+                     className={containers["button-container"]}
+                     style={{ paddingTop: "40px" }}
+                  >
                      <Button name="Back" onClick={() => router.back()} />
                   </div>
                </div>

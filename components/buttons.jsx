@@ -9,16 +9,28 @@ export const Button = (props) => {
          disabled={props.disabled}
          onClick={props.onClick}
          role="button"
+         style={props.style}
          aria-label={props.name}
       >
-         <ButtonShine />
+         <ButtonShine small={props.small} />
          {props.name}
       </button>
    );
 };
 
-const ButtonShine = () => {
-   return <div className={button["button-shine"]}></div>;
+const ButtonShine = (props) => {
+   let small = props.small;
+
+   if (small) {
+      return (
+         <div
+            className={button["button-shine"]}
+            style={{ marginTop: "-4px" }}
+         ></div>
+      );
+   } else {
+      return <div className={button["button-shine"]}></div>;
+   }
 };
 
 export const RulesButton = (props) => {
