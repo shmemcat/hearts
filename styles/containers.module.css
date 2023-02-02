@@ -70,7 +70,7 @@
 .body-container {
    font-family: "appFont";
    display: flex;
-   margin-top: 50px;
+   margin-top: 40px;
    width: 85vw;
    align-items: center;
    justify-content: center;
@@ -81,7 +81,7 @@
 /* Rules */
 
 .rules-body-container {
-   margin-top: 50px;
+   margin-top: 40px;
    display: flex;
    width: 900px;
    gap: 30px;
@@ -111,7 +111,7 @@
 /* About */
 
 .about-body-container {
-   margin-top: 50px;
+   margin-top: 40px;
    display: flex;
    width: 900px;
    gap: 40px;
@@ -128,6 +128,11 @@
 
 .create-button-container {
    display: flex;
+   font-family: "appFont";
+   color: var(--header);
+   letter-spacing: 3pt;
+   text-transform: uppercase;
+   font-weight: 600;
    background-color: var(--mediumpink);
    padding: 30px;
    padding-left: 50px;
@@ -135,7 +140,7 @@
    align-items: center;
    justify-content: center;
    border-radius: 20px;
-   gap: 20px;
+   gap: 30px;
 }
 
 /* for re-sized desktop */

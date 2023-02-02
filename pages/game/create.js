@@ -5,7 +5,7 @@ import React from "react";
 
 import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons.jsx";
-import { SelectionButton } from "@/components/buttons.jsx";
+import { CreateGameSelections } from "@/components/radiobuttons.jsx";
 import { HeartsLogo } from "@/components/heartslogo.jsx";
 import { Navbar } from "@/components/navbar.jsx";
 import { LoginWarning } from "@/components/loginwarning";
@@ -47,24 +47,12 @@ export default function Home() {
                   className={containers["body-container"]}
                   style={{ gap: "20px" }}
                >
-                  <h2>Game Type</h2>
-                  <div className={containers["create-button-container"]}>
-                     <Button
-                        name="Versus AI"
-                        active={true}
-                        style={{ width: "150px" }}
-                     />
-                     <Button name="Online" style={{ width: "150px" }} />
-                  </div>
-                  <h2>AI Difficulty</h2>
-                  <div className={containers["create-button-container"]}>
-                     <Button name="Easy" style={{ width: "110px" }} />
-                     <Button name="Medium" style={{ width: "110px" }} />
-                     <Button name="My Mom" style={{ width: "110px" }} />
-                  </div>
+                  <CreateGameSelections />
+
                   <div style={{ paddingTop: "15px" }}>
                      <Button
                         name="Create Game!"
+                        disabled
                         big
                         style={{ height: "50px" }}
                      />

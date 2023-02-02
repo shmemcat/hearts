@@ -64,6 +64,7 @@ html {
    --transparent: hsla(0, 0%, 0%, 0);
    --inputbox: hsl(0, 0%, 100%);
    --inputboxborder: hsl(341, 60%, 84%);
+   --radiobutton: hsl(342, 36%, 64%);
 }
 
 [data-theme="dark"] {
@@ -91,6 +92,7 @@ html {
    --linkbox: hsla(342, 36%, 64%, 0.5);
    --inputbox: hsl(231, 16%, 29%);
    --inputboxborder: hsl(231, 16%, 29%);
+   --radiobutton: hsl(212, 60%, 80%);
 }
 
 body {
@@ -197,6 +199,10 @@ input {
 
 input:focus {
    outline: none;
+}
+
+.radio {
+   accent-color: var(--radiobutton);
 }
 
 .icon {
