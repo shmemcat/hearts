@@ -89,6 +89,7 @@ html {
 }
 
 body {
+   font-family: "appFont";
    background-color: var(--background);
    font-size: 16px;
    letter-spacing: 1.5px;
@@ -100,6 +101,7 @@ body {
 }
 
 .link {
+   font-family: "appFont";
    position: relative;
    overflow: hidden;
    color: var(--link);
@@ -130,6 +132,7 @@ body {
 }
 
 .navlink {
+   font-family: "appFont";
    position: relative;
    overflow: hidden;
    color: var(--lightpink);
