@@ -31,6 +31,7 @@
 }
 
 html {
+   overflow-y: scroll;
    font-family: "appFont";
    color: var(--text);
    --background: #fee6e6;
@@ -207,6 +208,10 @@ h2 {
 
 /* for mobile and mobile-sized windows */
 @media only screen and (max-width: 768px) {
+   html {
+      overflow-y: none;
+   }
+
    h1 {
       text-align: center;
       font-size: 40pt;
