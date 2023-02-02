@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import buttons from "@/styles/buttons.module.css";
 import { useRouter } from "next/router";
 import { useTheme } from "next-themes";
@@ -20,11 +21,6 @@ export const UserButton = (props) => {
 
    const onClickHandler = () => {
       setAnimation(1);
-      if (!session) {
-         signIn();
-      } else {
-         router.push("/user");
-      }
    };
 
    return (
@@ -34,12 +30,14 @@ export const UserButton = (props) => {
             aria-label="Login/User Settings"
             onClick={() => onClickHandler()}
          >
-            <FontAwesomeIcon
-               className={buttons.icon}
-               icon={session ? fasUser : farUser}
-               clicked={animation}
-               onAnimationEnd={() => setAnimation(0)}
-            />
+            <Link href="/user">
+               <FontAwesomeIcon
+                  className={buttons.icon}
+                  icon={session ? fasUser : farUser}
+                  clicked={animation}
+                  onAnimationEnd={() => setAnimation(0)}
+               />
+            </Link>
          </div>
          <div>{session ? session.user.name : "Guest"}</div>
       </div>

@@ -69,7 +69,6 @@ const UserInfo = () => {
 
             <div className={containers["button-container"]}>
                <Button name="Sign Out" onClick={() => signOut()} />
-               <Button name="Back" onClick={() => router.back()} />
                <Link href="/">
                   <Button name="Home" />
                </Link>

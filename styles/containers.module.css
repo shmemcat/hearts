@@ -1,7 +1,7 @@
 /* Containers */
 
 .index-container {
-   margin-top: 25vh;
+   margin-top: 200px;
    display: flex;
    align-items: center;
    justify-content: center;
@@ -55,7 +55,7 @@
    background-color: var(--contentbox);
    padding: 35px;
    box-sizing: border-box;
-   margin-top: 6vh;
+   margin-top: 20px;
    margin-bottom: 20px;
    padding-bottom: 120px;
 }
@@ -144,6 +144,10 @@
 
 /* for mobile and mobile-sized windows */
 @media only screen and (max-width: 768px) {
+   .index-container {
+      margin-top: 25vh;
+   }
+
    .nav {
       position: absolute;
       top: 30px;
