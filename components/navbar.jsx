@@ -41,7 +41,7 @@ export const UserButton = (props) => {
                onAnimationEnd={() => setAnimation(0)}
             />
          </div>
-         <div>{session ? session.user.email : "Guest"}</div>
+         <div>{session ? session.user.name : "Guest"}</div>
       </div>
    );
 };

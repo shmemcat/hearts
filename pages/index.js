@@ -1,5 +1,4 @@
 import Head from "next/head";
-import Image from "next/image";
 import Link from "next/link";
 import containers from "@/styles/containers.module.css";
 import { HeartsLogo } from "@/components/heartslogo.jsx";

@@ -1,5 +1,4 @@
 import Head from "next/head";
-import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { useRouter } from "next/router";
@@ -65,7 +64,7 @@ const UserInfo = () => {
       return (
          <div className={containers["body-container"]}>
             <div>
-               <p>Welcome {session.user.email}!</p>
+               <p>Welcome {session.user.name}!</p>
             </div>
 
             <div className={containers["button-container"]}>
@@ -86,7 +85,6 @@ const UserInfo = () => {
 
             <div className={containers["button-container"]}>
                <Button name="Sign In" onClick={() => signIn()} />
-               <Button name="Back" onClick={() => router.back()} />
                <Link href="/">
                   <Button name="Home" />
                </Link>
