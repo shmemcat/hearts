@@ -29,7 +29,7 @@ export const LoginWarning = () => {
             </p>
             <p>We noticed you're not signed in!</p>
             <p>
-               if you wish to save your game data, don't forget to{" "}
+               If you wish to save your game data, don't forget to{" "}
                <span className="link" onClick={() => signIn()}>
                   sign in.
                </span>
