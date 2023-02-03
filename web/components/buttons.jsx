@@ -12,33 +12,14 @@ export const Button = (props) => {
          style={props.style}
          aria-label={props.name}
       >
-         <ButtonShine small={props.small} big={props.big} />
+         <ButtonShine />
          {props.name}
       </button>
    );
 };
 
-const ButtonShine = (props) => {
-   let small = props.small;
-   let big = props.big;
-
-   if (small) {
-      return (
-         <div
-            className={button["button-shine"]}
-            style={({ marginTop: "-4px" }, props.style)}
-         ></div>
-      );
-   } else if (big) {
-      return (
-         <div
-            className={button["button-shine"]}
-            style={({ marginTop: "-4px" }, props.style)}
-         ></div>
-      );
-   } else {
-      return <div className={button["button-shine"]} style={props.style}></div>;
-   }
+const ButtonShine = () => {
+   return <div className={button["button-shine"]}></div>;
 };
 
 export const RulesButton = (props) => {

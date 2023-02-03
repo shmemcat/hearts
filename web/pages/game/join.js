@@ -72,7 +72,6 @@ export default function Home() {
                         <Button
                            name="Join"
                            disabled
-                           small
                            style={{ width: "100px", height: "30px" }}
                         />
                      </div>

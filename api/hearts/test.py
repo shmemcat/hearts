@@ -1,4 +1,4 @@
-from api import app
+from hearts import app
 
 
 @app.route('/')

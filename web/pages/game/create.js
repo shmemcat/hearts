@@ -53,7 +53,6 @@ export default function Home() {
                      <Button
                         name="Create Game!"
                         disabled
-                        big
                         style={{ height: "50px" }}
                      />
                   </div>

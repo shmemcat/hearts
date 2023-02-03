@@ -1,6 +1,7 @@
 /* Menu Buttons */
 .menu-button {
    background-color: var(--lightpink);
+   position: relative;
    border-style: none;
    color: var(--buttontext);
    font-family: "appFont";
@@ -36,8 +37,8 @@
 /* Button Shine */
 .button-shine {
    position: absolute;
-   margin-top: -6.3px;
-   margin-left: -3.7px;
+   top: 2.5px;
+   left: 2px;
    transform: rotate(-25deg);
    width: 12px;
    height: 7px;
@@ -216,15 +217,7 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
    }
 
    .button-shine {
-      margin-top: -6.9px;
-      margin-left: -3.7px;
-   }
-
-   .button-shine-small {
-      width: 4px;
-      height: 5px;
-      margin-top: 3px;
-      margin-left: -3.4px;
+      top: 3px;
    }
 
    .piping-bag-right {
