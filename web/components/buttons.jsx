@@ -11,6 +11,7 @@ export const Button = (props) => {
          role="button"
          style={props.style}
          aria-label={props.name}
+         tabIndex={-1}
       >
          <ButtonShine />
          {props.name}
