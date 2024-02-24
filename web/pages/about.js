@@ -7,6 +7,7 @@ import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons.jsx";
 import { HeartsLogo } from "@/components/heartslogo.jsx";
 import { Navbar } from "@/components/navbar.jsx";
+import { Sparkle } from "@/components/sparkle.jsx";
 
 export default function Home() {
    return (
@@ -45,15 +46,23 @@ export default function Home() {
                      <span style={{ margin: "0px" }}>
                         Welcome to my <p className="bold">Hearts</p> web app! My
                         name is <p className="bold">Emily</p> aka{" "}
-                        <p className="bold">shmemcat</p>, I'm a software
-                        engineer developing this web application in React and
-                        Python. Eventually, you'll be able to play Hearts games
-                        locally with AI and online with friends. This has been a
-                        fun project to work on; it's been a decade and a half
-                        since I've been immersed in web development (as you can
-                        imagine, a lot's changed since then) so learning an
-                        array of new technologies has been an exceptionally fun
-                        challenge. Check out my{" "}
+                        <p className="bold">
+                           <span className="sparkle-container">
+                              <Sparkle className="sparkle-svg" />
+                              <Sparkle className="sparkle-svg" />
+                              <Sparkle className="sparkle-svg" />
+                              <Sparkle className="sparkle-svg" />
+                              <Sparkle className="sparkle-svg" />
+                              <span className="sparkle">shmemcat</span>
+                           </span>
+                        </p>. I'm a software engineer developing this web
+                        application in React and Python. Eventually, you'll be
+                        able to play Hearts games locally with AI and online
+                        with friends. This has been a fun project to work on;
+                        it's been a decade and a half since I've been immersed
+                        in web development (as you can imagine, a lot's changed
+                        since then) so learning an array of new technologies has
+                        been an exceptionally fun challenge. Check out my{" "}
                         <a
                            className="link"
                            target="_blank"

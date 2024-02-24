@@ -3,9 +3,11 @@
 @value tan: var(--tan);
 @value rulesbuttonselected: var(--rulesbuttonselected);
 @value heartslogo: var(--heartslogo);
+@value sparkle: var(--sparkle);
 
 .colors {
    --tan: var(--tan);
    --rulesbuttonselected: var(--rulesbuttonselected);
    --heartslogo: var(--heartslogo);
+   --sparkle: var(--sparkle);
 }

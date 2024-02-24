@@ -74,8 +74,9 @@ const UserInfo = () => {
             <div
                className={containers["button-container"]}
                style={{ paddingTop: "40px" }}
+               title="This used to work when I had a server lol"
             >
-               <Button name="Sign In" onClick={() => signIn()} />
+               <Button name="Sign In" disabled onClick={() => signIn()} />
                <Link href="/">
                   <Button name="Home" />
                </Link>

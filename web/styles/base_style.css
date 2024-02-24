@@ -38,6 +38,7 @@ html {
    --contentbox: #fff3f3;
    --lightpink: hsl(341, 81%, 84%);
    --heartslogo: hsl(341, 81%, 84%);
+   --sparkle: hsl(341, 81%, 84%);
    --hoverpink: hsl(342, 36%, 64%);
    --darkpink: hsl(336, 98%, 80%);
    --tan: hsl(30, 62%, 63%);
@@ -63,7 +64,7 @@ html {
    --linkbox: hsla(340, 82%, 59%, 0.2);
    --transparent: hsla(0, 0%, 0%, 0);
    --inputbox: hsl(0, 0%, 100%);
-   --inputboxborder: hsl(341, 60%, 84%);
+   --inputboxborder: hsl(342, 60%, 84%);
    --radiobutton: hsl(342, 36%, 64%);
    --warningicon: hsl(341, 81%, 84%);
 }
@@ -71,9 +72,10 @@ html {
 [data-theme="dark"] {
    --background: hsl(231, 13%, 11%);
    --contentbox: hsl(232, 15%, 19%);
-   --header: hsl(341, 81%, 84%);
+   --header: hsl(341, 80%, 84%);
    --lightpink: hsl(342, 36%, 64%);
    --heartslogo: hsl(231, 16%, 29%);
+   --sparkle: hsl(0, 0%, 100%);
    --buttontext: hsl(231, 13%, 11%);
    --text: hsl(341, 81%, 84%);
    --texthighlight: hsl(336, 21%, 25%);
@@ -202,6 +204,8 @@ input {
    border: 1px solid var(--inputboxborder);
    font-size: 16px;
    letter-spacing: 1.5px;
+   padding-left: 6px;
+   padding-right: 6px;
 }
 
 input:focus {
@@ -266,6 +270,48 @@ h3 {
    padding: 5px;
    font-size: 0.8em;
 }
+
+.sparkle-container {
+   position: relative;
+   display: inline-block;
+}
+
+.sparkle {
+   position: relative;
+   display: inline-block;
+}
+
+.sparkle-svg {
+	position: absolute;
+	z-index: 3;
+	fill: var(--sparkle);
+	width: 20px;
+   height: 20px;
+	aspect-ratio: 1;
+	animation: sparkle 5s calc((var(--delay-step) * var(--d)) * 1s) infinite both;
+	--delay-step: 0.15;
+	top: calc(var(--y, 50) * 1%);
+	left:  calc(var(--x, 0) * 1%);
+	transform: translate(-50%, -50%) scale(0);
+}
+
+@keyframes sparkle {
+   0% {
+      transform: translate(-50%, -50%) scale(0);
+   }
+   10% {
+		transform: translate(-50%, -50%) scale(var(--s, 1));
+   }
+   20% {
+      transform: translate(-50%, -50%) scale(0);
+   }
+}
+
+.sparkle-svg:nth-of-type(1) { --x: 10; --y: 10; --s: 0.4; --d: 1; }
+.sparkle-svg:nth-of-type(2) { --x: 30; --y: 80; --s: 0.4; --d: 2; }
+.sparkle-svg:nth-of-type(3) { --x: 50; --y: 50; --s: 0.4; --d: 3; }
+.sparkle-svg:nth-of-type(4) { --x: 70; --y: 20; --s: 0.4; --d: 4; }
+.sparkle-svg:nth-of-type(5) { --x: 90; --y: 70; --s: 0.4; --d: 5; }
 
 /* for mobile and mobile-sized windows */
 @media only screen and (max-width: 768px) {
