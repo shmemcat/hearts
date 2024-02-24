@@ -146,6 +146,7 @@ body {
    font-weight: 700;
    text-decoration: none;
    z-index: 1;
+   cursor: pointer;
 }
 
 .link::after {
