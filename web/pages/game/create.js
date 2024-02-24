@@ -49,7 +49,7 @@ export default function Home() {
                >
                   <CreateGameSelections />
 
-                  <div style={{ paddingTop: "15px" }}>
+                  <div style={{ paddingTop: "15px" }} title="Coming soon!">
                      <Button
                         name="Create Game!"
                         disabled

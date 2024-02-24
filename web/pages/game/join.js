@@ -68,7 +68,7 @@ export default function Home() {
                            }}
                         />
                      </form>
-                     <div>
+                     <div title="Coming soon!">
                         <Button
                            name="Join"
                            disabled

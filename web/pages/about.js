@@ -44,15 +44,16 @@ export default function Home() {
                   <div className={containers["about-text-body"]}>
                      <span style={{ margin: "0px" }}>
                         Welcome to my <p className="bold">Hearts</p> web app! My
-                        name is <p className="bold">Emily Tran</p>, I'm a
-                        software engineer developing this web application while
-                        learning JavaScript and React. Eventually, you'll be
-                        able to play Hearts games locally with AI and online
-                        with friends. This has been a fun project to work on;
-                        it's been a decade and a half since I've been immersed
-                        in web development (as you can imagine, a lot's changed
-                        since then) so learning an array of new technologies has
-                        been an exceptionally fun challenge. Check out my{" "}
+                        name is <p className="bold">Emily</p> aka{" "}
+                        <p className="bold">shmemcat</p>, I'm a software
+                        engineer developing this web application in React and
+                        Python. Eventually, you'll be able to play Hearts games
+                        locally with AI and online with friends. This has been a
+                        fun project to work on; it's been a decade and a half
+                        since I've been immersed in web development (as you can
+                        imagine, a lot's changed since then) so learning an
+                        array of new technologies has been an exceptionally fun
+                        challenge. Check out my{" "}
                         <a
                            className="link"
                            target="_blank"
