@@ -1,0 +1,63 @@
+# Hearts API
+
+Flask API for the Hearts app (auth, health).
+
+## Environment variables
+
+- **DATABASE_URL** – Postgres connection string (e.g. `postgresql://user:pass@localhost:5432/hearts`).
+- **JWT_SECRET** – Secret for signing JWTs (set a long random string).
+- **CORS_ORIGINS** – Comma-separated origins (e.g. `http://localhost:3000`).
+- **FRONTEND_URL** – Base URL for verification and reset links in emails (e.g. `http://localhost:3000`).
+
+### Email (verification + password reset)
+
+Set these so the API can send mail (e.g. Gmail, SendGrid SMTP):
+
+- **MAIL_SERVER** – SMTP host (e.g. `smtp.gmail.com`).
+- **MAIL_PORT** – Usually `587` for TLS.
+- **MAIL_USE_TLS** – `true` or `1`.
+- **MAIL_USERNAME** – SMTP user (often your email).
+- **MAIL_PASSWORD** – SMTP password or app password.
+- **MAIL_DEFAULT_SENDER** – From address (e.g. `noreply@yourdomain.com`).
+
+For local testing without real email, use a local SMTP catcher (e.g. MailHog) and set `MAIL_SERVER`, `MAIL_PORT`, and `MAIL_USE_TLS` accordingly.
+
+## Endpoints
+
+- **GET /health** – Health check.
+- **POST /register** – Register (rate limited). Sends verification email.
+- **POST /login** – Login (rate limited). Returns JWT; requires verified email for new users.
+- **POST /verify-email** – Verify email with token from link.
+- **POST /forgot-password** – Send reset link (rate limited).
+- **POST /reset-password** – Set new password with token from link.
+- **GET /me** – Current user (requires `Authorization: Bearer <jwt>`).
+
+## Local development (UV)
+
+```bash
+uv lock
+uv sync
+export DATABASE_URL=postgresql://...
+export JWT_SECRET=...
+uv run gunicorn --bind 0.0.0.0:5000 hearts:app
+```
+
+## Docker
+
+From repo root: `docker compose up -d`. API is at http://localhost:5001.
+
+### Migrations
+
+With the api container running, apply migrations:
+
+```bash
+docker compose exec api flask db upgrade
+```
+
+Or use the `upgrade` alias from anywhere (if defined in your shell). Create a new migration after changing models:
+
+```bash
+docker compose exec api flask db migrate -m "description"
+```
+
+Then commit the new file in `migrations/versions/` and run `upgrade` again.

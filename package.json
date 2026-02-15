@@ -2,7 +2,9 @@
   "name": "hearts-monorepo",
   "private": true,
   "scripts": {
-    "up": "docker compose up -d",
+    "up": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
+    "up:build": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build",
+    "up-prod": "docker compose up -d",
     "down": "docker compose down",
     "build": "docker compose build"
   }

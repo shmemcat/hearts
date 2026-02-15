@@ -1,0 +1,15 @@
+# Dev image: Node + Next.js dev server (source mounted at runtime for hot reload)
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Font Awesome Pro (same as prod): pass token at build so npm ci can install
+ARG FONTAWESOME_PACKAGE_TOKEN
+ENV FONTAWESOME_PACKAGE_TOKEN=${FONTAWESOME_PACKAGE_TOKEN}
+
+COPY package.json package-lock.json* ./
+COPY .npmrc ./
+RUN npm ci
+
+# Default: run dev server (host mounts . over /app at runtime for hot reload)
+CMD ["sh", "-c", "npm install && npm run dev"]

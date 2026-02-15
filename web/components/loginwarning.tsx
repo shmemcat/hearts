@@ -1,11 +1,12 @@
 import React from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/context/AuthContext";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faExclamationCircle as fasExclamationCircle } from "@fortawesome/pro-solid-svg-icons";
+import { StyledLink } from "@/components/StyledLink";
 
 export const LoginWarning: React.FC = () => {
-  const { data: session } = useSession();
+  const { user, status } = useAuth();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -13,8 +14,9 @@ export const LoginWarning: React.FC = () => {
   }, []);
 
   if (!mounted) return <></>;
+  if (status === "loading") return <></>;
 
-  if (!session) {
+  if (!user) {
     return (
       <div>
         <p>
@@ -30,12 +32,7 @@ export const LoginWarning: React.FC = () => {
         <p>We noticed you&apos;re not signed in!</p>
         <p>
           If you wish to save your game data, don&apos;t forget to{" "}
-          <span
-            className="link"
-            onClick={() => alert("Sign-in feature coming soon!")}
-          >
-            sign in.
-          </span>
+          <StyledLink href="/user">sign in.</StyledLink>
         </p>
       </div>
     );

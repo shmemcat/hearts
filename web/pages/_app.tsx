@@ -1,10 +1,10 @@
+import "@/styles/tailwind.css";
 import "@/styles/reset_css.css";
 import "@/styles/base_style.css";
 import localFont from "next/font/local";
 import { ThemeProvider } from "next-themes";
-import { SessionProvider } from "next-auth/react";
+import { AuthProvider } from "@/context/AuthContext";
 import type { AppProps } from "next/app";
-import type { Session } from "next-auth";
 
 /* Fontawesome */
 import { config } from "@fortawesome/fontawesome-svg-core";
@@ -33,15 +33,14 @@ const terminalDosis = localFont({
 });
 
 export default function App({ Component, pageProps }: AppProps) {
-  const { session } = pageProps as { session?: Session };
   return (
     <>
       <ThemeProvider>
-        <SessionProvider session={session}>
+        <AuthProvider>
           <div className={terminalDosis.className}>
             <Component {...pageProps} />
           </div>
-        </SessionProvider>
+        </AuthProvider>
       </ThemeProvider>
     </>
   );

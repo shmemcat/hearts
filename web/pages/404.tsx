@@ -7,40 +7,46 @@ import { HeartsLogo } from "@/components/heartslogo";
 import { Navbar } from "@/components/navbar";
 
 export default function Custom404() {
-  return (
-    <>
-      <Head>
-        <title>404 | Hearts</title>
-        <link rel="icon" href="/images/favicon.ico" />
-        <meta name="description" content="Hearts web application" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
-      <div className={containers["content-border-container"]}>
-        <Navbar />
-        <div className={containers["container"]}>
-          <div className={containers["title-container"]}>
-            <HeartsLogo
-              style={{
-                marginTop: "30px",
-                display: "block",
-                marginLeft: "auto",
-                marginRight: "auto",
-                userSelect: "none",
-              }}
+   return (
+      <>
+         <Head>
+            <title>404 | Hearts</title>
+            <link rel="icon" href="/images/favicon.ico" />
+            <meta name="description" content="Hearts web application" />
+            <meta
+               name="viewport"
+               content="width=device-width, initial-scale=1"
             />
-            <h1 style={{ marginTop: "-180px" }}>404</h1>
-          </div>
+         </Head>
+         <div className={containers["content-border-container"]}>
+            <Navbar />
+            <div className={containers["container"]}>
+               <div className={containers["title-container"]}>
+                  <HeartsLogo
+                     style={{
+                        marginTop: "30px",
+                        display: "block",
+                        marginLeft: "auto",
+                        marginRight: "auto",
+                        userSelect: "none",
+                     }}
+                  />
+                  <h1 style={{ marginTop: "-180px" }}>404</h1>
+               </div>
 
-          <div className={containers["body-container"]}>
-            <div>Page not found!</div>
-            <div className={containers["button-container"]}>
-              <Link href="/">
-                <Button name="Home" />
-              </Link>
+               <div className={containers["body-container"]}>
+                  <div>Page not found!</div>
+                  <div
+                     className={containers["button-container"]}
+                     style={{ paddingTop: "16px" }}
+                  >
+                     <Link href="/">
+                        <Button name="Home" />
+                     </Link>
+                  </div>
+               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
+         </div>
+      </>
+   );
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import buttons from "@/styles/buttons.module.css";
 import containers from "@/styles/containers.module.css";
 import { useTheme } from "next-themes";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/router";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -51,7 +51,7 @@ export const Navbar: React.FC = () => {
 
 const UserButton: React.FC = () => {
   const [animation, setAnimation] = React.useState(0);
-  const { data: session } = useSession();
+  const { user } = useAuth();
 
   const onClickHandler = () => {
     setAnimation(1);
@@ -67,7 +67,7 @@ const UserButton: React.FC = () => {
         >
           <FontAwesomeIcon
             className="icon"
-            icon={session ? fasUser : farUser}
+            icon={user ? fasUser : farUser}
             {...({ clicked: animation, onAnimationEnd: () => setAnimation(0) } as {
               clicked: number;
               onAnimationEnd: () => void;
@@ -75,7 +75,7 @@ const UserButton: React.FC = () => {
           />
         </div>
         <div className="navtext">
-          {session?.user?.name ?? "Guest"}
+          {user?.name ?? user?.email ?? "Guest"}
         </div>
       </div>
     </Link>

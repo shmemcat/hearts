@@ -19,6 +19,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 COPY gunicorn_conf.py ./
 COPY hearts ./hearts
+COPY migrations ./migrations
 
 EXPOSE 5000
 

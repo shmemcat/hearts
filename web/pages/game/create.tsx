@@ -7,6 +7,7 @@ import { CreateGameSelections } from "@/components/radiobuttons";
 import { HeartsLogo } from "@/components/heartslogo";
 import { Navbar } from "@/components/navbar";
 import { LoginWarning } from "@/components/loginwarning";
+import { Tooltip } from "@/components/Tooltip";
 
 export default function CreateGamePage() {
   return (
@@ -39,17 +40,21 @@ export default function CreateGamePage() {
           >
             <CreateGameSelections />
 
-            <div style={{ paddingTop: "15px" }} title="Coming soon!">
-              <Button
-                name="Create Game!"
-                disabled
-                style={{ height: "50px" }}
-              />
+            <div style={{ paddingTop: "15px" }}>
+              <Tooltip content="Coming soon!">
+                <div style={{ display: "inline-block" }}>
+                  <Button
+                    name="Create Game!"
+                    disabled
+                    style={{ height: "50px" }}
+                  />
+                </div>
+              </Tooltip>
             </div>
             <LoginWarning />
             <div className={containers["button-container"]}>
               <Link href="/">
-                <Button name="Back" style={{ width: "120px" }} />
+                <Button name="Home" style={{ width: "120px" }} />
               </Link>
             </div>
           </div>

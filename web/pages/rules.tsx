@@ -79,7 +79,7 @@ function Rules() {
         {state === "scoring" && <Scoring />}
         <div>
           <Link href="/">
-            <Button name="Back" />
+            <Button name="Home" />
           </Link>
         </div>
       </div>
