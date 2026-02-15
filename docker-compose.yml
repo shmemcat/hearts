@@ -1,0 +1,19 @@
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        # Optional: set in .env or pass at build time for Font Awesome Pro
+        - FONTAWESOME_PACKAGE_TOKEN=${FONTAWESOME_PACKAGE_TOKEN:-}
+    ports:
+      - "3000:80"
+    restart: unless-stopped

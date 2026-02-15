@@ -1,0 +1,9 @@
+{
+  "name": "hearts-monorepo",
+  "private": true,
+  "scripts": {
+    "up": "docker compose up -d",
+    "down": "docker compose down",
+    "build": "docker compose build"
+  }
+}

@@ -1,15 +1,10 @@
-[tool.poetry]
+[project]
 name = "api"
 version = "0.1.0"
 description = ""
-authors = ["shmemcat <emilycatellier@gmail.com>"]
 readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.11"
-flask = "^2.2.2"
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=2.2.2",
+    "gunicorn>=21.0.0",
+]

@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+.git
+*.md
+.env
+.env.*
+!.env.example
+Dockerfile
+.dockerignore
