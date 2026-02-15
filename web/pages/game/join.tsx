@@ -1,13 +1,11 @@
 import Head from "next/head";
 import Link from "next/link";
 
-import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons";
 import { FormInput } from "@/components/FormInput";
-import { HeartsLogo } from "@/components/heartslogo";
-import { Navbar } from "@/components/navbar";
 import { LoginWarning } from "@/components/loginwarning";
 import { Tooltip } from "@/components/Tooltip";
+import { PageLayout, ButtonGroup } from "@/components/ui";
 
 export default function JoinGamePage() {
    return (
@@ -21,69 +19,42 @@ export default function JoinGamePage() {
                content="width=device-width, initial-scale=1"
             />
          </Head>
-         <div className={containers["content-border-container"]}>
-            <Navbar />
-            <div className={containers["container"]}>
-               <div className={containers["title-container"]}>
-                  <HeartsLogo
-                     style={{
-                        marginTop: "30px",
-                        display: "block",
-                        marginLeft: "auto",
-                        marginRight: "auto",
-                        userSelect: "none",
-                     }}
+         <PageLayout title="JOIN GAME">
+            <h2>Enter the lobby code</h2>
+            <p>
+               The game host can provide you with a code, or simply visit the
+               game lobby link.
+            </p>
+            <br />
+            <div className="flex gap-5 items-center">
+               <form>
+                  <FormInput
+                     type="text"
+                     name="lobby_code"
+                     placeholder="Lobby Code"
+                     width="160px"
+                     fontWeight={600}
+                     inputStyle={{ padding: "5px 12px" }}
                   />
-                  <h1 style={{ marginTop: "-180px" }}>JOIN GAME</h1>
-               </div>
-
-               <div className={containers["body-container"]}>
-                  <h2>Enter the lobby code</h2>
-                  <p>
-                     The game host can provide you with a code, or simply visit
-                     the game lobby link.
-                  </p>
-                  <br />
-                  <div
-                     style={{
-                        display: "flex",
-                        gap: "20px",
-                        alignItems: "center",
-                     }}
-                  >
-                     <form>
-                        <FormInput
-                           type="text"
-                           name="lobby_code"
-                           placeholder="Lobby Code"
-                           width="160px"
-                           fontWeight={600}
-                           inputStyle={{ padding: "5px 12px" }}
-                        />
-                     </form>
-                     <Tooltip content="Coming soon!">
-                        <div style={{ display: "inline-block" }}>
-                           <Button
-                              name="Join"
-                              disabled
-                              style={{ width: "100px", height: "30px" }}
-                           />
-                        </div>
-                     </Tooltip>
+               </form>
+               <Tooltip content="Coming soon!">
+                  <div className="inline-block">
+                     <Button
+                        name="Join"
+                        disabled
+                        style={{ width: "100px", height: "30px" }}
+                     />
                   </div>
-                  <br />
-                  <LoginWarning />
-                  <div
-                     className={containers["button-container"]}
-                     style={{ paddingTop: "20px" }}
-                  >
-                     <Link href="/">
-                        <Button name="Home" style={{ width: "150px" }} />
-                     </Link>
-                  </div>
-               </div>
+               </Tooltip>
             </div>
-         </div>
+            <br />
+            <LoginWarning />
+            <ButtonGroup padding="tight" className="pt-5">
+               <Link href="/">
+                  <Button name="Home" style={{ width: "150px" }} />
+               </Link>
+            </ButtonGroup>
+         </PageLayout>
       </>
    );
 }

@@ -2,11 +2,14 @@ import Head from "next/head";
 import Link from "next/link";
 import { useState } from "react";
 
-import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons";
-import { HeartsLogo } from "@/components/heartslogo";
-import { Navbar } from "@/components/navbar";
 import { StyledLink } from "@/components/StyledLink";
+import {
+   PageLayout,
+   FormContainer,
+   ErrorMessage,
+   ButtonGroup,
+} from "@/components/ui";
 
 export default function ForgotPasswordPage() {
    const [email, setEmail] = useState("");
@@ -47,83 +50,43 @@ export default function ForgotPasswordPage() {
                content="width=device-width, initial-scale=1"
             />
          </Head>
-         <div className={containers["content-border-container"]}>
-            <Navbar />
-            <div className={containers["container"]}>
-               <div className={containers["title-container"]}>
-                  <HeartsLogo
-                     style={{
-                        marginTop: "30px",
-                        display: "block",
-                        marginLeft: "auto",
-                        marginRight: "auto",
-                        userSelect: "none",
-                     }}
-                  />
-                  <h1 style={{ marginTop: "-180px" }}>FORGOT PASSWORD</h1>
-               </div>
-               <div className={containers["body-container"]}>
-                  {sent ? (
-                     <p>
-                        If that email is registered, we sent a reset link. Check
-                        your inbox and spam folder.
-                     </p>
-                  ) : (
-                     <>
-                        <p>
-                           Enter your email and we&apos;ll send a reset link.
-                        </p>
-                        <form
-                           onSubmit={handleSubmit}
-                           style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: "16px",
-                              maxWidth: "280px",
-                              marginTop: "20px",
-                           }}
-                        >
-                           <input
-                              type="email"
-                              placeholder="Email"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              required
-                              autoComplete="email"
-                              style={{ padding: "8px 12px" }}
-                           />
-                           {error && (
-                              <span
-                                 style={{
-                                    color: "var(--warningicon, #c00)",
-                                    fontSize: "14px",
-                                 }}
-                              >
-                                 {error}
-                              </span>
-                           )}
-                           <Button
-                              name={loading ? "Sending…" : "Send reset link"}
-                              disabled={loading}
-                              onClick={() => {}}
-                           />
-                        </form>
-                     </>
-                  )}
-                  <div style={{ marginTop: "16px" }}>
-                     <StyledLink href="/user">Back to sign in</StyledLink>
-                  </div>
-                  <div
-                     className={containers["button-container"]}
-                     style={{ paddingTop: "24px" }}
-                  >
-                     <Link href="/">
-                        <Button name="Home" />
-                     </Link>
-                  </div>
-               </div>
+         <PageLayout title="FORGOT PASSWORD">
+            {sent ? (
+               <p>
+                  If that email is registered, we sent a reset link. Check your
+                  inbox and spam folder.
+               </p>
+            ) : (
+               <>
+                  <p>Enter your email and we&apos;ll send a reset link.</p>
+                  <FormContainer onSubmit={handleSubmit}>
+                     <input
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        autoComplete="email"
+                        className="px-3 py-2"
+                     />
+                     {error && <ErrorMessage>{error}</ErrorMessage>}
+                     <Button
+                        name={loading ? "Sending…" : "Send reset link"}
+                        disabled={loading}
+                        onClick={() => {}}
+                     />
+                  </FormContainer>
+               </>
+            )}
+            <div className="mt-4">
+               <StyledLink href="/user">Back to sign in</StyledLink>
             </div>
-         </div>
+            <ButtonGroup>
+               <Link href="/">
+                  <Button name="Home" />
+               </Link>
+            </ButtonGroup>
+         </PageLayout>
       </>
    );
 }

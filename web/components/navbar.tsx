@@ -1,7 +1,6 @@
 import React from "react";
 import Link from "next/link";
 import buttons from "@/styles/buttons.module.css";
-import containers from "@/styles/containers.module.css";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/router";
@@ -17,128 +16,129 @@ import { faMusicNoteSlash as fasMusicNoteSlash } from "@fortawesome/pro-solid-sv
 import { faHeart as fasHeart } from "@fortawesome/pro-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
-export const Navbar: React.FC = () => {
-  const router = useRouter();
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "row",
-        justifyContent: "space-between",
-      }}
-    >
-      {router.pathname === "/" ? (
-        <div></div>
-      ) : (
-        <Link href="/" style={{ textDecoration: "none" }}>
-          <div
-            id="nav-home"
-            style={{ display: "flex", gap: "15px", alignItems: "center" }}
-          >
-            <FontAwesomeIcon className="icon" icon={fasHeart} />{" "}
-            <span className="navhearts">HEARTS</span>
-          </div>
-        </Link>
-      )}
-      <div className={containers.navright}>
-        <UserButton />
-        <NightModeButton />
-        <SoundButton />
+export interface NavbarProps {
+   className?: string;
+}
+
+/** Props passed to FontAwesomeIcon for icon-select-bounce (CSS .icon[clicked="1"]) */
+interface IconAnimationProps {
+   clicked: number;
+   onAnimationEnd: () => void;
+}
+
+export const Navbar: React.FC<NavbarProps> = () => {
+   const router = useRouter();
+   return (
+      <div className="flex flex-row justify-between">
+         {router.pathname === "/" ? (
+            <div />
+         ) : (
+            <Link href="/" className="no-underline">
+               <div id="nav-home" className="flex gap-[15px] items-center">
+                  <FontAwesomeIcon className="icon" icon={fasHeart} />{" "}
+                  <span className="navhearts">HEARTS</span>
+               </div>
+            </Link>
+         )}
+         <div className="flex justify-end flex-row-reverse gap-5">
+            <UserButton />
+            <NightModeButton />
+            <SoundButton />
+         </div>
       </div>
-    </div>
-  );
+   );
 };
 
 const UserButton: React.FC = () => {
-  const [animation, setAnimation] = React.useState(0);
-  const { user } = useAuth();
+   const [animation, setAnimation] = React.useState(0);
+   const { user } = useAuth();
 
-  const onClickHandler = () => {
-    setAnimation(1);
-  };
+   const onClickHandler = () => {
+      setAnimation(1);
+   };
 
-  return (
-    <Link href="/user" style={{ textDecoration: "none" }}>
-      <div id="nav-home" style={{ display: "flex", gap: "10px" }}>
-        <div
-          role="button"
-          aria-label="Login/User Settings"
-          onClick={() => onClickHandler()}
-        >
-          <FontAwesomeIcon
-            className="icon"
-            icon={user ? fasUser : farUser}
-            {...({ clicked: animation, onAnimationEnd: () => setAnimation(0) } as {
-              clicked: number;
-              onAnimationEnd: () => void;
-            })}
-          />
-        </div>
-        <div className="navtext">
-          {user?.name ?? user?.email ?? "Guest"}
-        </div>
-      </div>
-    </Link>
-  );
+   return (
+      <Link href="/user" className="no-underline">
+         <div id="nav-home" className="flex gap-2.5">
+            <div
+               role="button"
+               aria-label="Login/User Settings"
+               onClick={() => onClickHandler()}
+            >
+               <FontAwesomeIcon
+                  className="icon"
+                  icon={user ? fasUser : farUser}
+                  {...({
+                     clicked: animation,
+                     onAnimationEnd: () => setAnimation(0),
+                  } as IconAnimationProps)}
+               />
+            </div>
+            <div className="navtext">
+               {user?.name ?? user?.email ?? "Guest"}
+            </div>
+         </div>
+      </Link>
+   );
 };
 
 const NightModeButton: React.FC = () => {
-  const [animation, setAnimation] = React.useState(0);
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
+   const [animation, setAnimation] = React.useState(0);
+   const { resolvedTheme, setTheme } = useTheme();
+   const [mounted, setMounted] = React.useState(false);
 
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+   React.useEffect(() => {
+      setMounted(true);
+   }, []);
 
-  if (!mounted) return <></>;
+   if (!mounted) return <></>;
 
-  const onClickHandler = () => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
-    setAnimation(1);
-  };
+   const onClickHandler = () => {
+      setTheme(resolvedTheme === "dark" ? "light" : "dark");
+      setAnimation(1);
+   };
 
-  return (
-    <div
-      role="button"
-      aria-label="Toggle between light and dark mode"
-      onClick={() => onClickHandler()}
-    >
-      <FontAwesomeIcon
-        className={buttons.icon}
-        icon={resolvedTheme === "dark" ? fasMoon : fasSunBright}
-        {...({ clicked: animation, onAnimationEnd: () => setAnimation(0) } as {
-          clicked: number;
-          onAnimationEnd: () => void;
-        })}
-      />
-    </div>
-  );
+   return (
+      <div
+         role="button"
+         aria-label="Toggle between light and dark mode"
+         onClick={() => onClickHandler()}
+      >
+         <FontAwesomeIcon
+            className={buttons.icon}
+            icon={resolvedTheme === "dark" ? fasMoon : fasSunBright}
+            {...({
+               clicked: animation,
+               onAnimationEnd: () => setAnimation(0),
+            } as IconAnimationProps)}
+         />
+      </div>
+   );
 };
 
 const SoundButton: React.FC = () => {
-  const [state, setState] = React.useState<IconDefinition>(fasMusicNote);
-  const [animation, setAnimation] = React.useState(0);
+   const [state, setState] = React.useState<IconDefinition>(fasMusicNote);
+   const [animation, setAnimation] = React.useState(0);
 
-  const onClickHandler = () => {
-    setState(state === fasMusicNote ? fasMusicNoteSlash : fasMusicNote);
-    setAnimation(1);
-  };
+   const onClickHandler = () => {
+      setState(state === fasMusicNote ? fasMusicNoteSlash : fasMusicNote);
+      setAnimation(1);
+   };
 
-  return (
-    <div
-      role="button"
-      aria-label="Toggle sound on or off"
-      onClick={() => onClickHandler()}
-    >
-      <FontAwesomeIcon
-        className={buttons.icon}
-        icon={state}
-        {...({ clicked: animation, onAnimationEnd: () => setAnimation(0) } as {
-          clicked: number;
-          onAnimationEnd: () => void;
-        })}
-      />
-    </div>
-  );
+   return (
+      <div
+         role="button"
+         aria-label="Toggle sound on or off"
+         onClick={() => onClickHandler()}
+      >
+         <FontAwesomeIcon
+            className={buttons.icon}
+            icon={state}
+            {...({
+               clicked: animation,
+               onAnimationEnd: () => setAnimation(0),
+            } as IconAnimationProps)}
+         />
+      </div>
+   );
 };

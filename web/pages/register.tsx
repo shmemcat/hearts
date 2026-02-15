@@ -3,12 +3,15 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/router";
 
-import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons";
-import { HeartsLogo } from "@/components/heartslogo";
-import { Navbar } from "@/components/navbar";
 import { FormInput } from "@/components/FormInput";
 import { StyledLink } from "@/components/StyledLink";
+import {
+   PageLayout,
+   FormContainer,
+   ErrorMessage,
+   ButtonGroup,
+} from "@/components/ui";
 
 const MIN_PASSWORD_LEN = 8;
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,64}$/;
@@ -46,7 +49,8 @@ export default function RegisterPage() {
       }
       if (!USERNAME_RE.test(trimmedUsername)) {
          setFieldError({
-            username: "Username must be 3–64 characters, letters, numbers, and underscores only.",
+            username:
+               "Username must be 3–64 characters, letters, numbers, and underscores only.",
          });
          return;
       }
@@ -99,136 +103,92 @@ export default function RegisterPage() {
                content="width=device-width, initial-scale=1"
             />
          </Head>
-         <div className={containers["content-border-container"]}>
-            <Navbar />
-            <div className={containers["container"]}>
-               <div className={containers["title-container"]}>
-                  <HeartsLogo
-                     style={{
-                        marginTop: "30px",
-                        display: "block",
-                        marginLeft: "auto",
-                        marginRight: "auto",
-                        userSelect: "none",
+         <PageLayout title="REGISTER">
+            {success ? (
+               <div>
+                  <StyledLink href="/user">Sign in</StyledLink>
+               </div>
+            ) : (
+               <FormContainer onSubmit={handleSubmit} noValidate>
+                  <FormInput
+                     type="text"
+                     placeholder="Username"
+                     value={username}
+                     onChange={(e) => {
+                        setUsername(e.target.value);
+                        setFieldError((prev) =>
+                           prev.username
+                              ? { ...prev, username: undefined }
+                              : prev
+                        );
                      }}
+                     autoComplete="username"
+                     error={fieldError.username}
                   />
-                  <h1 style={{ marginTop: "-180px" }}>REGISTER</h1>
-               </div>
+                  <FormInput
+                     type="email"
+                     placeholder="Email"
+                     value={email}
+                     onChange={(e) => {
+                        setEmail(e.target.value);
+                        setFieldError((prev) =>
+                           prev.email ? { ...prev, email: undefined } : prev
+                        );
+                     }}
+                     autoComplete="email"
+                     error={fieldError.email}
+                  />
+                  <FormInput
+                     type="password"
+                     placeholder="Password"
+                     value={password}
+                     onChange={(e) => {
+                        setPassword(e.target.value);
+                        setFieldError((prev) =>
+                           prev.password
+                              ? { ...prev, password: undefined }
+                              : prev
+                        );
+                     }}
+                     autoComplete="new-password"
+                     error={fieldError.password}
+                  />
+                  <FormInput
+                     type="password"
+                     placeholder="Confirm password"
+                     value={confirmPassword}
+                     onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        setFieldError((prev) =>
+                           prev.confirmPassword
+                              ? { ...prev, confirmPassword: undefined }
+                              : prev
+                        );
+                     }}
+                     autoComplete="new-password"
+                     error={fieldError.confirmPassword}
+                  />
+                  {error && <ErrorMessage>{error}</ErrorMessage>}
+                  <Button
+                     name={loading ? "Creating account…" : "Create account"}
+                     disabled={loading}
+                     onClick={() => {}}
+                  />
+               </FormContainer>
+            )}
 
-               <div className={containers["body-container"]}>
-                  {success ? (
-                     <div>
-                        <StyledLink href="/user">Sign in</StyledLink>
-                     </div>
-                  ) : (
-                     <form
-                        onSubmit={handleSubmit}
-                        noValidate
-                        style={{
-                           display: "flex",
-                           flexDirection: "column",
-                           gap: "16px",
-                           maxWidth: "280px",
-                           marginTop: "20px",
-                        }}
-                     >
-                        <FormInput
-                           type="text"
-                           placeholder="Username"
-                           value={username}
-                           onChange={(e) => {
-                              setUsername(e.target.value);
-                              setFieldError((prev) =>
-                                 prev.username
-                                    ? { ...prev, username: undefined }
-                                    : prev
-                              );
-                           }}
-                           autoComplete="username"
-                           error={fieldError.username}
-                        />
-                        <FormInput
-                           type="email"
-                           placeholder="Email"
-                           value={email}
-                           onChange={(e) => {
-                              setEmail(e.target.value);
-                              setFieldError((prev) =>
-                                 prev.email
-                                    ? { ...prev, email: undefined }
-                                    : prev
-                              );
-                           }}
-                           autoComplete="email"
-                           error={fieldError.email}
-                        />
-                        <FormInput
-                           type="password"
-                           placeholder="Password"
-                           value={password}
-                           onChange={(e) => {
-                              setPassword(e.target.value);
-                              setFieldError((prev) =>
-                                 prev.password
-                                    ? { ...prev, password: undefined }
-                                    : prev
-                              );
-                           }}
-                           autoComplete="new-password"
-                           error={fieldError.password}
-                        />
-                        <FormInput
-                           type="password"
-                           placeholder="Confirm password"
-                           value={confirmPassword}
-                           onChange={(e) => {
-                              setConfirmPassword(e.target.value);
-                              setFieldError((prev) =>
-                                 prev.confirmPassword
-                                    ? { ...prev, confirmPassword: undefined }
-                                    : prev
-                              );
-                           }}
-                           autoComplete="new-password"
-                           error={fieldError.confirmPassword}
-                        />
-                        {error && (
-                           <span
-                              style={{
-                                 color: "var(--warningicon, #c00)",
-                                 fontSize: "14px",
-                              }}
-                           >
-                              {error}
-                           </span>
-                        )}
-                        <Button
-                           name={
-                              loading ? "Creating account…" : "Create account"
-                           }
-                           disabled={loading}
-                           onClick={() => {}}
-                        />
-                     </form>
-                  )}
-
-                  <div style={{ marginTop: "16px" }}>
-                     <StyledLink href="/user">
-                        Already have an account? Sign in
-                     </StyledLink>
-                  </div>
-
-                  <div
-                     className={containers["button-container"]}
-                     style={{ paddingTop: "24px" }}
-                  >
-                     <Link href="/">
-                        <Button name="Home" />
-                     </Link>
-                  </div>
-               </div>
+            <div className="mt-4">
+               <StyledLink href="/user">
+                  Already have an account? Sign in
+               </StyledLink>
             </div>
-         </div>
+
+            <ButtonGroup>
+               <Link href="/">
+                  <Button name="Home" />
+               </Link>
+            </ButtonGroup>
+         </PageLayout>
       </>
    );
 }

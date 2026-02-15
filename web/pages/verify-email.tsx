@@ -3,10 +3,9 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-import containers from "@/styles/containers.module.css";
+import type { VerifyEmailQuery } from "@/types/api";
 import { Button } from "@/components/buttons";
-import { HeartsLogo } from "@/components/heartslogo";
-import { Navbar } from "@/components/navbar";
+import { PageLayout, ButtonGroup } from "@/components/ui";
 
 const getApiUrl = () =>
    typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL
@@ -15,7 +14,7 @@ const getApiUrl = () =>
 
 export default function VerifyEmailPage() {
    const router = useRouter();
-   const { token } = router.query;
+   const { token } = router.query as VerifyEmailQuery;
    const [status, setStatus] = useState<"loading" | "success" | "error">(
       "loading"
    );
@@ -58,39 +57,19 @@ export default function VerifyEmailPage() {
                content="width=device-width, initial-scale=1"
             />
          </Head>
-         <div className={containers["content-border-container"]}>
-            <Navbar />
-            <div className={containers["container"]}>
-               <div className={containers["title-container"]}>
-                  <HeartsLogo
-                     style={{
-                        marginTop: "30px",
-                        display: "block",
-                        marginLeft: "auto",
-                        marginRight: "auto",
-                        userSelect: "none",
-                     }}
-                  />
-                  <h1 style={{ marginTop: "-180px" }}>VERIFY EMAIL</h1>
-               </div>
-               <div className={containers["body-container"]}>
-                  {status === "loading" && <p>Verifying…</p>}
-                  {status === "success" && <div>{message}</div>}
-                  {status === "error" && <div>{message}</div>}
-                  <div
-                     className={containers["button-container"]}
-                     style={{ paddingTop: "24px" }}
-                  >
-                     <Link href="/user">
-                        <Button name="Sign in" />
-                     </Link>
-                     <Link href="/">
-                        <Button name="Home" />
-                     </Link>
-                  </div>
-               </div>
-            </div>
-         </div>
+         <PageLayout title="VERIFY EMAIL">
+            {status === "loading" && <p>Verifying…</p>}
+            {status === "success" && <div>{message}</div>}
+            {status === "error" && <div>{message}</div>}
+            <ButtonGroup>
+               <Link href="/user">
+                  <Button name="Sign in" />
+               </Link>
+               <Link href="/">
+                  <Button name="Home" />
+               </Link>
+            </ButtonGroup>
+         </PageLayout>
       </>
    );
 }

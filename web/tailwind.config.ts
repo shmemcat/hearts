@@ -7,7 +7,19 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        background: "var(--background)",
+        contentbox: "var(--contentbox)",
+        header: "var(--header)",
+        text: "var(--text)",
+        warningicon: "var(--warningicon)",
+        heartslogo: "var(--heartslogo)",
+        mediumpink: "var(--mediumpink)",
+        inputboxborder: "var(--inputboxborder)",
+        buttonboxshadow: "var(--buttonboxshadow)",
+      },
+    },
   },
   plugins: [],
 };

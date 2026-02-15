@@ -3,12 +3,15 @@ import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
-import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/buttons";
-import { HeartsLogo } from "@/components/heartslogo";
-import { Navbar } from "@/components/navbar";
 import { FormInput } from "@/components/FormInput";
 import { StyledLink } from "@/components/StyledLink";
+import {
+   PageLayout,
+   FormContainer,
+   ErrorMessage,
+   ButtonGroup,
+} from "@/components/ui";
 
 export default function UserPage() {
    return (
@@ -22,25 +25,9 @@ export default function UserPage() {
                content="width=device-width, initial-scale=1"
             />
          </Head>
-         <div className={containers["content-border-container"]}>
-            <Navbar />
-            <div className={containers["container"]}>
-               <div className={containers["title-container"]}>
-                  <HeartsLogo
-                     style={{
-                        marginTop: "30px",
-                        display: "block",
-                        marginLeft: "auto",
-                        marginRight: "auto",
-                        userSelect: "none",
-                     }}
-                  />
-                  <h1 style={{ marginTop: "-180px" }}>USER</h1>
-               </div>
-
-               <UserInfo />
-            </div>
-         </div>
+         <PageLayout title="USER">
+            <UserInfo />
+         </PageLayout>
       </>
    );
 }
@@ -50,7 +37,10 @@ function UserInfo() {
    const [username, setUsername] = useState("");
    const [password, setPassword] = useState("");
    const [error, setError] = useState("");
-   const [fieldError, setFieldError] = useState<{ username?: string; password?: string }>({});
+   const [fieldError, setFieldError] = useState<{
+      username?: string;
+      password?: string;
+   }>({});
    const [loading, setLoading] = useState(false);
 
    const handleSignIn = async (e: React.FormEvent) => {
@@ -78,49 +68,41 @@ function UserInfo() {
    };
 
    if (status === "loading") {
-      return <div className={containers["body-container"]}>Loading…</div>;
-   }
-
-   if (user) {
       return (
-         <div className={containers["body-container"]}>
-            <div>Welcome {user.name ?? user.email}!</div>
-
-            <div
-               className={containers["button-container"]}
-               style={{ paddingTop: "40px" }}
-            >
-               <Button name="Sign Out" onClick={() => logout()} />
-               <Link href="/">
-                  <Button name="Home" />
-               </Link>
-            </div>
+         <div className="mt-10 w-[85vw] flex flex-col items-center justify-center text-center">
+            Loading…
          </div>
       );
    }
 
+   if (user) {
+      return (
+         <>
+            <div>Welcome {user.name ?? user.email}!</div>
+            <ButtonGroup padding="loose">
+               <Button name="Sign Out" onClick={() => logout()} />
+               <Link href="/">
+                  <Button name="Home" />
+               </Link>
+            </ButtonGroup>
+         </>
+      );
+   }
+
    return (
-      <div className={containers["body-container"]}>
+      <>
          <div>Sign in with your username and password.</div>
 
-         <form
-            onSubmit={handleSignIn}
-            noValidate
-            style={{
-               display: "flex",
-               flexDirection: "column",
-               gap: "16px",
-               maxWidth: "280px",
-               marginTop: "20px",
-            }}
-         >
+         <FormContainer onSubmit={handleSignIn} noValidate>
             <FormInput
                type="text"
                placeholder="Username"
                value={username}
                onChange={(e) => {
                   setUsername(e.target.value);
-                  setFieldError((prev) => (prev.username ? { ...prev, username: undefined } : prev));
+                  setFieldError((prev) =>
+                     prev.username ? { ...prev, username: undefined } : prev
+                  );
                }}
                autoComplete="username"
                error={fieldError.username}
@@ -131,21 +113,14 @@ function UserInfo() {
                value={password}
                onChange={(e) => {
                   setPassword(e.target.value);
-                  setFieldError((prev) => (prev.password ? { ...prev, password: undefined } : prev));
+                  setFieldError((prev) =>
+                     prev.password ? { ...prev, password: undefined } : prev
+                  );
                }}
                autoComplete="current-password"
                error={fieldError.password}
             />
-            {error && (
-               <span
-                  style={{
-                     color: "var(--warningicon, #c00)",
-                     fontSize: "14px",
-                  }}
-               >
-                  {error}
-               </span>
-            )}
+            {error && <ErrorMessage>{error}</ErrorMessage>}
             <div>
                <Button
                   name={loading ? "Signing in…" : "Sign In"}
@@ -153,20 +128,17 @@ function UserInfo() {
                   onClick={() => {}}
                />
             </div>
-         </form>
+         </FormContainer>
 
-         <div style={{ marginTop: "20px" }}>
+         <div className="mt-5">
             <StyledLink href="/register">Create an account</StyledLink>
          </div>
 
-         <div
-            className={containers["button-container"]}
-            style={{ paddingTop: "28px" }}
-         >
+         <ButtonGroup className="pt-7">
             <Link href="/">
                <Button name="Home" />
             </Link>
-         </div>
-      </div>
+         </ButtonGroup>
+      </>
    );
 }
