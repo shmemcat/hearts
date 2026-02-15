@@ -5,6 +5,5 @@ out
 *.md
 .env
 .env.*
-!.env.example
 Dockerfile
 .dockerignore

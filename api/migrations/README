@@ -1,6 +1,0 @@
-Generic single-database configuration for Flask-Migrate (Alembic).
-
-Run from repo root:
-  docker compose exec api flask db upgrade
-
-Or use the alias: upgrade
