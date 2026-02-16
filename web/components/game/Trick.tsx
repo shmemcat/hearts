@@ -7,24 +7,25 @@ import type { CurrentTrickSlot } from "@/types/game";
 import styles from "@/styles/play.module.css";
 
 export interface TrickProps {
-  /** current_trick from state: [slot0, slot1, slot2, slot3], null = no card. */
+  /** Slots in play order: [0]=1st (bottom), [1]=2nd (left), [2]=3rd (top), [3]=4th (right). null = no card. */
   slots: CurrentTrickSlot[];
   /** Player names for labels (optional). */
   playerNames?: string[];
-  /** "table" = slots at bottom/top/left/right around center (0=bottom, 1=top, 2=left, 3=right). */
+  /** "table" = slots in play order at bottom/left/top/right (0=bottom, 1=left, 2=top, 3=right). */
   layout?: "row" | "table";
   /** When layout=table, optional icon in center (e.g. hearts broken). */
   centerIcon?: React.ReactNode;
 }
 
+/** Slots in play order: 0=bottom (1st play), 1=left (2nd), 2=top (3rd), 3=right (4th). Layout fixed; all slots clear on Hand Resolves. */
 const TABLE_SLOT_ORDER: Array<{ index: number; className: string }> = [
   { index: 0, className: styles.trickTableSlotBottom },
-  { index: 1, className: styles.trickTableSlotTop },
-  { index: 2, className: styles.trickTableSlotLeft },
+  { index: 1, className: styles.trickTableSlotLeft },
+  { index: 2, className: styles.trickTableSlotTop },
   { index: 3, className: styles.trickTableSlotRight },
 ];
 
-/** Display the current trick. Four positions (0=bottom, 1=top, 2=left, 3=right). */
+/** Display the current trick. Four positions in play order: bottom, left, top, right. */
 export const Trick: React.FC<TrickProps> = ({
   slots,
   playerNames,

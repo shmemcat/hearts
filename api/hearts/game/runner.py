@@ -243,17 +243,11 @@ class GameRunner:
                 first_lead_of_round=first_lead,
             )
             legal_plays = [c.to_code() for c in legal_cards]
-        current_trick_by_player: List[Optional[Dict[str, Any]]] = [
-            None,
-            None,
-            None,
-            None,
+        # current_trick in play order: slot 0 = 1st play (bottom), 1 = 2nd (left), 2 = 3rd (top), 3 = 4th (right)
+        current_trick = [
+            {"player_index": idx, "card": card.to_code()}
+            for idx, card in s.current_trick
         ]
-        for idx, card in s.current_trick:
-            current_trick_by_player[idx] = {
-                "player_index": idx,
-                "card": card.to_code(),
-            }
         return {
             "phase": s.phase.value,
             "round": s.round,
@@ -261,7 +255,7 @@ class GameRunner:
             "players": players,
             "human_hand": human_hand,
             "legal_plays": legal_plays,
-            "current_trick": current_trick_by_player,
+            "current_trick": current_trick,
             "whose_turn": s.whose_turn,
             "hearts_broken": s.hearts_broken,
             "game_over": s.game_over,
