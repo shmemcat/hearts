@@ -1,5 +1,5 @@
-# Hearts game engine: card, rules, state, transitions.
-# Runner and AI live in game/runner.py and hearts/ai/.
+# Hearts game engine: card, rules, state, transitions, runner.
+# AI lives in hearts/ai/.
 
 from hearts.game.card import Card, Suit, deck_52, shuffle_deck, deal_into_4_hands
 from hearts.game.rules import (
@@ -20,6 +20,7 @@ from hearts.game.transitions import (
     apply_play,
     apply_round_scoring,
 )
+from hearts.game.runner import GameRunner
 
 __all__ = [
     "Card",
@@ -39,4 +40,5 @@ __all__ = [
     "apply_passes",
     "apply_play",
     "apply_round_scoring",
+    "GameRunner",
 ]
