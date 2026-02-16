@@ -20,7 +20,7 @@ export default function CreateGamePage() {
             />
          </Head>
          <PageLayout title="CREATE GAME">
-            <div className="flex flex-col">
+            <div className="flex flex-col w-[425px] max-md:w-[300px]">
                <CreateGameSelections />
 
                <div className="pt-4 mt-4">
