@@ -2,10 +2,11 @@
 Game API: in-memory store, POST /games/start, GET /games/<id>, POST pass, POST play.
 """
 
+import random
 import uuid
 from typing import Any, Dict, Optional
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 
 from hearts.game.card import Card
 from hearts.game.runner import GameRunner
@@ -15,6 +16,11 @@ games_bp = Blueprint("games", __name__, url_prefix="/games")
 
 # In-memory store: game_id -> GameRunner (no persistence across restarts)
 _store: Dict[str, GameRunner] = {}
+
+
+def reset_store() -> None:
+    """Clear the in-memory game store. For tests only."""
+    _store.clear()
 
 
 def _get_runner(game_id: str) -> Optional[GameRunner]:
@@ -27,16 +33,25 @@ def _state_json(runner: GameRunner) -> Dict[str, Any]:
 
 @games_bp.route("/start", methods=["POST"])
 def start_game():
-    """Create a new game. Body optional: { "player_name": "You" }. Returns { "game_id": "<id>" }."""
+    """Create a new game. Body optional: { "player_name": "You", "seed": <int> }.
+    When TESTING is true, "seed" gives a deterministic game for tests.
+    Returns { "game_id": "<id>" }."""
     data = request.get_json() or {}
     player_name = (data.get("player_name") or "You").strip() or "You"
     game_id = uuid.uuid4().hex
-    pass_strategy = RandomPassStrategy()
-    play_strategy = RandomPlayStrategy()
+    rng = None
+    if current_app.config.get("TESTING") and "seed" in data:
+        try:
+            rng = random.Random(int(data["seed"]))
+        except (TypeError, ValueError):
+            pass
+    pass_strategy = RandomPassStrategy(rng=rng) if rng else RandomPassStrategy()
+    play_strategy = RandomPlayStrategy(rng=rng) if rng else RandomPlayStrategy()
     runner = GameRunner.new_game(
         pass_strategy,
         play_strategy,
         human_name=player_name,
+        rng=rng,
     )
     _store[game_id] = runner
     return jsonify({"game_id": game_id}), 201
