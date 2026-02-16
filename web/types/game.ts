@@ -50,3 +50,15 @@ export type SubmitPassBody = {
 export type SubmitPlayBody = {
   card: string;
 };
+
+/** One play in the sequence (human then AIs) after a submit_play. */
+export type PlayEvent = {
+  player_index: number;
+  card: string;
+};
+
+/** POST /games/:id/play response includes state plus animation hints. */
+export type PlayResponse = GameState & {
+  intermediate_plays?: PlayEvent[];
+  round_just_ended?: boolean;
+};

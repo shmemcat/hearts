@@ -5,6 +5,7 @@
 import { getApiUrl } from "@/lib/api";
 import type {
   GameState,
+  PlayResponse,
   StartGameBody,
   StartGameResponse,
   SubmitPassBody,
@@ -76,11 +77,29 @@ export async function submitPass(
   return { ok: true, data: data as GameState };
 }
 
-/** POST /games/:id/play – play one card */
+/** POST /games/:id/advance – run AI until human's turn (e.g. when AI has 2♣ after pass). */
+export async function advanceGame(
+  gameId: string
+): Promise<{ ok: true; data: PlayResponse } | { ok: false; error: string; notFound?: boolean }> {
+  const res = await fetch(
+    `${base()}/games/${encodeURIComponent(gameId)}/advance`,
+    { method: "POST" }
+  );
+  const data = await parseJson<PlayResponse & GameApiError>(res);
+  if (res.status === 404) {
+    return { ok: false, error: (data as GameApiError).error ?? "Game not found", notFound: true };
+  }
+  if (!res.ok) {
+    return { ok: false, error: (data as GameApiError).error ?? `Request failed (${res.status})` };
+  }
+  return { ok: true, data: data as PlayResponse };
+}
+
+/** POST /games/:id/play – play one card. Returns state + intermediate_plays, round_just_ended for animation. */
 export async function submitPlay(
   gameId: string,
   body: SubmitPlayBody
-): Promise<{ ok: true; data: GameState } | { ok: false; error: string; notFound?: boolean }> {
+): Promise<{ ok: true; data: PlayResponse } | { ok: false; error: string; notFound?: boolean }> {
   const res = await fetch(
     `${base()}/games/${encodeURIComponent(gameId)}/play`,
     {
@@ -89,12 +108,12 @@ export async function submitPlay(
       body: JSON.stringify(body),
     }
   );
-  const data = await parseJson<GameState & GameApiError>(res);
+  const data = await parseJson<PlayResponse & GameApiError>(res);
   if (res.status === 404) {
     return { ok: false, error: (data as GameApiError).error ?? "Game not found", notFound: true };
   }
   if (!res.ok) {
     return { ok: false, error: (data as GameApiError).error ?? `Request failed (${res.status})` };
   }
-  return { ok: true, data: data as GameState };
+  return { ok: true, data: data as PlayResponse };
 }

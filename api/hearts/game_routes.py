@@ -87,6 +87,27 @@ def submit_pass(game_id: str):
     return jsonify(_state_json(runner))
 
 
+@games_bp.route("/<game_id>/advance", methods=["POST"])
+def advance_game(game_id: str):
+    """Run AI turns until human's turn or round end. Use when whose_turn is not 0 (e.g. AI has 2♣ after pass)."""
+    runner = _get_runner(game_id)
+    if runner is None:
+        return jsonify({"error": "Game not found"}), 404
+    state = runner.state
+    if state.phase.value != "playing":
+        return jsonify({"error": "Game is not in playing phase"}), 400
+    if state.whose_turn == 0:
+        return jsonify({"error": "Already human's turn"}), 400
+    try:
+        runner.advance_to_human_turn()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    payload = _state_json(runner)
+    payload["intermediate_plays"] = runner.get_last_play_events()
+    payload["round_just_ended"] = runner.get_last_round_ended()
+    return jsonify(payload)
+
+
 @games_bp.route("/<game_id>/play", methods=["POST"])
 def submit_play(game_id: str):
     """Play human's card. Body: { "card": "2c" }."""
@@ -105,4 +126,7 @@ def submit_play(game_id: str):
         runner.submit_play(card)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-    return jsonify(_state_json(runner))
+    payload = _state_json(runner)
+    payload["intermediate_plays"] = runner.get_last_play_events()
+    payload["round_just_ended"] = runner.get_last_round_ended()
+    return jsonify(payload)

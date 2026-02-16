@@ -53,6 +53,8 @@ class GameRunner:
         self._play_strategy = play_strategy
         self._player_names = player_names or DEFAULT_PLAYER_NAMES
         self._rng = rng or random.Random()
+        self._last_play_events: List[Dict[str, Any]] = []
+        self._last_round_ended: bool = False
 
     @property
     def state(self) -> GameState:
@@ -140,6 +142,8 @@ class GameRunner:
         )
         if card not in legal:
             raise ValueError("Illegal play")
+        self._last_play_events = [{"player_index": HUMAN_PLAYER, "card": card.to_code()}]
+        self._last_round_ended = False
         self._state = apply_play(self._state, HUMAN_PLAYER, card)
         self._run_ai_until_human_or_done()
 
@@ -167,11 +171,15 @@ class GameRunner:
             card = self._play_strategy.choose_play(
                 self._state, player, legal
             )
+            self._last_play_events.append(
+                {"player_index": player, "card": card.to_code()}
+            )
             self._state = apply_play(self._state, player, card)
             if _round_complete(self._state):
                 self._state = apply_round_scoring(self._state)
                 if self._state.game_over:
                     return
+                self._last_round_ended = True
                 hands = deal_into_4_hands(
                     shuffle_deck(deck_52(), rng=self._rng)
                 )
@@ -182,6 +190,23 @@ class GameRunner:
                 )
                 if self._state.phase == Phase.PASSING:
                     return
+
+    def advance_to_human_turn(self) -> None:
+        """
+        Run AI turns from current state until human's turn or round/game end.
+        Use when it's an AI's turn (e.g. AI has 2♣ after pass). Records plays in _last_play_events.
+        """
+        self._last_play_events = []
+        self._last_round_ended = False
+        self._run_ai_until_human_or_done()
+
+    def get_last_play_events(self) -> List[Dict[str, Any]]:
+        """After submit_play or advance_to_human_turn, returns the list of { player_index, card } in order."""
+        return list(self._last_play_events)
+
+    def get_last_round_ended(self) -> bool:
+        """After submit_play, True if the round just ended (scores applied, new round dealt)."""
+        return self._last_round_ended
 
     def get_state_for_frontend(self) -> Dict[str, Any]:
         """
