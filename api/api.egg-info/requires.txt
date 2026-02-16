@@ -1,0 +1,10 @@
+flask>=2.2.2
+gunicorn>=21.0.0
+flask-sqlalchemy>=3.1.0
+psycopg2-binary>=2.9.0
+argon2-cffi>=23.1.0
+pyjwt>=2.8.0
+flask-cors>=4.0.0
+flask-limiter>=3.5.0
+flask-mail>=0.9.1
+flask-migrate>=4.0.0

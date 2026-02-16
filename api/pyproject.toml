@@ -3,7 +3,7 @@ name = "api"
 version = "0.1.0"
 description = ""
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 dependencies = [
     "flask>=2.2.2",
     "gunicorn>=21.0.0",
@@ -16,3 +16,7 @@ dependencies = [
     "flask-mail>=0.9.1",
     "flask-migrate>=4.0.0",
 ]
+
+[tool.setuptools.packages.find]
+include = ["hearts*"]
+exclude = ["migrations*"]
