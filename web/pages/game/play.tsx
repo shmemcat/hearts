@@ -396,9 +396,19 @@ export default function PlayGamePage() {
                               state.players.map((p) => p.name)
                            )}
                            centerIcon={
-                              state.phase === "playing" &&
-                              state.hearts_broken ? (
-                                 <span aria-hidden="true">♥</span>
+                              state.phase === "playing" ? (
+                                 <span
+                                    aria-hidden
+                                    style={{
+                                       fontSize: "50px",
+                                       marginTop: "-10px",
+                                       color: state.hearts_broken
+                                          ? "hsl(0, 65%, 50%)"
+                                          : "var(--darkpink)",
+                                    }}
+                                 >
+                                    ♥
+                                 </span>
                               ) : undefined
                            }
                         />
