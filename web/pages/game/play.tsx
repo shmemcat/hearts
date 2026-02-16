@@ -5,23 +5,15 @@ import React, { useEffect, useState } from "react";
 
 import { Button } from "@/components/buttons";
 import { PageLayout, ButtonGroup } from "@/components/ui";
-import { getApiUrl } from "@/lib/api";
-
-type GameState = {
-   phase: string;
-   round: number;
-   human_hand: string[];
-   players: { name: string; score: number; card_count: number }[];
-   game_over?: boolean;
-   [key: string]: unknown;
-} | null;
+import { getGameState } from "@/lib/game-api";
+import type { GameState } from "@/types/game";
 
 export default function PlayGamePage() {
    const router = useRouter();
    const { game_id: gameId } = router.query;
    const [loading, setLoading] = useState(true);
    const [notFound, setNotFound] = useState(false);
-   const [state, setState] = useState<GameState>(null);
+   const [state, setState] = useState<GameState | null>(null);
    const [error, setError] = useState<string | null>(null);
 
    useEffect(() => {
@@ -33,24 +25,15 @@ export default function PlayGamePage() {
       setLoading(true);
       setNotFound(false);
       setError(null);
-      fetch(`${getApiUrl()}/games/${encodeURIComponent(gameId)}`)
-         .then((res) => {
+      getGameState(gameId)
+         .then((result) => {
             if (cancelled) return;
-            if (res.status === 404) {
-               setNotFound(true);
-               setLoading(false);
-               return;
+            if (result.ok) {
+               setState(result.data);
+            } else {
+               if (result.notFound) setNotFound(true);
+               else setError(result.error);
             }
-            if (!res.ok) {
-               setError(`Request failed (${res.status})`);
-               setLoading(false);
-               return;
-            }
-            return res.json();
-         })
-         .then((data) => {
-            if (cancelled) return;
-            if (data != null) setState(data);
             setLoading(false);
          })
          .catch((e) => {

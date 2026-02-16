@@ -100,8 +100,8 @@ html {
    --inputboxborder: hsl(231, 16%, 29%);
    --radiobutton: hsl(212, 60%, 80%);
    --warningicon: hsl(341, 81%, 84%);
-   --tooltipbackground: hsl(231, 16%, 29%);
-   --tooltiptext: hsl(341, 81%, 84%);
+   --tooltipbackground: hsl(231, 13%, 11%);
+   --tooltiptext: hsl(231, 16%, 29%);
 }
 
 body {
@@ -266,7 +266,7 @@ h2 {
    font-size: 24px;
    letter-spacing: 4pt;
    font-weight: 700;
-   margin: 16px;
+   margin-bottom: 16px;
 }
 
 h3 {

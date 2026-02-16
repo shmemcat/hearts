@@ -1,0 +1,60 @@
+.toggleLabel {
+   display: inline-flex;
+   cursor: pointer;
+   user-select: none;
+   position: relative;
+}
+
+.toggleLabel.checked .track {
+   background-color: var(--darkpink);
+}
+
+.toggleInput {
+   position: absolute;
+   opacity: 0;
+   width: 0;
+   height: 0;
+}
+
+.track {
+   position: relative;
+   display: inline-block;
+   width: 44px;
+   height: 24px;
+   flex-shrink: 0;
+   border-radius: 12px;
+   background-color: var(--inputboxborder);
+   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+   transition: background-color 0.2s ease;
+}
+
+.toggleInput:focus-visible + .track {
+   outline: 2px solid var(--radiobutton);
+   outline-offset: 2px;
+}
+
+.toggleInput:disabled + .track {
+   opacity: 0.55;
+   cursor: not-allowed;
+}
+
+.toggleLabel:has(.toggleInput:disabled) {
+   cursor: not-allowed;
+}
+
+.thumb {
+   position: absolute;
+   left: 4px;
+   top: 4px;
+   width: 16px;
+   height: 16px;
+   border-radius: 50%;
+   background-color: var(--white);
+   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+   transition: transform 0.2s ease-out;
+   transform: translateX(0);
+}
+
+.toggleLabel.checked .thumb {
+   transform: translateX(20px);
+}

@@ -1,5 +1,8 @@
 import React from "react";
 import containers from "@/styles/containers.module.css";
+import { Select, Toggle, type SelectOption } from "@/components/ui";
+
+export type NumAiPlayers = 0 | 1 | 2;
 
 export interface CreateGameSelectionsProps {
    className?: string;
@@ -8,6 +11,11 @@ export interface CreateGameSelectionsProps {
    onGameTypeChange?: (value: string) => void;
    difficulty?: string;
    onDifficultyChange?: (value: string) => void;
+   /** Online mode: include AI players (show toggle + dropdown) */
+   aiPlayersEnabled?: boolean;
+   onAiPlayersEnabledChange?: (value: boolean) => void;
+   numAiPlayers?: NumAiPlayers;
+   onNumAiPlayersChange?: (value: NumAiPlayers) => void;
 }
 
 export const CreateGameSelections: React.FC<CreateGameSelectionsProps> = ({
@@ -15,13 +23,24 @@ export const CreateGameSelections: React.FC<CreateGameSelectionsProps> = ({
    onGameTypeChange,
    difficulty: controlledDifficulty,
    onDifficultyChange,
+   aiPlayersEnabled: controlledAiEnabled,
+   onAiPlayersEnabledChange,
+   numAiPlayers: controlledNumAi,
+   onNumAiPlayersChange,
 }) => {
    const [internalGameType, setInternalGameType] = React.useState("Versus AI");
    const [internalDifficulty, setInternalDifficulty] = React.useState("Easy");
+   const [internalAiEnabled, setInternalAiEnabled] = React.useState(false);
+   const [internalNumAi, setInternalNumAi] = React.useState<NumAiPlayers>(0);
+
    const gameType = controlledGameType ?? internalGameType;
    const setGameType = onGameTypeChange ?? setInternalGameType;
    const difficulty = controlledDifficulty ?? internalDifficulty;
    const setDifficulty = onDifficultyChange ?? setInternalDifficulty;
+   const aiPlayersEnabled = controlledAiEnabled ?? internalAiEnabled;
+   const setAiPlayersEnabled = onAiPlayersEnabledChange ?? setInternalAiEnabled;
+   const numAiPlayers = controlledNumAi ?? internalNumAi;
+   const setNumAiPlayers = onNumAiPlayersChange ?? setInternalNumAi;
 
    function onChangeValue(event: React.ChangeEvent<HTMLInputElement>) {
       const value = event.target.value;
@@ -60,6 +79,13 @@ export const CreateGameSelections: React.FC<CreateGameSelectionsProps> = ({
                difficulty={difficulty}
                onDifficultyChange={setDifficulty}
             />
+         ) : gameType === "Online" ? (
+            <OnlineAiOptions
+               aiPlayersEnabled={aiPlayersEnabled}
+               onAiPlayersEnabledChange={setAiPlayersEnabled}
+               numAiPlayers={numAiPlayers}
+               onNumAiPlayersChange={setNumAiPlayers}
+            />
          ) : null}
       </>
    );
@@ -76,7 +102,7 @@ const Difficulty: React.FC<{
 
    return (
       <>
-         <div className="pt-4">
+         <div className="pt-6">
             <h2>AI Difficulty</h2>
          </div>
          <div className={containers["create-button-container"]}>
@@ -115,5 +141,62 @@ const Difficulty: React.FC<{
             </label>
          </div>
       </>
+   );
+};
+
+const OnlineAiOptions: React.FC<{
+   aiPlayersEnabled: boolean;
+   onAiPlayersEnabledChange: (value: boolean) => void;
+   numAiPlayers: NumAiPlayers;
+   onNumAiPlayersChange: (value: NumAiPlayers) => void;
+}> = ({
+   aiPlayersEnabled,
+   onAiPlayersEnabledChange,
+   numAiPlayers,
+   onNumAiPlayersChange,
+}) => {
+   const numOptions: SelectOption<NumAiPlayers>[] = [
+      { value: 0, label: "0" },
+      { value: 1, label: "1" },
+      { value: 2, label: "2" },
+   ];
+
+   return (
+      <div className={containers["create-online-ai-section"]}>
+         <h2>AI Players</h2>
+         <div className={containers["create-online-ai-inner"]}>
+            <div className={containers["create-toggle-row"]}>
+               <span className={containers["create-toggle-label"]}>
+                  <span className={containers["create-toggle-label-long"]}>
+                     Include AI players
+                  </span>
+                  <span className={containers["create-toggle-label-short"]}>
+                     Include
+                  </span>
+               </span>
+               <Toggle
+                  checked={aiPlayersEnabled}
+                  onCheckedChange={onAiPlayersEnabledChange}
+                  aria-label="Include AI players"
+               />
+            </div>
+            <div className={containers["create-select-row"]}>
+               <label
+                  htmlFor="num-ai-players"
+                  className={containers["create-select-label"]}
+               >
+                  Number
+               </label>
+               <Select<NumAiPlayers>
+                  id="num-ai-players"
+                  value={numAiPlayers}
+                  onChange={onNumAiPlayersChange}
+                  options={numOptions}
+                  disabled={!aiPlayersEnabled}
+                  aria-label="Number of AI players"
+               />
+            </div>
+         </div>
+      </div>
    );
 };

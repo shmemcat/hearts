@@ -43,7 +43,7 @@
 .title-container {
    display: flex;
    flex-direction: column;
-   height: 160px;
+   height: 150px;
    width: 90vw;
 }
 
@@ -122,13 +122,73 @@
    text-transform: uppercase;
    font-weight: 600;
    background-color: var(--mediumpink);
-   padding: 30px;
-   padding-left: 50px;
-   padding-right: 50px;
+   padding: 20px;
+   padding-left: 40px;
+   padding-right: 40px;
    align-items: center;
    justify-content: center;
    border-radius: 20px;
-   gap: 30px;
+   gap: 20px;
+}
+
+/* Online: AI players section (toggle + dropdown) */
+.create-online-ai-section {
+   padding-top: 24px;
+}
+
+.create-online-ai-inner {
+   font-family: "appFont";
+   color: var(--header);
+   letter-spacing: 2pt;
+   text-transform: uppercase;
+   font-weight: 600;
+   background-color: var(--mediumpink);
+   padding: 20px 28px;
+   border-radius: 20px;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 18px;
+}
+
+.create-toggle-row {
+   display: flex;
+   align-items: center;
+   gap: 24px;
+}
+
+.create-toggle-label {
+   flex: 1;
+   font-size: 16px;
+   letter-spacing: 4px;
+   text-align: right;
+}
+
+.create-toggle-label-short {
+   display: none;
+}
+
+@media only screen and (max-width: 768px) {
+   .create-toggle-label-long {
+      display: none;
+   }
+
+   .create-toggle-label-short {
+      display: inline;
+   }
+}
+
+.create-select-row {
+   display: flex;
+   align-items: center;
+   gap: 24px;
+}
+
+.create-select-label {
+   flex: 1;
+   font-size: 16px;
+   letter-spacing: 4px;
+   text-align: right;
 }
 
 /* for re-sized desktop */

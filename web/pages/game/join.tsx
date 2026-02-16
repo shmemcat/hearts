@@ -26,32 +26,32 @@ export default function JoinGamePage() {
                game lobby link.
             </p>
             <br />
-            <div className="flex gap-5 items-center">
+            <div className="flex items-center">
                <form>
                   <FormInput
                      type="text"
                      name="lobby_code"
                      placeholder="Lobby Code"
-                     width="160px"
                      fontWeight={600}
-                     inputStyle={{ padding: "5px 12px" }}
                   />
                </form>
+            </div>
+            <LoginWarning />
+            <ButtonGroup padding="tight" className="pt-2">
                <Tooltip content="Coming soon!">
                   <div className="inline-block">
                      <Button
-                        name="Join"
+                        name="Join!"
                         disabled
-                        style={{ width: "100px", height: "30px" }}
+                        style={{ width: "150px", height: "50px" }}
                      />
                   </div>
                </Tooltip>
-            </div>
-            <br />
-            <LoginWarning />
-            <ButtonGroup padding="tight" className="pt-5">
                <Link href="/">
-                  <Button name="Home" style={{ width: "150px" }} />
+                  <Button
+                     name="Home"
+                     style={{ width: "150px", marginTop: "8px" }}
+                  />
                </Link>
             </ButtonGroup>
          </PageLayout>
