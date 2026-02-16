@@ -1,5 +1,6 @@
 """
-API route tests for game endpoints: POST /games/start, GET /games/<id>, POST pass, POST play.
+API route tests for game endpoints: POST /games/start, GET /games/<id>, POST pass,
+POST /games/<id>/advance, POST play.
 """
 
 import pytest
@@ -131,6 +132,74 @@ class TestSubmitPass:
         assert data["phase"] == "playing"
         # After pass, each player still has 13 cards (gave 3, received 3)
         assert len(data["human_hand"]) == 13
+
+
+# -----------------------------------------------------------------------------
+# POST /games/<game_id>/advance
+# -----------------------------------------------------------------------------
+
+class TestAdvanceGame:
+    def test_advance_nonexistent_returns_404(self, client):
+        r = client.post("/games/bad-id/advance")
+        assert r.status_code == 404
+        data = r.get_json()
+        assert "error" in data
+        assert "not found" in data["error"].lower()
+
+    def test_advance_while_passing_returns_400(self, client):
+        start_r = client.post("/games/start", json={})
+        game_id = start_r.get_json()["game_id"]
+        r = client.post(f"/games/{game_id}/advance")
+        assert r.status_code == 400
+        data = r.get_json()
+        assert "error" in data
+        assert "playing" in data["error"].lower() or "phase" in data["error"].lower()
+
+    def test_advance_when_human_turn_returns_400(self, client):
+        from hearts.game_routes import reset_store
+        for seed in range(50):
+            reset_store()
+            start_r = client.post("/games/start", json={"seed": seed})
+            game_id = start_r.get_json()["game_id"]
+            state = client.get(f"/games/{game_id}").get_json()
+            three_cards = state["human_hand"][:3]
+            client.post(f"/games/{game_id}/pass", json={"cards": three_cards})
+            state = client.get(f"/games/{game_id}").get_json()
+            if state["phase"] != "playing" or state["whose_turn"] != 0:
+                continue
+            r = client.post(f"/games/{game_id}/advance")
+            assert r.status_code == 400, r.get_json()
+            data = r.get_json()
+            assert "error" in data
+            assert "human" in data["error"].lower() or "turn" in data["error"].lower()
+            return
+        pytest.fail("No seed in 0..49 gave human the lead after pass")
+
+    def test_advance_when_ai_turn_returns_200_and_advances_to_human_or_pass(self, client):
+        from hearts.game_routes import reset_store
+        for seed in range(50):
+            reset_store()
+            start_r = client.post("/games/start", json={"seed": seed})
+            game_id = start_r.get_json()["game_id"]
+            state = client.get(f"/games/{game_id}").get_json()
+            three_cards = state["human_hand"][:3]
+            client.post(f"/games/{game_id}/pass", json={"cards": three_cards})
+            state = client.get(f"/games/{game_id}").get_json()
+            if state["phase"] != "playing" or state["whose_turn"] == 0:
+                continue
+            r = client.post(f"/games/{game_id}/advance")
+            assert r.status_code == 200, r.get_json()
+            data = r.get_json()
+            assert "phase" in data
+            assert "intermediate_plays" in data
+            assert "round_just_ended" in data
+            assert isinstance(data["intermediate_plays"], list)
+            if data["phase"] == "playing":
+                assert data["whose_turn"] == 0
+            else:
+                assert data["phase"] == "passing"
+            return
+        pytest.fail("No seed in 0..49 gave AI the lead after pass")
 
 
 # -----------------------------------------------------------------------------

@@ -27,18 +27,37 @@ export const Hand: React.FC<HandProps> = ({
 }) => {
   const sorted = React.useMemo(() => [...cards].sort(compareCardCodes), [cards]);
 
+  /* Symmetric arc: center card at 0°, others fan out by index (e.g. 4° per card). */
+  const centerIndex = (sorted.length - 1) / 2;
+  const degPerCard = 4;
+  const wrap = (code: string, index: number, card: React.ReactNode) => {
+    const rotation = (index - centerIndex) * degPerCard;
+    return (
+      <div
+        key={code}
+        className={styles.handCardWrap}
+        style={{ transform: `rotate(${rotation}deg)` }}
+      >
+        {card}
+      </div>
+    );
+  };
+
   if (selectionMode && selectedCodes) {
     return (
       <div className={styles.hand} role="group" aria-label="Your hand">
-        {sorted.map((code) => (
-          <Card
-            key={code}
-            code={code}
-            selected={selectedCodes.has(code)}
-            onClick={() => onCardClick?.(code)}
-            size={size}
-          />
-        ))}
+        {sorted.map((code, i) =>
+          wrap(
+            code,
+            i,
+            <Card
+              code={code}
+              selected={selectedCodes.has(code)}
+              onClick={() => onCardClick?.(code)}
+              size={size}
+            />
+          )
+        )}
       </div>
     );
   }
@@ -46,24 +65,25 @@ export const Hand: React.FC<HandProps> = ({
   if (legalCodes !== undefined) {
     return (
       <div className={styles.hand} role="group" aria-label="Your hand">
-        {sorted.map((code) => (
-          <Card
-            key={code}
-            code={code}
-            disabled={!legalCodes.has(code)}
-            onClick={onCardClick ? () => onCardClick(code) : undefined}
-            size={size}
-          />
-        ))}
+        {sorted.map((code, i) =>
+          wrap(
+            code,
+            i,
+            <Card
+              code={code}
+              disabled={!legalCodes.has(code)}
+              onClick={onCardClick ? () => onCardClick(code) : undefined}
+              size={size}
+            />
+          )
+        )}
       </div>
     );
   }
 
   return (
     <div className={styles.hand} role="group" aria-label="Your hand">
-      {sorted.map((code) => (
-        <Card key={code} code={code} size={size} />
-      ))}
+      {sorted.map((code, i) => wrap(code, i, <Card code={code} size={size} />))}
     </div>
   );
 };

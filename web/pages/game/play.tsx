@@ -7,12 +7,26 @@ import { Button } from "@/components/buttons";
 import { Hand } from "@/components/game/Hand";
 import { Trick } from "@/components/game/Trick";
 import { PageLayout, ButtonGroup } from "@/components/ui";
-import { advanceGame, getGameState, submitPass, submitPlay } from "@/lib/game-api";
-import type { CurrentTrickSlot, GameState, PlayEvent, PlayResponse } from "@/types/game";
+import {
+   advanceGame,
+   getGameState,
+   submitPass,
+   submitPlay,
+} from "@/lib/game-api";
+import type {
+   CurrentTrickSlot,
+   GameState,
+   PlayEvent,
+   PlayResponse,
+} from "@/types/game";
 import styles from "@/styles/play.module.css";
 
 const AI_PLAY_DELAY_MS = 1000;
 const ROUND_END_DELAY_MS = 3000;
+
+/** PageLayout body classes without top margin (mt-10) for play page layout */
+const PLAY_PAGE_LAYOUT_CLASS =
+   "w-[85vw] flex flex-col items-center justify-center text-center";
 
 function buildSlotsFromPlays(plays: PlayEvent[]): CurrentTrickSlot[] {
    const slots: CurrentTrickSlot[] = [null, null, null, null];
@@ -20,6 +34,12 @@ function buildSlotsFromPlays(plays: PlayEvent[]): CurrentTrickSlot[] {
       slots[p.player_index] = { player_index: p.player_index, card: p.card };
    }
    return slots;
+}
+
+/** Reorder trick slots for table layout: API order 0,1,2,3 → display order bottom(0), top(2), left(1), right(3) so turn order is clockwise left (user→AI1→AI2→AI3). */
+function reorderSlotsForTableLayout<T>(arr: T[]): T[] {
+   if (arr.length < 4) return arr;
+   return [arr[0], arr[2], arr[1], arr[3]];
 }
 
 export default function PlayGamePage() {
@@ -31,7 +51,9 @@ export default function PlayGamePage() {
    const [error, setError] = useState<string | null>(null);
    const [submitting, setSubmitting] = useState(false);
    const [passSelection, setPassSelection] = useState<Set<string>>(new Set());
-   const [displayTrickSlots, setDisplayTrickSlots] = useState<CurrentTrickSlot[] | null>(null);
+   const [displayTrickSlots, setDisplayTrickSlots] = useState<
+      CurrentTrickSlot[] | null
+   >(null);
    const animationTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
    useEffect(() => {
@@ -51,20 +73,18 @@ export default function PlayGamePage() {
       setDisplayTrickSlots(buildSlotsFromPlays(plays.slice(0, 1)));
       for (let i = 1; i < plays.length; i++) {
          const t = setTimeout(
-            () => setDisplayTrickSlots(buildSlotsFromPlays(plays.slice(0, i + 1))),
+            () =>
+               setDisplayTrickSlots(buildSlotsFromPlays(plays.slice(0, i + 1))),
             AI_PLAY_DELAY_MS * i
          );
          animationTimeoutsRef.current.push(t);
       }
       const delayUntilDone = AI_PLAY_DELAY_MS * plays.length;
       const roundEndExtra = data.round_just_ended ? ROUND_END_DELAY_MS : 0;
-      const t = setTimeout(
-         () => {
-            setDisplayTrickSlots(null);
-            setSubmitting(false);
-         },
-         delayUntilDone + roundEndExtra
-      );
+      const t = setTimeout(() => {
+         setDisplayTrickSlots(null);
+         setSubmitting(false);
+      }, delayUntilDone + roundEndExtra);
       animationTimeoutsRef.current.push(t);
    }, []);
 
@@ -102,7 +122,11 @@ export default function PlayGamePage() {
                   })
                   .catch((e) => {
                      if (cancelled) return;
-                     setError(e instanceof Error ? e.message : "Failed to advance game");
+                     setError(
+                        e instanceof Error
+                           ? e.message
+                           : "Failed to advance game"
+                     );
                      setLoading(false);
                   });
             } else {
@@ -142,7 +166,10 @@ export default function PlayGamePage() {
             }
             setState(result.data);
             setPassSelection(new Set());
-            if (result.data.phase === "playing" && result.data.whose_turn !== 0) {
+            if (
+               result.data.phase === "playing" &&
+               result.data.whose_turn !== 0
+            ) {
                advanceGame(gameId)
                   .then((advResult) => {
                      if (!advResult.ok) {
@@ -153,7 +180,9 @@ export default function PlayGamePage() {
                      runPlayResponseAnimation(advResult.data);
                   })
                   .catch((e) => {
-                     setError(e instanceof Error ? e.message : "Advance failed");
+                     setError(
+                        e instanceof Error ? e.message : "Advance failed"
+                     );
                      setSubmitting(false);
                   });
             } else {
@@ -194,7 +223,11 @@ export default function PlayGamePage() {
                <title>Play Game | Hearts</title>
                <link rel="icon" href="/images/favicon.ico" />
             </Head>
-            <PageLayout title="PLAY GAME" hideTitleBlock>
+            <PageLayout
+               title="PLAY GAME"
+               hideTitleBlock
+               className={PLAY_PAGE_LAYOUT_CLASS}
+            >
                <p>No game specified.</p>
                <ButtonGroup className="pt-4">
                   <Link href="/game/create">
@@ -216,7 +249,11 @@ export default function PlayGamePage() {
                <title>Play Game | Hearts</title>
                <link rel="icon" href="/images/favicon.ico" />
             </Head>
-            <PageLayout title="PLAY GAME" hideTitleBlock>
+            <PageLayout
+               title="PLAY GAME"
+               hideTitleBlock
+               className={PLAY_PAGE_LAYOUT_CLASS}
+            >
                <div className="animate-pulse flex flex-col gap-4 w-full max-w-md">
                   <div className="h-8 bg-gray-200 rounded w-1/3" />
                   <div className="h-24 bg-gray-200 rounded" />
@@ -234,7 +271,11 @@ export default function PlayGamePage() {
                <title>Game Not Found | Hearts</title>
                <link rel="icon" href="/images/favicon.ico" />
             </Head>
-            <PageLayout title="PLAY GAME" hideTitleBlock>
+            <PageLayout
+               title="PLAY GAME"
+               hideTitleBlock
+               className={PLAY_PAGE_LAYOUT_CLASS}
+            >
                <p>Game not found.</p>
                <ButtonGroup className="pt-4">
                   <Link href="/game/create">
@@ -256,7 +297,11 @@ export default function PlayGamePage() {
                <title>Play Game | Hearts</title>
                <link rel="icon" href="/images/favicon.ico" />
             </Head>
-            <PageLayout title="PLAY GAME" hideTitleBlock>
+            <PageLayout
+               title="PLAY GAME"
+               hideTitleBlock
+               className={PLAY_PAGE_LAYOUT_CLASS}
+            >
                <p className="text-red-600" role="alert">
                   {error}
                </p>
@@ -282,7 +327,11 @@ export default function PlayGamePage() {
             <title>Play Game | Hearts</title>
             <link rel="icon" href="/images/favicon.ico" />
          </Head>
-         <PageLayout title="PLAY GAME" hideTitleBlock>
+         <PageLayout
+            title="PLAY GAME"
+            hideTitleBlock
+            className={PLAY_PAGE_LAYOUT_CLASS}
+         >
             {state && (
                <div className={styles.playContent}>
                   <header className={styles.playHeader}>
@@ -293,23 +342,116 @@ export default function PlayGamePage() {
                         )}
                      </span>
                      <span className={styles.playPhase}>{state.phase}</span>
-                     <div className={styles.playScores}>
-                        {state.players.map((p, i) => (
-                           <span key={i}>
-                              {p.name}: {p.score}
-                           </span>
-                        ))}
-                     </div>
                   </header>
 
-                  <Trick
-                     slots={
-                        state.phase === "passing"
-                           ? [null, null, null, null]
-                           : (displayTrickSlots ?? state.current_trick)
-                     }
-                     playerNames={state.players.map((p) => p.name)}
-                  />
+                  <div className={styles.gameTable}>
+                     {/* Top (player 2 – second AI, clockwise left from user) */}
+                     <div
+                        className={`${styles.gameTableSeat} ${
+                           styles.gameTableSeatTop
+                        } ${
+                           state.phase === "playing" &&
+                           !state.game_over &&
+                           state.whose_turn === 2
+                              ? styles.gameTableSeatYourTurn
+                              : ""
+                        }`}
+                     >
+                        <span className={styles.gameTableSeatName}>
+                           {state.players[2]?.name ?? "—"}
+                        </span>
+                        <span className={styles.gameTableSeatScore}>
+                           {state.players[2]?.score ?? 0}
+                        </span>
+                     </div>
+                     {/* Left (player 1 – first AI, clockwise left from user) */}
+                     <div
+                        className={`${styles.gameTableSeat} ${
+                           styles.gameTableSeatLeft
+                        } ${
+                           state.phase === "playing" &&
+                           !state.game_over &&
+                           state.whose_turn === 1
+                              ? styles.gameTableSeatYourTurn
+                              : ""
+                        }`}
+                     >
+                        <span className={styles.gameTableSeatName}>
+                           {state.players[1]?.name ?? "—"}
+                        </span>
+                        <span className={styles.gameTableSeatScore}>
+                           {state.players[1]?.score ?? 0}
+                        </span>
+                     </div>
+                     {/* Center: trick + hearts broken */}
+                     <div className={styles.tableCenter}>
+                        <Trick
+                           layout="table"
+                           slots={reorderSlotsForTableLayout(
+                              state.phase === "passing"
+                                 ? [null, null, null, null]
+                                 : displayTrickSlots ?? state.current_trick
+                           )}
+                           playerNames={reorderSlotsForTableLayout(
+                              state.players.map((p) => p.name)
+                           )}
+                           centerIcon={
+                              state.phase === "playing" &&
+                              state.hearts_broken ? (
+                                 <span aria-hidden="true">♥</span>
+                              ) : undefined
+                           }
+                        />
+                     </div>
+                     {/* Right (player 3) */}
+                     <div
+                        className={`${styles.gameTableSeat} ${
+                           styles.gameTableSeatRight
+                        } ${
+                           state.phase === "playing" &&
+                           !state.game_over &&
+                           state.whose_turn === 3
+                              ? styles.gameTableSeatYourTurn
+                              : ""
+                        }`}
+                     >
+                        <span className={styles.gameTableSeatName}>
+                           {state.players[3]?.name ?? "—"}
+                        </span>
+                        <span className={styles.gameTableSeatScore}>
+                           {state.players[3]?.score ?? 0}
+                        </span>
+                     </div>
+                     {/* Bottom (player 0 = human) */}
+                     <div
+                        className={`${styles.gameTableSeat} ${
+                           styles.gameTableSeatBottom
+                        } ${
+                           state.phase === "playing" &&
+                           !state.game_over &&
+                           state.whose_turn === 0
+                              ? styles.gameTableSeatYourTurn
+                              : ""
+                        }`}
+                     >
+                        <span className={styles.gameTableSeatName}>
+                           {state.players[0]?.name ?? "You"}
+                        </span>
+                        <span className={styles.gameTableSeatScore}>
+                           {state.players[0]?.score ?? 0}
+                        </span>
+                     </div>
+                  </div>
+
+                  {state.phase === "playing" && (
+                     <p className={styles.playTurnHint}>
+                        {submitting
+                           ? "Playing…"
+                           : state.whose_turn === 0 && !state.game_over
+                           ? "Your turn"
+                           : "Waiting for others…"}
+                     </p>
+                  )}
 
                   {state.phase === "passing" && (
                      <>
@@ -319,7 +461,9 @@ export default function PlayGamePage() {
                         <Hand
                            cards={state.human_hand}
                            selectedCodes={passSelection}
-                           onCardClick={handlePassCardToggle}
+                           onCardClick={
+                              submitting ? undefined : handlePassCardToggle
+                           }
                            selectionMode
                         />
                         <div className={styles.passActions}>
@@ -338,7 +482,9 @@ export default function PlayGamePage() {
                         cards={state.human_hand}
                         legalCodes={new Set(state.legal_plays)}
                         onCardClick={
-                           state.whose_turn === 0 && !state.game_over
+                           !submitting &&
+                           state.whose_turn === 0 &&
+                           !state.game_over
                               ? handlePlayCard
                               : undefined
                         }
@@ -346,24 +492,37 @@ export default function PlayGamePage() {
                   )}
 
                   {state.game_over && (
-                     <p className={styles.gameOverMessage}>
-                        Game over.
-                        {state.winner_index != null &&
-                           state.players[state.winner_index] && (
-                              <> Winner: {state.players[state.winner_index].name}</>
-                           )}
-                     </p>
+                     <div className={styles.gameOverBlock}>
+                        <p className={styles.gameOverMessage}>
+                           Game over – Winner:{" "}
+                           {state.winner_index != null &&
+                           state.players[state.winner_index]
+                              ? state.players[state.winner_index].name
+                              : "—"}
+                        </p>
+                        <Link href="/game/create">
+                           <Button
+                              name="Create New Game"
+                              style={{ width: "250px", marginTop: "12px" }}
+                           />
+                        </Link>
+                     </div>
                   )}
                </div>
             )}
-            <ButtonGroup className="pt-4">
-               <Link href="/game/create">
-                  <Button name="Create New Game" style={{ width: "250px" }} />
-               </Link>
-               <Link href="/">
-                  <Button name="Home" style={{ width: "250px" }} />
-               </Link>
-            </ButtonGroup>
+            {state?.game_over ? null : (
+               <ButtonGroup className="pt-12">
+                  <Link href="/game/create">
+                     <Button
+                        name="Create New Game"
+                        style={{ width: "250px" }}
+                     />
+                  </Link>
+                  <Link href="/">
+                     <Button name="Home" style={{ width: "250px" }} />
+                  </Link>
+               </ButtonGroup>
+            )}
          </PageLayout>
       </>
    );

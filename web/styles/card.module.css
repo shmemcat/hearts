@@ -29,6 +29,13 @@
   font-size: 0.85rem;
 }
 
+.cardMedium {
+  width: 56px;
+  min-width: 56px;
+  height: 78px;
+  font-size: 0.9rem;
+}
+
 .cardSelected {
   border-color: var(--hoverpink);
   box-shadow: 0 0 0 3px var(--hoverpink);
