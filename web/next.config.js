@@ -2,7 +2,7 @@
 const path = require("path");
 
 const nextConfig = {
-  output: "export",
+  // Do not use output: "export" when using API routes (pages/api/*)
   reactStrictMode: true,
   images: {
     unoptimized: true,

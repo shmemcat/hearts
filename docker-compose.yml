@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:16-alpine
     ports:
-      - "5432:5432"
+      - '5432:5432'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-hearts}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hearts}
@@ -16,7 +16,7 @@ services:
       context: ./api
       dockerfile: Dockerfile
     ports:
-      - "5001:5000"
+      - '5001:5000'
     environment:
       FLASK_APP: hearts:app
       DATABASE_URL: postgresql://${POSTGRES_USER:-hearts}:${POSTGRES_PASSWORD:-hearts}@db:5432/${POSTGRES_DB:-hearts}
@@ -41,7 +41,7 @@ services:
         # Optional: set in .env or pass at build time for Font Awesome Pro
         - FONTAWESOME_PACKAGE_TOKEN=${FONTAWESOME_PACKAGE_TOKEN:-}
     ports:
-      - "3000:80"
+      - '3000:80'
     restart: unless-stopped
 
 volumes:

@@ -13,12 +13,13 @@ export interface PageLayoutProps {
    contentClassName?: string;
    /** Applied to the children wrapper (body content area) */
    className?: string;
+   /** When true, do not show the hearts logo or title */
+   hideTitleBlock?: boolean;
 }
 
 const bodyContentClasses =
    "mt-10 w-[85vw] flex flex-col items-center justify-center text-center";
 
-/** Same logo + title structure as index: original CSS .title-container + inline styles for overlap */
 const titleBlockInlineStyles = {
    logo: {
       marginTop: "-100px",
@@ -36,6 +37,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
    variant = "default",
    contentClassName,
    className,
+   hideTitleBlock = false,
 }) => (
    <div
       className={
@@ -46,14 +48,16 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
    >
       <Navbar />
       <div
-         className={`flex flex-col items-center justify-center mt-[140px] ${
-            contentClassName ?? ""
-         }`.trim()}
+         className={`flex flex-col items-center justify-center ${
+            hideTitleBlock ? "mt-6" : "mt-[140px]"
+         } ${contentClassName ?? ""}`.trim()}
       >
-         <div className={containers["title-container"]}>
-            <HeartsLogo style={titleBlockInlineStyles.logo} />
-            <h1 style={titleBlockInlineStyles.h1}>{title}</h1>
-         </div>
+         {!hideTitleBlock && (
+            <div className={containers["title-container"]}>
+               <HeartsLogo style={titleBlockInlineStyles.logo} />
+               <h1 style={titleBlockInlineStyles.h1}>{title}</h1>
+            </div>
+         )}
          <div className={className ?? bodyContentClasses}>{children}</div>
       </div>
    </div>

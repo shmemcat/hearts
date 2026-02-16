@@ -27,9 +27,21 @@ db.init_app(app)
 migrate = Migrate(app, db)
 limiter.init_app(app)
 mail.init_app(app)
-CORS(app, origins=os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(","))
+CORS(
+    app,
+    origins=[
+        o.strip()
+        for o in os.environ.get(
+            "CORS_ORIGINS", "http://localhost:3000,http://localhost:3001"
+        ).split(",")
+        if o.strip()
+    ],
+)
 
 from hearts.auth_routes import auth_bp  # noqa: E402
+from hearts.game_routes import games_bp  # noqa: E402
+
 app.register_blueprint(auth_bp)
+app.register_blueprint(games_bp)
 
 import hearts.test  # noqa: E402
