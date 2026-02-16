@@ -46,7 +46,7 @@ html {
    --black: hsl(0, 0%, 18%);
    --darkbrown: hsl(12, 6%, 33%);
    --header: hsl(12, 6%, 33%);
-   --buttontext: hsl(12, 6%, 33%);
+   --buttontext: hsl(343, 24%, 41%);
    --rulesbuttontext: hsl(12, 6%, 33%);
    --rulesbuttonselected: hsl(342, 36%, 64%);
    --text: hsl(12, 6%, 33%);
@@ -79,7 +79,7 @@ html {
    --lightpink: hsl(342, 36%, 64%);
    --heartslogo: hsl(231, 16%, 29%);
    --sparkle: hsl(0, 0%, 100%);
-   --buttontext: hsl(231, 13%, 11%);
+   --buttontext: hsl(343, 26%, 24%);
    --text: hsl(341, 81%, 84%);
    --texthighlight: hsl(336, 21%, 25%);
    --tan: hsl(335, 19%, 45%);
