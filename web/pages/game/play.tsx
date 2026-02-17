@@ -21,12 +21,18 @@ import type {
 } from "@/types/game";
 import styles from "@/styles/play.module.css";
 
-/** Interval for revealing plays one-by-one; only advances reveal.count, never mutates game state. */
-const REVEAL_INTERVAL_MS = 1000;
+/** One second per step: each card reveal, hold after trick, and cleared board. */
+const TRICK_STEP_MS = 1000;
 
 /** PageLayout body classes without top margin (mt-10) for play page layout */
 const PLAY_PAGE_LAYOUT_CLASS =
    "w-[85vw] flex flex-col items-center justify-center text-center";
+
+/**
+ * Terminology (this codebase):
+ * - TRICK = four cards, one per player; when a trick is won we show a cleared table, then the next player leads.
+ * - ROUND = all 13 tricks played. After a round we pass, then start the next round.
+ */
 
 /** Build trick slots by player: slot 0 = player 0 (You/bottom), 1 = AI1/left, 2 = AI2/top, 3 = AI3/right. So each card appears in the correct player's position. */
 function buildSlotsFromPlays(plays: PlayEvent[]): CurrentTrickSlot[] {
@@ -58,9 +64,11 @@ function reorderSlotsForTableLayout<T>(arr: T[]): T[] {
  *
  * 4) When it's AI's turn (useEffect): if !submitting && whose_turn !== 0, advanceGame → applyPlayResponse.
  *
- * 5) applyPlayResponse: setState(data) only (state never updated in a timer). If intermediate_plays,
- *    set reveal = { plays, count: 1 } and start one interval that only advances count;
- *    when done, set reveal = null and submitting false. Display = f(state, reveal).
+ * 5) applyPlayResponse: setState(data) only (state never updated in a timer). Trick display cycle (1s each):
+ *    leader card → clockwise 1 → clockwise 2 → clockwise 3 → hold 1s (full trick visible) → clear board 1s →
+ *    next trick leader, etc. When reveal finishes we schedule a 1s hold then set showTrickEndClear and clear
+ *    reveal; prevTrickRef is cleared so the next trick does not show previous cards. When round ends, phase
+ *    passing also clears the board. Display = f(state, reveal, showTrickEndClear).
  */
 export default function PlayGamePage() {
    const router = useRouter();
@@ -77,12 +85,26 @@ export default function PlayGamePage() {
       count: number;
       existingBefore: PlayEvent[];
    } | null>(null);
-   const revealIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+   const revealIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+      null
+   );
+   /** Timeout for "hold 1s then clear"; cleared when a new play response arrives. */
+   const holdClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+      null
+   );
+   /** When user plays during the 1s hold, we show clear then apply this response after 1s. */
+   const pendingPlayResponseRef = useRef<PlayResponse | null>(null);
+   const deferredApplyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+      null
+   );
    /** Block duplicate or stray card plays. */
    const isSubmittingPlayRef = useRef(false);
    /** Ref updated each render so applyPlayResponse can read "what was on the table" before we apply new state. */
    const prevTrickRef = useRef<PlayEvent[]>([]);
-
+   /** When true, show empty table: cleared state after each trick (trick won) until first card of next trick is played. */
+   const [showTrickEndClear, setShowTrickEndClear] = useState(false);
+   /** Set when API returns round_just_ended (round = all 13 tricks); used e.g. for round-over messaging. */
+   const roundJustEndedRef = useRef(false);
 
    useEffect(() => {
       return () => {
@@ -90,21 +112,45 @@ export default function PlayGamePage() {
             clearInterval(revealIntervalRef.current);
             revealIntervalRef.current = null;
          }
+         if (holdClearTimeoutRef.current) {
+            clearTimeout(holdClearTimeoutRef.current);
+            holdClearTimeoutRef.current = null;
+         }
+         if (deferredApplyTimeoutRef.current) {
+            clearTimeout(deferredApplyTimeoutRef.current);
+            deferredApplyTimeoutRef.current = null;
+            pendingPlayResponseRef.current = null;
+         }
       };
    }, []);
 
-   if (state?.phase === "playing" && state.current_trick) {
+   if (state?.phase === "playing" && state.current_trick && !showTrickEndClear) {
       const ct = (state.current_trick.filter(Boolean) ?? []) as PlayEvent[];
       prevTrickRef.current = ct;
+   } else if (state?.phase === "passing") {
+      prevTrickRef.current = [];
    }
 
    useEffect(() => {
       if (!state) return;
+      if (state.phase === "passing") {
+         // Round ended (all 13 tricks played): clear board and display state before next round.
+         setShowTrickEndClear(true);
+         setReveal(null);
+         setSubmitting(false);
+         isSubmittingPlayRef.current = false;
+         if (revealIntervalRef.current) {
+            clearInterval(revealIntervalRef.current);
+            revealIntervalRef.current = null;
+         }
+      }
       const ct = state.current_trick?.filter(Boolean) ?? [];
       console.log("[HEARTS] state/reveal changed", {
          phase: state.phase,
          current_trick_len: ct.length,
-         current_trick: ct.map((s) => (s ? `${s.player_index}:${s.card}` : null)),
+         current_trick: ct.map((s) =>
+            s ? `${s.player_index}:${s.card}` : null
+         ),
          reveal: reveal
             ? { count: reveal.count, plays_len: reveal.plays.length }
             : null,
@@ -113,6 +159,11 @@ export default function PlayGamePage() {
 
    /** Apply API response once; optionally reveal plays one-by-one via a single interval. State is never updated in a timer. */
    const applyPlayResponse = useCallback((data: PlayResponse) => {
+      if (deferredApplyTimeoutRef.current) {
+         clearTimeout(deferredApplyTimeoutRef.current);
+         deferredApplyTimeoutRef.current = null;
+         pendingPlayResponseRef.current = null;
+      }
       const plays = data.intermediate_plays ?? [];
       const currentTrickLen = data.current_trick?.filter(Boolean).length ?? 0;
       console.log("[HEARTS] applyPlayResponse called", {
@@ -120,47 +171,119 @@ export default function PlayGamePage() {
          current_trick_len: currentTrickLen,
          round_just_ended: data.round_just_ended,
          plays: plays.map((p) => `${p.player_index}:${p.card}`),
-         current_trick: (data.current_trick ?? []).map((s) => (s ? `${s.player_index}:${s.card}` : null)),
+         current_trick: (data.current_trick ?? []).map((s) =>
+            s ? `${s.player_index}:${s.card}` : null
+         ),
       });
+      setShowTrickEndClear(false);
+      if (holdClearTimeoutRef.current) {
+         clearTimeout(holdClearTimeoutRef.current);
+         holdClearTimeoutRef.current = null;
+         setShowTrickEndClear(true);
+         setReveal(null);
+         prevTrickRef.current = [];
+         setSubmitting(false);
+         isSubmittingPlayRef.current = false;
+         pendingPlayResponseRef.current = data;
+         deferredApplyTimeoutRef.current = setTimeout(() => {
+            deferredApplyTimeoutRef.current = null;
+            const pending = pendingPlayResponseRef.current;
+            pendingPlayResponseRef.current = null;
+            if (pending) applyPlayResponse(pending);
+         }, TRICK_STEP_MS);
+         return;
+      }
       if (revealIntervalRef.current) {
          clearInterval(revealIntervalRef.current);
          revealIntervalRef.current = null;
          console.log("[HEARTS] applyPlayResponse: cleared previous interval");
       }
+      if (data.round_just_ended) {
+         prevTrickRef.current = [];
+      }
       const refTrick = prevTrickRef.current ?? [];
       const existingLen = Math.max(0, refTrick.length - plays.length + 1);
-      const existingBefore = existingLen > 0 ? refTrick.slice(0, existingLen) : refTrick.slice();
-      console.log("[HEARTS] applyPlayResponse: existingBefore from ref", { ref_len: refTrick.length, plays_len: plays.length, existingLen, existingBefore_len: existingBefore.length, cards: existingBefore.map((p) => `${p.player_index}:${p.card}`) });
+      const existingBefore =
+         existingLen > 0 ? refTrick.slice(0, existingLen) : refTrick.slice();
+      console.log("[HEARTS] applyPlayResponse: existingBefore from ref", {
+         ref_len: refTrick.length,
+         plays_len: plays.length,
+         existingLen,
+         existingBefore_len: existingBefore.length,
+         cards: existingBefore.map((p) => `${p.player_index}:${p.card}`),
+      });
       setState(data);
       if (plays.length === 0) {
-         console.log("[HEARTS] applyPlayResponse: no plays, setReveal(null), submitting=false");
+         console.log(
+            "[HEARTS] applyPlayResponse: no plays, setReveal(null), submitting=false"
+         );
          setReveal(null);
          setSubmitting(false);
          isSubmittingPlayRef.current = false;
+         if (data.round_just_ended) setShowTrickEndClear(true);
          return;
       }
-      console.log("[HEARTS] applyPlayResponse: setReveal({ plays, count: 1, existingBefore }), starting interval");
+      roundJustEndedRef.current = Boolean(data.round_just_ended);
+      console.log(
+         "[HEARTS] applyPlayResponse: setReveal({ plays, count: 1, existingBefore }), starting interval"
+      );
       setReveal({ plays, count: 1, existingBefore });
       const id = setInterval(() => {
          setReveal((prev) => {
             if (!prev || prev.plays !== plays) {
-               console.log("[HEARTS] interval tick: stale prev or different plays, skipping");
+               console.log(
+                  "[HEARTS] interval tick: stale prev or different plays, skipping"
+               );
                return prev;
             }
             const next = prev.count + 1;
             if (next > plays.length) {
-               console.log("[HEARTS] interval: reveal done", { next, plays_length: plays.length });
+               const totalShown = prev.existingBefore.length + plays.length;
+               const trickComplete = totalShown > 0 && totalShown % 4 === 0;
+               console.log("[HEARTS] interval: reveal done", {
+                  next,
+                  plays_length: plays.length,
+                  totalShown,
+                  trickComplete,
+               });
                clearInterval(id);
-               if (revealIntervalRef.current === id) revealIntervalRef.current = null;
-               setReveal(null);
-               setSubmitting(false);
-               isSubmittingPlayRef.current = false;
+               if (revealIntervalRef.current === id)
+                  revealIntervalRef.current = null;
+               if (trickComplete) {
+                  prevTrickRef.current = [];
+                  const playsRef = plays;
+                  holdClearTimeoutRef.current = setTimeout(() => {
+                     holdClearTimeoutRef.current = null;
+                     setShowTrickEndClear(true);
+                     setSubmitting(false);
+                     isSubmittingPlayRef.current = false;
+                     if (roundJustEndedRef.current)
+                        roundJustEndedRef.current = false;
+                     setReveal((current) =>
+                        current?.plays !== playsRef ? current : null
+                     );
+                  }, TRICK_STEP_MS);
+               } else {
+                  const playsRef = plays;
+                  setTimeout(() => {
+                     setSubmitting(false);
+                     isSubmittingPlayRef.current = false;
+                     setReveal((current) =>
+                        current?.plays !== playsRef ? current : null
+                     );
+                  }, 0);
+               }
                return prev;
             }
-            console.log("[HEARTS] interval tick: count", prev.count, "->", next);
+            console.log(
+               "[HEARTS] interval tick: count",
+               prev.count,
+               "->",
+               next
+            );
             return { plays, count: next, existingBefore: prev.existingBefore };
          });
-      }, REVEAL_INTERVAL_MS);
+      }, TRICK_STEP_MS);
       revealIntervalRef.current = id;
    }, []);
 
@@ -573,39 +696,61 @@ export default function PlayGamePage() {
                      </div>
                      {/* Center: trick + hearts broken */}
                      <div className={styles.tableCenter}>
-                        <Trick
-                           layout="table"
-                           slots={(() => {
-                              const phase = state.phase;
-                              const currentTrickFiltered = (state.current_trick?.filter(Boolean) ?? []) as PlayEvent[];
-                              const hasReveal = reveal !== null;
-                              console.log("[HEARTS] slots compute", {
-                                 phase,
-                                 current_trick_len: currentTrickFiltered.length,
-                                 reveal: hasReveal
-                                    ? { count: reveal!.count, plays_len: reveal!.plays.length }
-                                    : null,
+                        {(() => {
+                           const phase = state.phase;
+                           const currentTrickFiltered =
+                              (state.current_trick?.filter(Boolean) ??
+                                 []) as PlayEvent[];
+                           const hasReveal = reveal !== null;
+                           console.log("[HEARTS] slots compute", {
+                              phase,
+                              current_trick_len: currentTrickFiltered.length,
+                              reveal: hasReveal
+                                 ? {
+                                      count: reveal!.count,
+                                      plays_len: reveal!.plays.length,
+                                   }
+                                 : null,
+                           });
+                           let slots: CurrentTrickSlot[];
+                           if (showTrickEndClear) {
+                              // Cleared state: trick won, empty table until first card of next trick is played.
+                              slots = [null, null, null, null];
+                           } else if (phase === "passing") {
+                              console.log(
+                                 "[HEARTS] slots branch=passing -> empty"
+                              );
+                              slots = [null, null, null, null];
+                           } else if (reveal !== null) {
+                              const {
+                                 plays: revPlays,
+                                 count: revCount,
+                                 existingBefore,
+                              } = reveal;
+                              const n = Math.max(
+                                 1,
+                                 Math.min(revCount, revPlays.length)
+                              );
+                              const slice = revPlays.slice(0, n);
+                              const toShow = existingBefore.concat(slice);
+                              console.log("[HEARTS] slots branch=reveal", {
+                                 existingBefore_len: existingBefore.length,
+                                 revCount,
+                                 n,
+                                 slice_len: slice.length,
+                                 toShow_len: toShow.length,
+                                 toShow: toShow.map(
+                                    (p) => `${p.player_index}:${p.card}`
+                                 ),
                               });
-                              if (phase === "passing") {
-                                 console.log("[HEARTS] slots branch=passing -> empty");
-                                 return [null, null, null, null];
-                              }
-                              if (reveal !== null) {
-                                 const { plays: revPlays, count: revCount, existingBefore } = reveal;
-                                 const n = Math.max(1, Math.min(revCount, revPlays.length));
-                                 const slice = revPlays.slice(0, n);
-                                 const toShow = existingBefore.concat(slice);
-                                 console.log("[HEARTS] slots branch=reveal", {
-                                    existingBefore_len: existingBefore.length,
-                                    revCount,
-                                    n,
-                                    slice_len: slice.length,
-                                    toShow_len: toShow.length,
-                                    toShow: toShow.map((p) => `${p.player_index}:${p.card}`),
-                                 });
-                                 return buildSlotsFromPlays(toShow);
-                              }
-                              const padded: CurrentTrickSlot[] = [null, null, null, null];
+                              slots = buildSlotsFromPlays(toShow);
+                           } else {
+                              const padded: CurrentTrickSlot[] = [
+                                 null,
+                                 null,
+                                 null,
+                                 null,
+                              ];
                               for (const s of currentTrickFiltered)
                                  if (
                                     s &&
@@ -614,32 +759,52 @@ export default function PlayGamePage() {
                                     s.player_index < 4
                                  )
                                     padded[s.player_index] = s;
-                              console.log("[HEARTS] slots branch=state.current_trick", {
-                                 current_trick_len: currentTrickFiltered.length,
-                                 cards: currentTrickFiltered.map((p) => `${p.player_index}:${p.card}`),
-                              });
-                              return padded;
-                           })()}
-                           playerNames={reorderSlotsForTableLayout(
-                              state.players.map((p) => p.name)
-                           )}
-                           centerIcon={
-                              state.phase === "playing" ? (
-                                 <span
-                                    aria-hidden
-                                    style={{
-                                       fontSize: "50px",
-                                       marginTop: "-10px",
-                                       color: state.hearts_broken
-                                          ? "hsl(0, 65%, 50%)"
-                                          : "var(--darkpink)",
-                                    }}
-                                 >
-                                    ♥
-                                 </span>
-                              ) : undefined
+                              console.log(
+                                 "[HEARTS] slots branch=state.current_trick",
+                                 {
+                                    current_trick_len:
+                                       currentTrickFiltered.length,
+                                    cards: currentTrickFiltered.map(
+                                       (p) => `${p.player_index}:${p.card}`
+                                    ),
+                                 }
+                              );
+                              slots = padded;
                            }
-                        />
+                           const heartOrQueenOnTable = slots.some(
+                              (s) =>
+                                 s &&
+                                 (s.card.toLowerCase().endsWith("h") ||
+                                    s.card.toLowerCase() === "qs")
+                           );
+                           const heartsBrokenForDisplay =
+                              state.hearts_broken || heartOrQueenOnTable;
+                           return (
+                              <Trick
+                                 layout="table"
+                                 slots={slots}
+                                 playerNames={reorderSlotsForTableLayout(
+                                    state.players.map((p) => p.name)
+                                 )}
+                                 centerIcon={
+                                    state.phase === "playing" ? (
+                                       <span
+                                          aria-hidden
+                                          style={{
+                                             fontSize: "50px",
+                                             marginTop: "-10px",
+                                             color: heartsBrokenForDisplay
+                                                ? "hsl(0, 65%, 50%)"
+                                                : "var(--darkpink)",
+                                          }}
+                                       >
+                                          ♥
+                                       </span>
+                                    ) : undefined
+                                 }
+                              />
+                           );
+                        })()}
                      </div>
                      {/* Right (player 3) */}
                      <div

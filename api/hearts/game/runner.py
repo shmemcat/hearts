@@ -1,10 +1,11 @@
 """
 Game runner: holds state, submits human pass/play, runs AI until human turn or round end.
 Exposes get_state_for_frontend() for the API.
+Supports optional callbacks (on_play, on_trick_complete, on_done) for WebSocket streaming.
 """
 
 import random
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from hearts.game.card import Card, deck_52, shuffle_deck, deal_into_4_hands, two_of_clubs
 from hearts.game.rules import get_legal_plays, is_valid_pass
@@ -113,11 +114,17 @@ class GameRunner:
         ]
         self._state = apply_passes(self._state, passes)
 
-    def submit_play(self, card: Card) -> None:
+    def submit_play(
+        self,
+        card: Card,
+        *,
+        on_play: Optional[Callable[[Dict[str, Any]], None]] = None,
+        on_trick_complete: Optional[Callable[[], None]] = None,
+        on_done: Optional[Callable[[Dict[str, Any]], None]] = None,
+    ) -> None:
         """
-        Play human's card. Validate, apply, then run AI turns until human's turn again
-        or round/game ends. When a round ends, apply_round_scoring and optionally
-        deal_new_round; if new round is passing phase, stop (API will call submit_pass next).
+        Play human's card. Validate, apply, then run AI until human's turn or round end.
+        Optional callbacks are used for WebSocket streaming.
         """
         if self._state.phase != Phase.PLAYING:
             raise ValueError("Not in playing phase")
@@ -142,15 +149,31 @@ class GameRunner:
         )
         if card not in legal:
             raise ValueError("Illegal play")
-        self._last_play_events = [{"player_index": HUMAN_PLAYER, "card": card.to_code()}]
+        play_event = {"player_index": HUMAN_PLAYER, "card": card.to_code()}
+        self._last_play_events = [play_event]
         self._last_round_ended = False
         self._state = apply_play(self._state, HUMAN_PLAYER, card)
-        self._run_ai_until_human_or_done()
+        if on_play:
+            on_play(play_event)
+        if on_trick_complete and self._state.phase == Phase.PLAYING and len(self._state.current_trick) == 0:
+            on_trick_complete()
+        self._run_ai_until_human_or_done(
+            on_play=on_play,
+            on_trick_complete=on_trick_complete,
+            on_done=on_done,
+        )
 
-    def _run_ai_until_human_or_done(self) -> None:
+    def _run_ai_until_human_or_done(
+        self,
+        on_play: Optional[Callable[[Dict[str, Any]], None]] = None,
+        on_trick_complete: Optional[Callable[[], None]] = None,
+        on_done: Optional[Callable[[Dict[str, Any]], None]] = None,
+    ) -> None:
         """Run AI turns until it's human's turn or game/round ends (passing phase)."""
         while not self._state.game_over and self._state.phase == Phase.PLAYING:
             if self._state.whose_turn == HUMAN_PLAYER:
+                if on_done:
+                    on_done(self.get_state_for_frontend())
                 return
             player = self._state.whose_turn
             hand = self._state.hand(player)
@@ -171,13 +194,18 @@ class GameRunner:
             card = self._play_strategy.choose_play(
                 self._state, player, legal
             )
-            self._last_play_events.append(
-                {"player_index": player, "card": card.to_code()}
-            )
+            play_event = {"player_index": player, "card": card.to_code()}
+            self._last_play_events.append(play_event)
             self._state = apply_play(self._state, player, card)
+            if on_play:
+                on_play(play_event)
+            if on_trick_complete and self._state.phase == Phase.PLAYING and len(self._state.current_trick) == 0:
+                on_trick_complete()
             if _round_complete(self._state):
                 self._state = apply_round_scoring(self._state)
                 if self._state.game_over:
+                    if on_done:
+                        on_done(self.get_state_for_frontend())
                     return
                 self._last_round_ended = True
                 hands = deal_into_4_hands(
@@ -189,16 +217,30 @@ class GameRunner:
                     hands,
                 )
                 if self._state.phase == Phase.PASSING:
+                    if on_done:
+                        payload = self.get_state_for_frontend()
+                        payload["round_just_ended"] = True
+                        on_done(payload)
                     return
 
-    def advance_to_human_turn(self) -> None:
+    def advance_to_human_turn(
+        self,
+        *,
+        on_play: Optional[Callable[[Dict[str, Any]], None]] = None,
+        on_trick_complete: Optional[Callable[[], None]] = None,
+        on_done: Optional[Callable[[Dict[str, Any]], None]] = None,
+    ) -> None:
         """
-        Run AI turns from current state until human's turn or round/game end.
-        Use when it's an AI's turn (e.g. AI has 2♣ after pass). Records plays in _last_play_events.
+        Run AI turns until human's turn or round/game end.
+        Optional callbacks are used for WebSocket streaming.
         """
         self._last_play_events = []
         self._last_round_ended = False
-        self._run_ai_until_human_or_done()
+        self._run_ai_until_human_or_done(
+            on_play=on_play,
+            on_trick_complete=on_trick_complete,
+            on_done=on_done,
+        )
 
     def get_last_play_events(self) -> List[Dict[str, Any]]:
         """After submit_play or advance_to_human_turn, returns the list of { player_index, card } in order."""

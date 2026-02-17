@@ -3,11 +3,23 @@
 import os
 from flask import Flask
 from flask_cors import CORS
+from flask_socketio import SocketIO
 
 from hearts.extensions import db, limiter, mail
 from flask_migrate import Migrate
 
 app = Flask(__name__)
+socketio = SocketIO(
+    app,
+    cors_allowed_origins=[
+        o.strip()
+        for o in os.environ.get(
+            "CORS_ORIGINS", "http://localhost:3000,http://localhost:3001"
+        ).split(",")
+        if o.strip()
+    ],
+    async_mode="eventlet",
+)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL", "sqlite:///hearts.db"
 )
@@ -40,8 +52,10 @@ CORS(
 
 from hearts.auth_routes import auth_bp  # noqa: E402
 from hearts.game_routes import games_bp  # noqa: E402
+from hearts.game_socket import register_game_socket  # noqa: E402
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(games_bp)
+register_game_socket(socketio)
 
 import hearts.test  # noqa: E402
