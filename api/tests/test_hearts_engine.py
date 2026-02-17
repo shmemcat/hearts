@@ -8,7 +8,7 @@ import pytest
 from hearts.game.card import Card, Suit, deck_52, shuffle_deck, deal_into_4_hands, two_of_clubs
 from hearts.game.rules import get_legal_plays, get_trick_winner, get_trick_points, is_valid_pass
 from hearts.game.state import GameState, Phase, PassDirection, initial_state_after_deal
-from hearts.game.transitions import apply_passes, apply_play, apply_round_scoring, deal_new_round
+from hearts.game.transitions import apply_passes, apply_play, apply_round_scoring, deal_new_round, _is_first_lead
 from hearts.game.runner import GameRunner
 from hearts.ai import RandomPassStrategy, RandomPlayStrategy
 
@@ -20,44 +20,44 @@ from hearts.ai import RandomPassStrategy, RandomPlayStrategy
 class TestGetLegalPlays:
     def test_first_lead_of_round_must_play_2c_if_in_hand(self):
         hand = [two_of_clubs(), Card(Suit.HEARTS, 14), Card(Suit.CLUBS, 10)]
-        legal = get_legal_plays(hand, [], True, False, first_lead_of_round=True)
+        legal = get_legal_plays(hand, [], False, first_lead_of_round=True)
         assert legal == [two_of_clubs()]
 
     def test_first_lead_of_round_no_2c_returns_all_legal_leads(self):
         hand = [Card(Suit.CLUBS, 5), Card(Suit.DIAMONDS, 10)]
-        legal = get_legal_plays(hand, [], True, False, first_lead_of_round=True)
+        legal = get_legal_plays(hand, [], False, first_lead_of_round=True)
         assert set(legal) == set(hand)
 
     def test_leading_hearts_not_broken_cannot_lead_hearts(self):
         hand = [Card(Suit.HEARTS, 10), Card(Suit.CLUBS, 5)]
-        legal = get_legal_plays(hand, [], True, False)
+        legal = get_legal_plays(hand, [], False)
         assert legal == [Card(Suit.CLUBS, 5)]
 
     def test_leading_hearts_broken_can_lead_any(self):
         hand = [Card(Suit.HEARTS, 10), Card(Suit.CLUBS, 5)]
-        legal = get_legal_plays(hand, [], True, True)
+        legal = get_legal_plays(hand, [], True)
         assert set(legal) == set(hand)
 
     def test_leading_only_hearts_can_lead_hearts_even_not_broken(self):
         hand = [Card(Suit.HEARTS, 10), Card(Suit.HEARTS, 14)]
-        legal = get_legal_plays(hand, [], True, False)
+        legal = get_legal_plays(hand, [], False)
         assert set(legal) == set(hand)
 
     def test_must_follow_suit(self):
         lead = Card(Suit.CLUBS, 5)
         trick = [(0, lead)]
         hand = [Card(Suit.CLUBS, 10), Card(Suit.HEARTS, 14)]
-        legal = get_legal_plays(hand, trick, False, True)
+        legal = get_legal_plays(hand, trick, True)
         assert legal == [Card(Suit.CLUBS, 10)]
 
     def test_void_in_lead_suit_can_play_any(self):
         trick = [(0, Card(Suit.CLUBS, 5))]
         hand = [Card(Suit.HEARTS, 14), Card(Suit.SPADES, 12)]
-        legal = get_legal_plays(hand, trick, False, True)
+        legal = get_legal_plays(hand, trick, True)
         assert set(legal) == set(hand)
 
     def test_empty_hand_returns_empty(self):
-        assert get_legal_plays([], [], True, False) == []
+        assert get_legal_plays([], [], False) == []
 
 
 # -----------------------------------------------------------------------------
@@ -155,12 +155,9 @@ class TestApplyPlay:
         state = state_playing_after_pass
         player = state.whose_turn
         hand_before = state.hand(player)
-        trick_list = state.trick_list()
-        is_first = sum(13 - len(state.hands[i]) for i in range(4)) < 4
-        first_lead = len(trick_list) == 0 and is_first and two_of_clubs() in hand_before
         legal = get_legal_plays(
-            hand_before, trick_list, is_first, state.hearts_broken,
-            first_lead_of_round=first_lead,
+            hand_before, state.trick_list(), state.hearts_broken,
+            first_lead_of_round=_is_first_lead(state, hand_before),
         )
         card = legal[0]
         state2 = apply_play(state, player, card)
@@ -173,11 +170,10 @@ class TestApplyPlay:
         for _ in range(4):
             player = state.whose_turn
             hand = state.hand(player)
-            trick_list = state.trick_list()
-            from hearts.game.rules import get_legal_plays
-            is_first = sum(13 - len(state.hands[i]) for i in range(4)) < 4
-            first_lead = len(trick_list) == 0 and is_first and two_of_clubs() in hand
-            legal = get_legal_plays(hand, trick_list, is_first, state.hearts_broken, first_lead_of_round=first_lead)
+            legal = get_legal_plays(
+                hand, state.trick_list(), state.hearts_broken,
+                first_lead_of_round=_is_first_lead(state, hand),
+            )
             card = rng.choice(legal)
             state = apply_play(state, player, card)
         assert len(state.current_trick) == 0

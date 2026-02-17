@@ -98,12 +98,10 @@ def apply_play(state: GameState, player_index: int, card: Card) -> GameState:
     if card not in hand:
         raise ValueError("Card not in hand")
     trick_list = state.trick_list()
-    is_first_trick = _is_first_trick_of_round(state)
-    first_lead = len(trick_list) == 0 and is_first_trick and two_of_clubs() in hand
+    first_lead = _is_first_lead(state, hand)
     legal = get_legal_plays(
         hand,
         trick_list,
-        is_first_trick,
         state.hearts_broken,
         first_lead_of_round=first_lead,
     )
@@ -167,7 +165,16 @@ def _replace_hand(
 def _is_first_trick_of_round(state: GameState) -> bool:
     """True if we're in the first trick of this round (no tricks completed yet)."""
     total_played = sum(13 - len(state.hands[i]) for i in range(4))
-    return total_played == 0
+    return total_played < 4
+
+
+def _is_first_lead(state: GameState, hand: List[Card]) -> bool:
+    """True if this player is about to make the very first lead of the round (must play 2 of clubs)."""
+    return (
+        len(state.current_trick) == 0
+        and _is_first_trick_of_round(state)
+        and two_of_clubs() in hand
+    )
 
 
 def apply_round_scoring(state: GameState) -> GameState:

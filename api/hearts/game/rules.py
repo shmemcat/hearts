@@ -17,7 +17,6 @@ from hearts.game.card import (
 def get_legal_plays(
     hand: List[Card],
     trick: List[Tuple[int, Card]],
-    is_first_trick: bool,
     hearts_broken: bool,
     *,
     first_lead_of_round: bool = False,
@@ -25,8 +24,8 @@ def get_legal_plays(
     """
     Return the list of cards the current player may play.
     - first_lead_of_round: if True and hand contains 2♣, only 2♣ is legal (first lead after pass).
-    - If leading (trick empty): cannot lead hearts until hearts_broken, unless hand is all hearts; Q♠ may be led anytime.
-    - If following: must follow suit if possible; on first trick, cannot play heart or Q♠ if you have a card in the suit led (clubs).
+    - If leading (trick empty): cannot lead hearts until hearts_broken, unless hand is all hearts.
+    - If following: must follow suit if possible.
     """
     if not hand:
         return []

@@ -16,6 +16,22 @@ from hearts.game.card import Card
 _sid_to_game_id: Dict[str, str] = {}
 
 
+def _make_callbacks(runner):
+    """Build the on_play / on_trick_complete / on_done callbacks for WebSocket streaming."""
+    def on_play(ev):
+        emit("play", ev, namespace="/game")
+
+    def on_trick_complete():
+        emit("trick_complete", {}, namespace="/game")
+
+    def on_done(s):
+        payload = dict(s)
+        payload["round_just_ended"] = runner.get_last_round_ended()
+        emit("state", payload, namespace="/game")
+
+    return on_play, on_trick_complete, on_done
+
+
 def register_game_socket(socketio):
     @socketio.on("connect", namespace="/game")
     def on_connect():
@@ -50,14 +66,7 @@ def register_game_socket(socketio):
             emit("error", {"message": "Already human's turn"}, namespace="/game")
             return
         try:
-            def on_play(ev):
-                emit("play", ev, namespace="/game")
-            def on_trick_complete():
-                emit("trick_complete", {}, namespace="/game")
-            def on_done(s):
-                payload = dict(s)
-                payload["round_just_ended"] = runner.get_last_round_ended()
-                emit("state", payload, namespace="/game")
+            on_play, on_trick_complete, on_done = _make_callbacks(runner)
             runner.advance_to_human_turn(on_play=on_play, on_trick_complete=on_trick_complete, on_done=on_done)
         except Exception as e:
             emit("error", {"message": str(e)}, namespace="/game")
@@ -82,14 +91,7 @@ def register_game_socket(socketio):
             emit("error", {"message": str(e)}, namespace="/game")
             return
         try:
-            def on_play(ev):
-                emit("play", ev, namespace="/game")
-            def on_trick_complete():
-                emit("trick_complete", {}, namespace="/game")
-            def on_done(s):
-                payload = dict(s)
-                payload["round_just_ended"] = runner.get_last_round_ended()
-                emit("state", payload, namespace="/game")
+            on_play, on_trick_complete, on_done = _make_callbacks(runner)
             runner.submit_play(card, on_play=on_play, on_trick_complete=on_trick_complete, on_done=on_done)
         except ValueError as e:
             emit("error", {"message": str(e)}, namespace="/game")

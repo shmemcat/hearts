@@ -4,7 +4,7 @@ Game API: in-memory store, POST /games/start, GET /games/<id>, POST pass, POST p
 
 import random
 import uuid
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from flask import Blueprint, request, jsonify, current_app
 
@@ -14,7 +14,6 @@ from hearts.ai.random_ai import RandomPassStrategy, RandomPlayStrategy
 
 games_bp = Blueprint("games", __name__, url_prefix="/games")
 
-# In-memory store: game_id -> GameRunner (no persistence across restarts)
 _store: Dict[str, GameRunner] = {}
 
 
@@ -25,10 +24,6 @@ def reset_store() -> None:
 
 def _get_runner(game_id: str) -> Optional[GameRunner]:
     return _store.get(game_id)
-
-
-def _state_json(runner: GameRunner) -> Dict[str, Any]:
-    return runner.get_state_for_frontend()
 
 
 @games_bp.route("/start", methods=["POST"])
@@ -63,7 +58,7 @@ def get_game(game_id: str):
     runner = _get_runner(game_id)
     if runner is None:
         return jsonify({"error": "Game not found"}), 404
-    return jsonify(_state_json(runner))
+    return jsonify(runner.get_state_for_frontend())
 
 
 @games_bp.route("/<game_id>/pass", methods=["POST"])
@@ -84,7 +79,7 @@ def submit_pass(game_id: str):
         runner.submit_pass(cards)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-    return jsonify(_state_json(runner))
+    return jsonify(runner.get_state_for_frontend())
 
 
 @games_bp.route("/<game_id>/advance", methods=["POST"])
@@ -102,7 +97,7 @@ def advance_game(game_id: str):
         runner.advance_to_human_turn()
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    payload = _state_json(runner)
+    payload = runner.get_state_for_frontend()
     payload["intermediate_plays"] = runner.get_last_play_events()
     payload["round_just_ended"] = runner.get_last_round_ended()
     return jsonify(payload)
@@ -126,7 +121,7 @@ def submit_play(game_id: str):
         runner.submit_play(card)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-    payload = _state_json(runner)
+    payload = runner.get_state_for_frontend()
     payload["intermediate_plays"] = runner.get_last_play_events()
     payload["round_just_ended"] = runner.get_last_round_ended()
     return jsonify(payload)

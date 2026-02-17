@@ -7,14 +7,15 @@ Supports optional callbacks (on_play, on_trick_complete, on_done) for WebSocket 
 import random
 from typing import Any, Callable, Dict, List, Optional
 
-from hearts.game.card import Card, deck_52, shuffle_deck, deal_into_4_hands, two_of_clubs
+from hearts.game.card import Card, deck_52, shuffle_deck, deal_into_4_hands
 from hearts.game.rules import get_legal_plays, is_valid_pass
-from hearts.game.state import GameState, Phase, PassDirection
+from hearts.game.state import GameState, Phase
 from hearts.game.transitions import (
     apply_passes,
     apply_play,
     apply_round_scoring,
     deal_new_round,
+    _is_first_lead,
 )
 
 from hearts.ai.base import PassStrategy, PlayStrategy
@@ -22,11 +23,6 @@ from hearts.ai.base import PassStrategy, PlayStrategy
 
 HUMAN_PLAYER = 0
 DEFAULT_PLAYER_NAMES = ("You", "AI 1", "AI 2", "AI 3")
-
-
-def _is_first_trick_of_round(state: GameState) -> bool:
-    total_played = sum(13 - len(state.hands[i]) for i in range(4))
-    return total_played < 4
 
 
 def _round_complete(state: GameState) -> bool:
@@ -133,19 +129,11 @@ class GameRunner:
         hand0 = self._state.hand(HUMAN_PLAYER)
         if card not in hand0:
             raise ValueError("Card not in hand")
-        trick_list = self._state.trick_list()
-        is_first_trick = _is_first_trick_of_round(self._state)
-        first_lead = (
-            len(trick_list) == 0
-            and is_first_trick
-            and two_of_clubs() in hand0
-        )
         legal = get_legal_plays(
             hand0,
-            trick_list,
-            is_first_trick,
+            self._state.trick_list(),
             self._state.hearts_broken,
-            first_lead_of_round=first_lead,
+            first_lead_of_round=_is_first_lead(self._state, hand0),
         )
         if card not in legal:
             raise ValueError("Illegal play")
@@ -163,6 +151,38 @@ class GameRunner:
             on_done=on_done,
         )
 
+    def _handle_round_end_if_needed(
+        self,
+        on_done: Optional[Callable[[Dict[str, Any]], None]] = None,
+    ) -> Optional[str]:
+        """If the round is complete, score it and deal the next round.
+
+        Returns None if round is not complete, "stop" if the caller should
+        return (game over or entering passing phase), or "continue" if a new
+        no-pass round was dealt and the AI loop should keep going.
+        """
+        if not _round_complete(self._state):
+            return None
+        self._state = apply_round_scoring(self._state)
+        if self._state.game_over:
+            if on_done:
+                on_done(self.get_state_for_frontend())
+            return "stop"
+        self._last_round_ended = True
+        hands = deal_into_4_hands(shuffle_deck(deck_52(), rng=self._rng))
+        self._state = deal_new_round(
+            self._state.scores,
+            self._state.round + 1,
+            hands,
+        )
+        if self._state.phase == Phase.PASSING:
+            if on_done:
+                payload = self.get_state_for_frontend()
+                payload["round_just_ended"] = True
+                on_done(payload)
+            return "stop"
+        return "continue"
+
     def _run_ai_until_human_or_done(
         self,
         on_play: Optional[Callable[[Dict[str, Any]], None]] = None,
@@ -171,29 +191,10 @@ class GameRunner:
     ) -> None:
         """Run AI turns until it's human's turn or game/round ends (passing phase)."""
         while not self._state.game_over and self._state.phase == Phase.PLAYING:
-            # Round may already be complete if the human played the last card
-            if _round_complete(self._state):
-                self._state = apply_round_scoring(self._state)
-                if self._state.game_over:
-                    if on_done:
-                        on_done(self.get_state_for_frontend())
-                    return
-                self._last_round_ended = True
-                hands = deal_into_4_hands(
-                    shuffle_deck(deck_52(), rng=self._rng)
-                )
-                self._state = deal_new_round(
-                    self._state.scores,
-                    self._state.round + 1,
-                    hands,
-                )
-                if self._state.phase == Phase.PASSING:
-                    if on_done:
-                        payload = self.get_state_for_frontend()
-                        payload["round_just_ended"] = True
-                        on_done(payload)
-                    return
-                # No-pass round: continue the loop to run AI plays
+            result = self._handle_round_end_if_needed(on_done)
+            if result == "stop":
+                return
+            if result == "continue":
                 continue
             if self._state.whose_turn == HUMAN_PLAYER:
                 if on_done:
@@ -201,19 +202,11 @@ class GameRunner:
                 return
             player = self._state.whose_turn
             hand = self._state.hand(player)
-            trick_list = self._state.trick_list()
-            is_first_trick = _is_first_trick_of_round(self._state)
-            first_lead = (
-                len(trick_list) == 0
-                and is_first_trick
-                and two_of_clubs() in hand
-            )
             legal = get_legal_plays(
                 hand,
-                trick_list,
-                is_first_trick,
+                self._state.trick_list(),
                 self._state.hearts_broken,
-                first_lead_of_round=first_lead,
+                first_lead_of_round=_is_first_lead(self._state, hand),
             )
             card = self._play_strategy.choose_play(
                 self._state, player, legal
@@ -225,27 +218,8 @@ class GameRunner:
                 on_play(play_event)
             if on_trick_complete and self._state.phase == Phase.PLAYING and len(self._state.current_trick) == 0:
                 on_trick_complete()
-            if _round_complete(self._state):
-                self._state = apply_round_scoring(self._state)
-                if self._state.game_over:
-                    if on_done:
-                        on_done(self.get_state_for_frontend())
-                    return
-                self._last_round_ended = True
-                hands = deal_into_4_hands(
-                    shuffle_deck(deck_52(), rng=self._rng)
-                )
-                self._state = deal_new_round(
-                    self._state.scores,
-                    self._state.round + 1,
-                    hands,
-                )
-                if self._state.phase == Phase.PASSING:
-                    if on_done:
-                        payload = self.get_state_for_frontend()
-                        payload["round_just_ended"] = True
-                        on_done(payload)
-                    return
+            if self._handle_round_end_if_needed(on_done) == "stop":
+                return
 
     def advance_to_human_turn(
         self,
@@ -294,19 +268,11 @@ class GameRunner:
             and not s.game_over
         ):
             hand0 = s.hand(HUMAN_PLAYER)
-            trick_list = s.trick_list()
-            is_first_trick = _is_first_trick_of_round(s)
-            first_lead = (
-                len(trick_list) == 0
-                and is_first_trick
-                and two_of_clubs() in hand0
-            )
             legal_cards = get_legal_plays(
                 hand0,
-                trick_list,
-                is_first_trick,
+                s.trick_list(),
                 s.hearts_broken,
-                first_lead_of_round=first_lead,
+                first_lead_of_round=_is_first_lead(s, hand0),
             )
             legal_plays = [c.to_code() for c in legal_cards]
         # current_trick in play order: slot 0 = 1st play (bottom), 1 = 2nd (left), 2 = 3rd (top), 3 = 4th (right)
