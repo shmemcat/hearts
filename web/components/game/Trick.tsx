@@ -41,10 +41,11 @@ export const Trick: React.FC<TrickProps> = ({
           const slot = slots[index];
           return (
             <div key={index} className={`${styles.trickTableSlot} ${className}`}>
-              {slot ? (
-                <Card code={slot.card} size="medium" />
-              ) : (
-                <div className={styles.trickSlotEmpty} aria-hidden="true" />
+              <div className={styles.trickSlotEmpty} aria-hidden="true" />
+              {slot && (
+                <div className={styles.trickSlotCard}>
+                  <Card code={slot.card} size="medium" />
+                </div>
               )}
             </div>
           );

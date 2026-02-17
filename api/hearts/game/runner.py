@@ -171,6 +171,30 @@ class GameRunner:
     ) -> None:
         """Run AI turns until it's human's turn or game/round ends (passing phase)."""
         while not self._state.game_over and self._state.phase == Phase.PLAYING:
+            # Round may already be complete if the human played the last card
+            if _round_complete(self._state):
+                self._state = apply_round_scoring(self._state)
+                if self._state.game_over:
+                    if on_done:
+                        on_done(self.get_state_for_frontend())
+                    return
+                self._last_round_ended = True
+                hands = deal_into_4_hands(
+                    shuffle_deck(deck_52(), rng=self._rng)
+                )
+                self._state = deal_new_round(
+                    self._state.scores,
+                    self._state.round + 1,
+                    hands,
+                )
+                if self._state.phase == Phase.PASSING:
+                    if on_done:
+                        payload = self.get_state_for_frontend()
+                        payload["round_just_ended"] = True
+                        on_done(payload)
+                    return
+                # No-pass round: continue the loop to run AI plays
+                continue
             if self._state.whose_turn == HUMAN_PLAYER:
                 if on_done:
                     on_done(self.get_state_for_frontend())

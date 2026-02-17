@@ -1,30 +1,47 @@
 /* Play page layout */
 
-.playHeader {
+/* ── Floating info pill (top-right corner) ───────────────── */
+.playInfoPill {
+   position: absolute;
+   top: 0;
+   right: -35px;
    display: flex;
-   flex-wrap: wrap;
    align-items: center;
-   justify-content: center;
-   gap: 16px 24px;
-   margin-bottom: 24px;
+   gap: 6px;
+   padding: 5px 12px;
+   background: var(--infopillbg);
+   border: 1px solid var(--infopillborder);
+   border-radius: 20px;
+   font-size: 0.75rem;
+   color: var(--infopilltext);
+   letter-spacing: 1px;
+   z-index: 2;
+   backdrop-filter: blur(6px);
+   -webkit-backdrop-filter: blur(6px);
+   pointer-events: none;
+}
+.playInfoRound {
+   font-weight: 700;
+}
+.playInfoDetail {
+   opacity: 0.7;
+}
+.playInfoDetail::before {
+   content: "·";
+   margin-right: 6px;
+   opacity: 0.5;
+}
+.playInfoPhase {
+   text-transform: uppercase;
    font-weight: 600;
+   opacity: 0.55;
+   font-size: 0.75rem;
    letter-spacing: 1px;
 }
-
-.playScores {
-   display: flex;
-   flex-wrap: wrap;
-   gap: 8px 16px;
-   align-items: center;
-   justify-content: center;
-}
-
-.playPhase {
-   padding: 6px 14px;
-   background: var(--mediumpink);
-   border-radius: 12px;
-   text-transform: uppercase;
-   font-size: 0.9rem;
+.playInfoPhase::before {
+   content: "·";
+   margin-right: 6px;
+   opacity: 0.5;
 }
 
 .playTurnHint {
@@ -71,31 +88,39 @@
 .trickSlotEmpty {
    width: 56px;
    height: 78px;
-   border: 2px dashed rgba(0, 0, 0, 0.2);
+   border: 2px dashed var(--trickslotempty);
    border-radius: 8px;
    background: transparent;
 }
 
-/* Curved fan: rotation per card via wrapper */
+/* Curved fan: gentle arc via rotation + vertical offset */
 .hand {
    display: flex;
    flex-wrap: nowrap;
    align-items: flex-end;
    justify-content: center;
-   gap: 2px 0;
+   gap: 0;
    margin-top: 16px;
-   padding: 0 8px;
+   padding: 0 8px 24px;
 }
 .handCardWrap {
    display: inline-block;
    transition: transform 0.15s ease;
+   transform-origin: center bottom;
+   margin: 0 -12px;
 }
-.handCardWrap:hover {
+.handCardWrap:first-child {
+   margin-left: 0;
+}
+.handCardWrap:last-child {
+   margin-right: 0;
+}
+.handCardWrap:hover:has(button:not(:disabled)) {
    z-index: 1;
 }
 
 .passActions {
-   margin-top: 20px;
+   margin-top: 8px;
    display: flex;
    flex-direction: column;
    align-items: center;
@@ -117,6 +142,13 @@
    text-align: center;
 }
 
+.gameOverTitle {
+   font-size: 1.4rem;
+   font-weight: 700;
+   color: var(--header);
+   margin-bottom: 12px;
+}
+
 .gameOverMessage {
    padding: 16px 24px;
    background: var(--mediumpink);
@@ -124,11 +156,182 @@
    font-weight: 600;
 }
 
+/* ── Round summary overlay (on top of game table) ────────── */
+.roundSummaryOverlay {
+   position: absolute;
+   inset: 0;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   z-index: 10;
+   background: rgba(255, 240, 245, 0.92);
+   border-radius: 16px;
+   animation: overlaySlideDown 0.35s ease-out;
+}
+
+@keyframes overlaySlideDown {
+   from {
+      opacity: 0;
+      transform: translateY(-20px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+
+.roundSummaryBlock {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   text-align: center;
+   padding: 24px 32px;
+   max-width: 420px;
+   width: 90%;
+}
+
+.roundSummaryTitle {
+   font-size: 1.2rem;
+   font-weight: 700;
+   color: var(--header);
+   margin-bottom: 16px;
+}
+
+/* ── Score table (shared by round summary + game over) ───── */
+.scoreTable {
+   width: 100%;
+   border-collapse: collapse;
+   margin: 0 auto;
+   font-size: 0.95rem;
+}
+.scoreTable th,
+.scoreTable td {
+   padding: 8px 16px;
+   text-align: center;
+   border-bottom: 1px solid var(--mediumpink);
+}
+.scoreTable th {
+   font-weight: 600;
+   color: var(--header);
+   text-transform: uppercase;
+   font-size: 0.8rem;
+   letter-spacing: 0.5px;
+}
+.scoreTable tbody tr:last-child td {
+   border-bottom: none;
+}
+
+.scoreTableWinner {
+   background: rgba(255, 182, 193, 0.3);
+   font-weight: 700;
+}
+
+.scoreDelta {
+   color: hsl(0, 65%, 50%);
+   font-weight: 600;
+}
+
+/* ── Seat score: hearts counter + trick-end delta animation ── */
+.seatScoreSep {
+   opacity: 0.5;
+}
+.seatHeartCount {
+   color: var(--cardredsuit);
+   font-weight: 600;
+}
+.heartDeltaBadge {
+   position: absolute;
+   top: 0px;
+   right: -5px;
+   padding: 3px 8px;
+   font-size: 0.7rem;
+   font-weight: 700;
+   color: #fff;
+   background: var(--cardredsuit);
+   border-radius: 8px;
+   pointer-events: none;
+   animation: heartDeltaPop 1s ease-out forwards;
+}
+
+@keyframes heartDeltaPop {
+   0% {
+      opacity: 0;
+      transform: translateY(-8px);
+   }
+   15% {
+      opacity: 1;
+      transform: translateY(0);
+   }
+   70% {
+      opacity: 1;
+      transform: translateY(0);
+   }
+   100% {
+      opacity: 0;
+      transform: translateY(0);
+   }
+}
+
+/* ── Received cards floating popup over user seat ─────────── */
+.receivedCardsFloat {
+   position: absolute;
+   bottom: -20px;
+   left: 50%;
+   transform: translateX(-50%);
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 6px;
+   padding: 10px 16px;
+   background: var(--receivedcardsbackground);
+   border: 2px solid var(--yourturnborder);
+   border-radius: 12px;
+   white-space: nowrap;
+   z-index: 5;
+   margin-bottom: 8px;
+   animation: receivedFloat 3s ease forwards;
+   pointer-events: none;
+}
+.receivedCardsLabel {
+   font-size: 0.8rem;
+   font-weight: 600;
+   color: var(--header);
+}
+.receivedCardsList {
+   display: flex;
+   gap: 8px;
+   justify-content: center;
+}
+
+@keyframes receivedFloat {
+   0% {
+      opacity: 0;
+      transform: translateX(-50%) translateY(6px);
+   }
+   12% {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+   }
+   75% {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+   }
+   100% {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-4px);
+   }
+}
+
 .playContent {
    position: relative;
    max-width: 1200px;
    width: 92%;
    margin: 0 auto;
+}
+
+/* Wrapper for the game table + round summary overlay */
+.gameTableWrapper {
+   position: relative;
 }
 
 /* Four-position table: 0=bottom, 1=left, 2=top, 3=right (clockwise from user) */
@@ -144,10 +347,12 @@
    justify-items: center;
    max-height: 390px;
    aspect-ratio: 1.4;
-   margin: 8px auto 32px;
+   margin: 8px auto 28px;
+   gap: 20px;
 }
 
 .gameTableSeat {
+   position: relative;
    display: flex;
    flex-direction: column;
    align-items: center;
@@ -175,13 +380,14 @@
    color: var(--header);
 }
 .gameTableSeatScore {
+   position: relative;
    font-size: 0.9rem;
    opacity: 0.9;
 }
 .gameTableSeatYourTurn {
-   outline: 2px solid var(--hoverpink);
+   outline: 2px solid var(--yourturnborder);
    outline-offset: 4px;
-   background: rgba(255, 182, 193, 0.25);
+   background: var(--yourturnbackground);
 }
 
 .tableCenter {
@@ -210,25 +416,85 @@
    align-items: center;
    gap: 4px;
 }
+.trickSlotCard {
+   position: absolute;
+   inset: 0;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}
 .trickTableSlotBottom {
    left: 50%;
    bottom: 0;
    transform: translate(-50%, 100%);
+}
+.trickTableSlotBottom .trickSlotCard {
+   animation: cardSlideUp 0.22s;
 }
 .trickTableSlotTop {
    left: 50%;
    top: 0;
    transform: translate(-50%, -100%);
 }
+.trickTableSlotTop .trickSlotCard {
+   animation: cardSlideDown 0.22s;
+}
 .trickTableSlotLeft {
    left: 0;
    top: 50%;
    transform: translate(-100%, -50%);
 }
+.trickTableSlotLeft .trickSlotCard {
+   animation: cardSlideFromLeft 0.22s;
+}
 .trickTableSlotRight {
    right: 0;
    top: 50%;
    transform: translate(100%, -50%);
+}
+.trickTableSlotRight .trickSlotCard {
+   animation: cardSlideFromRight 0.22s;
+}
+
+@keyframes cardSlideUp {
+   from {
+      opacity: 0;
+      transform: translateY(14px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+@keyframes cardSlideDown {
+   from {
+      opacity: 0;
+      transform: translateY(-14px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+@keyframes cardSlideFromLeft {
+   from {
+      opacity: 0;
+      transform: translateX(-14px);
+   }
+   to {
+      opacity: 1;
+      transform: translateX(0);
+   }
+}
+@keyframes cardSlideFromRight {
+   from {
+      opacity: 0;
+      transform: translateX(14px);
+   }
+   to {
+      opacity: 1;
+      transform: translateX(0);
+   }
 }
 .trickTableSlotLabel {
    font-size: 0.65rem;

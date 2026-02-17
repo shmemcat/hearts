@@ -11,10 +11,12 @@ import {
 import { LoginWarning } from "@/components/loginwarning";
 import { Tooltip } from "@/components/Tooltip";
 import { PageLayout, ButtonGroup } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
 import { startGame } from "@/lib/game-api";
 
 export default function CreateGamePage() {
    const router = useRouter();
+   const { user } = useAuth();
    const [gameType, setGameType] = React.useState("Versus AI");
    const [difficulty, setDifficulty] = React.useState("Easy");
    const [aiPlayersEnabled, setAiPlayersEnabled] = React.useState(false);
@@ -27,7 +29,9 @@ export default function CreateGamePage() {
       setError(null);
       setSubmitting(true);
       try {
-         const result = await startGame({});
+         const result = await startGame({
+            player_name: user?.name || undefined,
+         });
          if (result.ok) {
             const gameId = result.data.game_id;
             router.push(`/game/play?game_id=${encodeURIComponent(gameId)}`);

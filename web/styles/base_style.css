@@ -70,6 +70,20 @@ html {
    --warningicon: hsl(341, 81%, 84%);
    --tooltipbackground: hsl(350, 100%, 94%);
    --tooltiptext: hsla(342, 36%, 64%, 0.7);
+   --cardborder: hsl(12, 6%, 33%);
+   --cardborderdisabled: hsl(341, 14%, 73%);
+   --cardblacksuit: hsl(0, 0%, 18%);
+   --cardblacksuitdisabled: hsl(0, 0%, 72%);
+   --cardredsuit: hsl(0, 65%, 50%);
+   --cardredsuitdisabled: hsl(0, 40%, 78%);
+   --cardhighlight: hsl(342, 36%, 64%);
+   --trickslotempty: hsla(0, 0%, 18%, 0.2);
+   --yourturnborder: hsl(342, 36%, 64%);
+   --yourturnbackground: hsl(354, 93%, 94%);
+   --receivedcardsbackground: hsl(354, 93%, 94%);
+   --infopillbg: hsla(350, 60%, 92%, 0.85);
+   --infopillborder: hsl(350, 50%, 86%);
+   --infopilltext: hsl(342, 30%, 40%);
 }
 
 [data-theme="dark"] {
@@ -102,6 +116,20 @@ html {
    --warningicon: hsl(341, 81%, 84%);
    --tooltipbackground: hsl(231, 13%, 11%);
    --tooltiptext: hsl(231, 16%, 29%);
+   --cardborder: hsl(230, 15%, 48%);
+   --cardborderdisabled: hsl(231, 16%, 29%);
+   --cardblacksuit: hsl(212, 60%, 80%);
+   --cardblacksuitdisabled: hsl(231, 16%, 29%);
+   --cardredsuit: hsl(0, 65%, 50%);
+   --cardredsuitdisabled: hsl(0, 40%, 78%);
+   --cardhighlight: hsl(342, 36%, 64%);
+   --trickslotempty: hsl(231, 16%, 29%);
+   --yourturnborder: hsl(230, 15%, 48%);
+   --yourturnbackground: hsl(230, 16%, 29%);
+   --receivedcardsbackground: hsl(231, 17%, 23%);
+   --infopillbg: hsla(232, 15%, 22%, 0.85);
+   --infopillborder: hsl(232, 14%, 30%);
+   --infopilltext: hsl(341, 50%, 75%);
 }
 
 body {

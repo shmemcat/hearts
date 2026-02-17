@@ -6,9 +6,73 @@ const STEP_MS = 1000;
 /** Duration of the empty-board flash between tricks. */
 const CLEAR_MS = 500;
 
+/* ── Client-side trick winner detection ──────────────────────────────── */
+
+const RANK_ORDER: Record<string, number> = {
+   "2": 2,
+   "3": 3,
+   "4": 4,
+   "5": 5,
+   "6": 6,
+   "7": 7,
+   "8": 8,
+   "9": 9,
+   "10": 10,
+   J: 11,
+   Q: 12,
+   K: 13,
+   A: 14,
+};
+
+function cardSuit(code: string): string {
+   return code.slice(-1).toLowerCase();
+}
+
+function cardRankValue(code: string): number {
+   return RANK_ORDER[code.slice(0, -1)] ?? 0;
+}
+
+/**
+ * Compute trick winner (highest card of lead suit) and heart-card count.
+ * The first entry in `plays` is the lead; only cards matching the lead suit
+ * compete for winner.
+ */
+function computeTrickResult(
+   plays: PlayEvent[]
+): { winner: number; hearts: number } | null {
+   if (plays.length < 4) return null;
+   const leadSuit = cardSuit(plays[0].card);
+   let winner = plays[0];
+   let bestRank = cardRankValue(plays[0].card);
+   for (let i = 1; i < plays.length; i++) {
+      if (cardSuit(plays[i].card) === leadSuit) {
+         const rank = cardRankValue(plays[i].card);
+         if (rank > bestRank) {
+            bestRank = rank;
+            winner = plays[i];
+         }
+      }
+   }
+   let hearts = 0;
+   for (const p of plays) {
+      if (cardSuit(p.card) === "h") hearts += 1;
+      else if (p.card.toLowerCase() === "qs") hearts += 13;
+   }
+   return { winner: winner.player_index, hearts };
+}
+
+/* ── Types ────────────────────────────────────────────────────────────── */
+
 export type QueueItem =
    | { type: "play"; event: PlayEvent }
    | { type: "trick_complete" };
+
+export interface TrickResult {
+   winner: number;
+   hearts: number;
+   /** Monotonically increasing id so React can re-key animations. */
+   id: number;
+}
 
 const EMPTY_SLOTS: CurrentTrickSlot[] = [null, null, null, null];
 
@@ -21,13 +85,18 @@ export interface UsePlayQueueOptions {
  *
  * Drain model: "delay BEFORE show".
  *   play   -> wait 1s, show card, immediately process next
- *   trick_complete -> wait 1s (hold), clear board, wait 0.5s, process next
+ *   trick_complete -> compute trick result, wait 1s (hold), clear board, wait 0.5s, process next
  *
  * This means:
  *   - There is always a 1s gap after the human's instant card (the delay
  *     before the first queued AI card).
  *   - When the queue empties, onIdle fires immediately — no trailing 1s —
  *     so the human's legal moves appear the instant the last AI card is shown.
+ *
+ * Trick result tracking:
+ *   - Every play (queued or immediate) is recorded in trickPlaysRef.
+ *   - On trick_complete, the winner and heart count are computed client-side.
+ *   - trickResult is set during the 1s hold and cleared when the board clears.
  */
 export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
    const [displaySlots, setDisplaySlots] =
@@ -35,12 +104,18 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
    const [busy, setBusy] = useState(false);
    /** Player index of whoever is "active" during animation (for turn indicator). */
    const [currentTurn, setCurrentTurn] = useState<number | null>(null);
+   /** Result of the most recently completed trick (set during the hold). */
+   const [trickResult, setTrickResult] = useState<TrickResult | null>(null);
 
    const queueRef = useRef<QueueItem[]>([]);
    const processingRef = useRef(false);
    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
    const onIdleRef = useRef(onIdle);
    onIdleRef.current = onIdle;
+
+   /** Cards played in the current trick (in chronological order). */
+   const trickPlaysRef = useRef<PlayEvent[]>([]);
+   const trickCounterRef = useRef(0);
 
    const processNext = useCallback(() => {
       const queue = queueRef.current;
@@ -60,6 +135,7 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
 
          timerRef.current = setTimeout(() => {
             queue.shift();
+            trickPlaysRef.current.push(item.event);
             setDisplaySlots((prev) => {
                const next = [...prev];
                const idx = item.event.player_index;
@@ -75,8 +151,20 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
          }, STEP_MS);
       } else if (item.type === "trick_complete") {
          queue.shift();
+
+         // Compute who won the trick and how many hearts were in it
+         const result = computeTrickResult(trickPlaysRef.current);
+         trickPlaysRef.current = [];
+         if (result && result.hearts > 0) {
+            setTrickResult({
+               ...result,
+               id: ++trickCounterRef.current,
+            });
+         }
+
          // Hold 1s so user can see all 4 cards, then clear, then 0.5s empty
          timerRef.current = setTimeout(() => {
+            setTrickResult(null);
             setDisplaySlots(EMPTY_SLOTS);
             setCurrentTurn(null);
             timerRef.current = setTimeout(processNext, CLEAR_MS);
@@ -102,6 +190,7 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
 
    /** Show a card on the table immediately (for human plays). */
    const showImmediately = useCallback((event: PlayEvent) => {
+      trickPlaysRef.current.push(event);
       setDisplaySlots((prev) => {
          const next = [...prev];
          const idx = event.player_index;
@@ -126,8 +215,10 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
       }
       queueRef.current = [];
       processingRef.current = false;
+      trickPlaysRef.current = [];
       setBusy(false);
       setCurrentTurn(null);
+      setTrickResult(null);
       setDisplaySlots(EMPTY_SLOTS);
    }, []);
 
@@ -135,6 +226,7 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
       displaySlots,
       busy,
       currentTurn,
+      trickResult,
       enqueue,
       showImmediately,
       setSlots,

@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/buttons";
+import { Card } from "@/components/game/Card";
 import { Hand } from "@/components/game/Hand";
 import { Trick } from "@/components/game/Trick";
 import { PageLayout, ButtonGroup } from "@/components/ui";
@@ -56,6 +57,15 @@ export default function PlayGamePage() {
    const [error, setError] = useState<string | null>(null);
    const [submitting, setSubmitting] = useState(false); // pass phase only
    const [passSelection, setPassSelection] = useState<Set<string>>(new Set());
+   const [roundSummary, setRoundSummary] = useState<{
+      deltas: number[];
+      round: number;
+      players: { name: string; score: number }[];
+   } | null>(null);
+   const [receivedCards, setReceivedCards] = useState<string[] | null>(null);
+   const [heartsPerPlayer, setHeartsPerPlayer] = useState<number[]>([
+      0, 0, 0, 0,
+   ]);
 
    // ── Refs for WS callbacks (stable across renders) ──────────────────
    const pendingStateRef = useRef<GameSocketState | null>(null);
@@ -63,6 +73,13 @@ export default function PlayGamePage() {
    const advanceSentRef = useRef(false);
    const stateRef = useRef(state);
    stateRef.current = state;
+   const prevScoresRef = useRef<number[]>([0, 0, 0, 0]);
+   const roundPendingStateRef = useRef<GameSocketState | null>(null);
+   const setRoundSummaryRef = useRef(setRoundSummary);
+   setRoundSummaryRef.current = setRoundSummary;
+   const receivedCardsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+      null
+   );
 
    // ── Play queue (animation) ─────────────────────────────────────────
    const applyPendingState = useCallback(() => {
@@ -70,9 +87,36 @@ export default function PlayGamePage() {
       if (!pending) return;
       pendingStateRef.current = null;
       advanceSentRef.current = false;
+
+      // Intercept round-end: show round summary instead of transitioning
+      if (pending.round_just_ended) {
+         const deltas = pending.players.map(
+            (p: { score: number }, i: number) =>
+               p.score - prevScoresRef.current[i]
+         );
+         prevScoresRef.current = pending.players.map(
+            (p: { score: number }) => p.score
+         );
+         roundPendingStateRef.current = pending;
+         const currentRound = stateRef.current?.round ?? 1;
+         setRoundSummaryRef.current({
+            deltas,
+            round: currentRound,
+            players: pending.players.map(
+               (p: { name: string; score: number }) => ({
+                  name: p.name,
+                  score: p.score,
+               })
+            ),
+         });
+         return;
+      }
+
       setState(pending);
+      prevScoresRef.current = pending.players.map(
+         (p: { score: number }) => p.score
+      );
       if (pending.phase === "passing") {
-         // Will be handled by reset below via the hook reference
          resetRef.current();
       }
    }, []);
@@ -89,6 +133,7 @@ export default function PlayGamePage() {
       displaySlots,
       busy,
       currentTurn,
+      trickResult,
       enqueue,
       showImmediately,
       setSlots,
@@ -138,10 +183,7 @@ export default function PlayGamePage() {
    // ── WebSocket: event subscriptions ─────────────────────────────────
    useEffect(() => {
       const unsubPlay = onGameSocketPlay((ev: PlayEvent) => {
-         if (
-            ev.player_index === 0 &&
-            ev.card === lastHumanCardRef.current
-         ) {
+         if (ev.player_index === 0 && ev.card === lastHumanCardRef.current) {
             lastHumanCardRef.current = null;
             return;
          }
@@ -199,6 +241,9 @@ export default function PlayGamePage() {
             const data = result.data;
             setState(data);
             setLoading(false);
+            prevScoresRef.current = data.players.map(
+               (p: { score: number }) => p.score
+            );
 
             // Restore board if there are cards on the table already
             if (data.phase === "playing" && data.current_trick) {
@@ -239,6 +284,7 @@ export default function PlayGamePage() {
          state.whose_turn === 0 ||
          loading ||
          busy ||
+         receivedCards !== null ||
          advanceSentRef.current
       ) {
          return;
@@ -282,9 +328,40 @@ export default function PlayGamePage() {
       state?.game_over,
       loading,
       busy,
+      receivedCards,
       enqueue,
       enqueueRestPlays,
    ]);
+
+   // ── Auto-clear received cards after 3s ────────────────────────────
+   useEffect(() => {
+      if (!receivedCards) return;
+      receivedCardsTimerRef.current = setTimeout(() => {
+         setReceivedCards(null);
+      }, 3000);
+      return () => {
+         if (receivedCardsTimerRef.current) {
+            clearTimeout(receivedCardsTimerRef.current);
+            receivedCardsTimerRef.current = null;
+         }
+      };
+   }, [receivedCards]);
+
+   // ── Hearts-per-player tracking (client-side, per round) ───────────
+   const currentRound = state?.round;
+   useEffect(() => {
+      setHeartsPerPlayer([0, 0, 0, 0]);
+   }, [currentRound]);
+
+   useEffect(() => {
+      if (trickResult && trickResult.hearts > 0) {
+         setHeartsPerPlayer((prev) => {
+            const next = [...prev];
+            next[trickResult.winner] += trickResult.hearts;
+            return next;
+         });
+      }
+   }, [trickResult]);
 
    // ── Handlers ───────────────────────────────────────────────────────
    const handlePassCardToggle = useCallback((code: string) => {
@@ -298,7 +375,11 @@ export default function PlayGamePage() {
 
    const handleSubmitPass = useCallback(() => {
       if (typeof gameId !== "string" || passSelection.size !== 3) return;
+      const currentState = stateRef.current;
+      if (!currentState) return;
       setSubmitting(true);
+      const oldHand = currentState.human_hand;
+      const passedCards = passSelection;
       const cards = Array.from(passSelection) as [string, string, string];
       submitPass(gameId, { cards })
          .then((result) => {
@@ -307,6 +388,13 @@ export default function PlayGamePage() {
                setSubmitting(false);
                return;
             }
+            const oldMinusPassed = new Set(
+               oldHand.filter((c) => !passedCards.has(c))
+            );
+            const received = result.data.human_hand.filter(
+               (c: string) => !oldMinusPassed.has(c)
+            );
+            setReceivedCards(received);
             setState(result.data);
             setPassSelection(new Set());
             setSubmitting(false);
@@ -317,6 +405,21 @@ export default function PlayGamePage() {
             setSubmitting(false);
          });
    }, [gameId, passSelection, reset]);
+
+   const handleContinueRound = useCallback(() => {
+      const pending = roundPendingStateRef.current;
+      roundPendingStateRef.current = null;
+      setRoundSummary(null);
+      if (pending) {
+         setState(pending);
+         prevScoresRef.current = pending.players.map(
+            (p: { score: number }) => p.score
+         );
+         if (pending.phase === "passing") {
+            reset();
+         }
+      }
+   }, [reset]);
 
    const handlePlayCard = useCallback(
       (code: string) => {
@@ -361,9 +464,7 @@ export default function PlayGamePage() {
                   }
                })
                .catch((e) => {
-                  setError(
-                     e instanceof Error ? e.message : "Play failed"
-                  );
+                  setError(e instanceof Error ? e.message : "Play failed");
                });
          }
       },
@@ -485,11 +586,39 @@ export default function PlayGamePage() {
    const heartOrQueenOnTable = slots.some(
       (s) =>
          s &&
-         (s.card.toLowerCase().endsWith("h") ||
-            s.card.toLowerCase() === "qs")
+         (s.card.toLowerCase().endsWith("h") || s.card.toLowerCase() === "qs")
    );
    const heartsBrokenForDisplay =
       (state?.hearts_broken ?? false) || heartOrQueenOnTable;
+
+   // ── Helper: seat score display ──────────────────────────────────────
+   const seatScore = (i: number) => {
+      const score = roundSummary
+         ? roundSummary.players[i]?.score ?? 0
+         : state?.players[i]?.score ?? 0;
+      const showHearts =
+         state?.phase === "playing" && !roundSummary && !state?.game_over;
+      const heartDelta =
+         trickResult && trickResult.winner === i ? trickResult.hearts : 0;
+      return (
+         <span className={styles.gameTableSeatScore}>
+            {score}
+            {showHearts && (
+               <>
+                  <span className={styles.seatScoreSep}> · </span>
+                  <span className={styles.seatHeartCount}>
+                     ♥ {heartsPerPlayer[i]}
+                  </span>
+               </>
+            )}
+            {heartDelta > 0 && (
+               <span key={trickResult!.id} className={styles.heartDeltaBadge}>
+                  +{heartDelta}
+               </span>
+            )}
+         </span>
+      );
+   };
 
    // ── Main render ────────────────────────────────────────────────────
    return (
@@ -505,122 +634,178 @@ export default function PlayGamePage() {
          >
             {state && (
                <div className={styles.playContent}>
-                  <header className={styles.playHeader}>
-                     <span>
-                        Round {state.round}
+                  {!roundSummary && (
+                     <div className={styles.playInfoPill}>
+                        <span className={styles.playInfoRound}>
+                           Round {state.round}
+                        </span>
                         {state.pass_direction !== "none" && (
-                           <> · Pass {state.pass_direction}</>
+                           <span className={styles.playInfoDetail}>
+                              Pass {state.pass_direction}
+                           </span>
                         )}
-                     </span>
-                     <span className={styles.playPhase}>{state.phase}</span>
-                  </header>
+                        <span className={styles.playInfoPhase}>
+                           {state.phase}
+                        </span>
+                     </div>
+                  )}
 
-                  <div className={styles.gameTable}>
-                     {/* Top (player 2) */}
-                     <div
-                        className={`${styles.gameTableSeat} ${
-                           styles.gameTableSeatTop
-                        } ${
-                           state.phase === "playing" &&
-                           !state.game_over &&
-                           whoseTurn === 2
-                              ? styles.gameTableSeatYourTurn
-                              : ""
-                        }`}
-                     >
-                        <span className={styles.gameTableSeatName}>
-                           {state.players[2]?.name ?? "—"}
-                        </span>
-                        <span className={styles.gameTableSeatScore}>
-                           {state.players[2]?.score ?? 0}
-                        </span>
-                     </div>
-                     {/* Left (player 1) */}
-                     <div
-                        className={`${styles.gameTableSeat} ${
-                           styles.gameTableSeatLeft
-                        } ${
-                           state.phase === "playing" &&
-                           !state.game_over &&
-                           whoseTurn === 1
-                              ? styles.gameTableSeatYourTurn
-                              : ""
-                        }`}
-                     >
-                        <span className={styles.gameTableSeatName}>
-                           {state.players[1]?.name ?? "—"}
-                        </span>
-                        <span className={styles.gameTableSeatScore}>
-                           {state.players[1]?.score ?? 0}
-                        </span>
-                     </div>
-                     {/* Center: trick + hearts icon */}
-                     <div className={styles.tableCenter}>
-                        <Trick
-                           layout="table"
-                           slots={slots}
-                           playerNames={reorderSlotsForTableLayout(
-                              state.players.map((p) => p.name)
+                  <div className={styles.gameTableWrapper}>
+                     <div className={styles.gameTable}>
+                        {/* Top (player 2) */}
+                        <div
+                           className={`${styles.gameTableSeat} ${
+                              styles.gameTableSeatTop
+                           } ${
+                              !roundSummary &&
+                              state.phase === "playing" &&
+                              !state.game_over &&
+                              whoseTurn === 2
+                                 ? styles.gameTableSeatYourTurn
+                                 : ""
+                           }`}
+                        >
+                           <span className={styles.gameTableSeatName}>
+                              {state.players[2]?.name ?? "—"}
+                           </span>
+                           {seatScore(2)}
+                        </div>
+                        {/* Left (player 1) */}
+                        <div
+                           className={`${styles.gameTableSeat} ${
+                              styles.gameTableSeatLeft
+                           } ${
+                              !roundSummary &&
+                              state.phase === "playing" &&
+                              !state.game_over &&
+                              whoseTurn === 1
+                                 ? styles.gameTableSeatYourTurn
+                                 : ""
+                           }`}
+                        >
+                           <span className={styles.gameTableSeatName}>
+                              {state.players[1]?.name ?? "—"}
+                           </span>
+                           {seatScore(1)}
+                        </div>
+                        {/* Center: trick + hearts icon */}
+                        <div className={styles.tableCenter}>
+                           <Trick
+                              layout="table"
+                              slots={slots}
+                              playerNames={reorderSlotsForTableLayout(
+                                 state.players.map((p) => p.name)
+                              )}
+                              centerIcon={
+                                 !roundSummary && state.phase === "playing" ? (
+                                    <span
+                                       aria-hidden
+                                       style={{
+                                          fontSize: "50px",
+                                          marginTop: "-10px",
+                                          color: heartsBrokenForDisplay
+                                             ? "hsl(0, 65%, 50%)"
+                                             : "var(--darkpink)",
+                                       }}
+                                    >
+                                       ♥
+                                    </span>
+                                 ) : undefined
+                              }
+                           />
+                        </div>
+                        {/* Right (player 3) */}
+                        <div
+                           className={`${styles.gameTableSeat} ${
+                              styles.gameTableSeatRight
+                           } ${
+                              !roundSummary &&
+                              state.phase === "playing" &&
+                              !state.game_over &&
+                              whoseTurn === 3
+                                 ? styles.gameTableSeatYourTurn
+                                 : ""
+                           }`}
+                        >
+                           <span className={styles.gameTableSeatName}>
+                              {state.players[3]?.name ?? "—"}
+                           </span>
+                           {seatScore(3)}
+                        </div>
+                        {/* Bottom (player 0 = human) */}
+                        <div
+                           className={`${styles.gameTableSeat} ${
+                              styles.gameTableSeatBottom
+                           } ${
+                              !roundSummary &&
+                              state.phase === "playing" &&
+                              !state.game_over &&
+                              whoseTurn === 0
+                                 ? styles.gameTableSeatYourTurn
+                                 : ""
+                           }`}
+                        >
+                           <span className={styles.gameTableSeatName}>
+                              {state.players[0]?.name ?? "You"}
+                           </span>
+                           {seatScore(0)}
+                           {receivedCards && (
+                              <div className={styles.receivedCardsFloat}>
+                                 <p className={styles.receivedCardsLabel}>
+                                    You received:
+                                 </p>
+                                 <div className={styles.receivedCardsList}>
+                                    {receivedCards.map((c) => (
+                                       <Card key={c} code={c} size="small" />
+                                    ))}
+                                 </div>
+                              </div>
                            )}
-                           centerIcon={
-                              state.phase === "playing" ? (
-                                 <span
-                                    aria-hidden
-                                    style={{
-                                       fontSize: "50px",
-                                       marginTop: "-10px",
-                                       color: heartsBrokenForDisplay
-                                          ? "hsl(0, 65%, 50%)"
-                                          : "var(--darkpink)",
-                                    }}
-                                 >
-                                    ♥
-                                 </span>
-                              ) : undefined
-                           }
-                        />
+                        </div>
                      </div>
-                     {/* Right (player 3) */}
-                     <div
-                        className={`${styles.gameTableSeat} ${
-                           styles.gameTableSeatRight
-                        } ${
-                           state.phase === "playing" &&
-                           !state.game_over &&
-                           whoseTurn === 3
-                              ? styles.gameTableSeatYourTurn
-                              : ""
-                        }`}
-                     >
-                        <span className={styles.gameTableSeatName}>
-                           {state.players[3]?.name ?? "—"}
-                        </span>
-                        <span className={styles.gameTableSeatScore}>
-                           {state.players[3]?.score ?? 0}
-                        </span>
-                     </div>
-                     {/* Bottom (player 0 = human) */}
-                     <div
-                        className={`${styles.gameTableSeat} ${
-                           styles.gameTableSeatBottom
-                        } ${
-                           state.phase === "playing" &&
-                           !state.game_over &&
-                           whoseTurn === 0
-                              ? styles.gameTableSeatYourTurn
-                              : ""
-                        }`}
-                     >
-                        <span className={styles.gameTableSeatName}>
-                           {state.players[0]?.name ?? "You"}
-                        </span>
-                        <span className={styles.gameTableSeatScore}>
-                           {state.players[0]?.score ?? 0}
-                        </span>
-                     </div>
-                  </div>
 
-                  {state.phase === "playing" && (
+                     {/* ── Round summary overlay ───────────────────── */}
+                     {roundSummary && (
+                        <div className={styles.roundSummaryOverlay}>
+                           <div className={styles.roundSummaryBlock}>
+                              <p className={styles.roundSummaryTitle}>
+                                 Round {roundSummary.round} Complete
+                              </p>
+                              <table className={styles.scoreTable}>
+                                 <thead>
+                                    <tr>
+                                       <th>Player</th>
+                                       <th>This Round</th>
+                                       <th>Total</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody>
+                                    {roundSummary.players.map((p, i) => (
+                                       <tr key={i}>
+                                          <td>{p.name}</td>
+                                          <td className={styles.scoreDelta}>
+                                             {roundSummary.deltas[i] > 0
+                                                ? `+${roundSummary.deltas[i]}`
+                                                : "0"}
+                                          </td>
+                                          <td>{p.score}</td>
+                                       </tr>
+                                    ))}
+                                 </tbody>
+                              </table>
+                              <Button
+                                 name="Continue"
+                                 onClick={handleContinueRound}
+                                 style={{ width: "180px", marginTop: "16px" }}
+                              />
+                           </div>
+                        </div>
+                     )}
+                  </div>
+                  {/* end gameTableWrapper */}
+
+                  {/* ── Playing phase UI ────────────────────────── */}
+                  {!roundSummary && state.phase === "playing" && (
                      <p className={styles.playTurnHint}>
                         {busy
                            ? "Playing…"
@@ -630,7 +815,8 @@ export default function PlayGamePage() {
                      </p>
                   )}
 
-                  {state.phase === "passing" && (
+                  {/* ── Passing phase UI ────────────────────────── */}
+                  {!roundSummary && state.phase === "passing" && (
                      <>
                         <p className={styles.passHint}>
                            Select 3 cards to pass {state.pass_direction}.
@@ -654,51 +840,71 @@ export default function PlayGamePage() {
                      </>
                   )}
 
-                  {state.phase === "playing" && (
-                     <Hand
-                        cards={state.human_hand}
-                        legalCodes={new Set(state.legal_plays)}
-                        onCardClick={
-                           !busy &&
-                           state.whose_turn === 0 &&
-                           !state.game_over
-                              ? handlePlayCard
-                              : undefined
-                        }
-                     />
+                  {/* ── Player hand (playing phase) ─────────────── */}
+                  {!roundSummary && state.phase === "playing" && (
+                     <>
+                        <Hand
+                           cards={state.human_hand}
+                           legalCodes={new Set(state.legal_plays)}
+                           onCardClick={
+                              !busy && state.whose_turn === 0 && !state.game_over
+                                 ? handlePlayCard
+                                 : undefined
+                           }
+                        />
+                        {/* Placeholder matching passActions height so layout doesn't shift when transitioning from passing */}
+                        <div
+                           className={styles.passActions}
+                           style={{ visibility: "hidden" }}
+                           aria-hidden="true"
+                        >
+                           <Button name="Submit pass" style={{ width: "180px" }} />
+                        </div>
+                     </>
                   )}
 
-                  {state.game_over && (
+                  {/* ── Game over screen with score table ───────── */}
+                  {state.game_over && !roundSummary && (
                      <div className={styles.gameOverBlock}>
-                        <p className={styles.gameOverMessage}>
-                           Game over – Winner:{" "}
-                           {state.winner_index != null &&
-                           state.players[state.winner_index]
-                              ? state.players[state.winner_index].name
-                              : "—"}
-                        </p>
+                        <p className={styles.gameOverTitle}>Game Over</p>
+                        <table className={styles.scoreTable}>
+                           <thead>
+                              <tr>
+                                 <th>Player</th>
+                                 <th>Score</th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                              {[...state.players]
+                                 .map((p, i) => ({ ...p, idx: i }))
+                                 .sort((a, b) => a.score - b.score)
+                                 .map((p) => (
+                                    <tr
+                                       key={p.idx}
+                                       className={
+                                          p.idx === state.winner_index
+                                             ? styles.scoreTableWinner
+                                             : ""
+                                       }
+                                    >
+                                       <td>{p.name}</td>
+                                       <td>{p.score}</td>
+                                    </tr>
+                                 ))}
+                           </tbody>
+                        </table>
                         <Link href="/game/create">
                            <Button
                               name="Create New Game"
-                              style={{ width: "250px", marginTop: "12px" }}
+                              style={{
+                                 width: "250px",
+                                 marginTop: "16px",
+                              }}
                            />
                         </Link>
                      </div>
                   )}
                </div>
-            )}
-            {state?.game_over ? null : (
-               <ButtonGroup className="pt-12">
-                  <Link href="/game/create">
-                     <Button
-                        name="Create New Game"
-                        style={{ width: "250px" }}
-                     />
-                  </Link>
-                  <Link href="/">
-                     <Button name="Home" style={{ width: "250px" }} />
-                  </Link>
-               </ButtonGroup>
             )}
          </PageLayout>
       </>

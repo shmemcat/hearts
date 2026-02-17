@@ -1,62 +1,70 @@
 .card {
-  width: 72px;
-  min-width: 72px;
-  height: 100px;
-  background: var(--contentbox);
-  border: 2px solid var(--header);
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  font-weight: 700;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+   width: 72px;
+   min-width: 72px;
+   height: 100px;
+   background: var(--contentbox);
+   border: 2px solid var(--cardborder);
+   border-radius: 8px;
+   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   gap: 2px;
+   font-weight: 700;
+   font-size: 1.1rem;
+   cursor: pointer;
+   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .card:hover:not(:disabled) {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+   transform: translateY(-6px);
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .cardSmall {
-  width: 48px;
-  min-width: 48px;
-  height: 68px;
-  font-size: 0.85rem;
+   width: 48px;
+   min-width: 48px;
+   height: 68px;
+   font-size: 0.9rem;
 }
 
 .cardMedium {
-  width: 56px;
-  min-width: 56px;
-  height: 78px;
-  font-size: 0.9rem;
+   width: 56px;
+   min-width: 56px;
+   height: 78px;
+   font-size: 1rem;
 }
 
 .cardSelected {
-  border-color: var(--hoverpink);
-  box-shadow: 0 0 0 3px var(--hoverpink);
-  transform: translateY(-4px);
+   border-color: var(--cardhighlight);
+   transform: translateY(-6px);
 }
 
 .cardDisabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+   cursor: not-allowed;
+   border-color: var(--cardborderdisabled);
+   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+.cardDisabled .rankBlack,
+.cardDisabled .suitBlack {
+   color: var(--cardblacksuitdisabled);
+}
+.cardDisabled .rankRed,
+.cardDisabled .suitRed {
+   color: var(--cardredsuitdisabled);
 }
 
 .card:disabled {
-  cursor: not-allowed;
+   cursor: not-allowed;
 }
 
 .rankBlack,
 .suitBlack {
-  color: var(--black);
+   color: var(--cardblacksuit);
 }
 
 .rankRed,
 .suitRed {
-  color: hsl(0, 65%, 50%);
+   color: var(--cardredsuit);
 }
