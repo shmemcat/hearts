@@ -295,3 +295,93 @@ class TestRunnerRejectsInvalidPlay:
         if state["whose_turn"] != 0:
             with pytest.raises(ValueError, match="Not your turn"):
                 runner.submit_play(Card.from_code(state["human_hand"][0]))
+
+
+# -----------------------------------------------------------------------------
+# Runner: WebSocket-style callbacks (on_play, on_trick_complete, on_done)
+# -----------------------------------------------------------------------------
+
+class TestRunnerCallbacks:
+    def test_advance_to_human_turn_invokes_callbacks_in_order(self):
+        """advance_to_human_turn should emit on_play per card, on_trick_complete after each 4-card trick, on_done once at end."""
+        plays = []
+        trick_completes = []
+        dones = []
+
+        for seed in range(80):
+            runner = GameRunner.new_game(
+                RandomPassStrategy(), RandomPlayStrategy(), rng=__import__("random").Random(seed)
+            )
+            runner.submit_pass([Card.from_code(c) for c in runner.get_state_for_frontend()["human_hand"][:3]])
+            st = runner.get_state_for_frontend()
+            if st["phase"] != "playing" or st["whose_turn"] == 0:
+                continue
+
+            plays.clear()
+            trick_completes.clear()
+            dones.clear()
+
+            def on_play(ev):
+                plays.append(ev)
+
+            def on_trick_complete():
+                trick_completes.append(1)
+
+            def on_done(state_dict):
+                dones.append(state_dict)
+
+            runner.advance_to_human_turn(
+                on_play=on_play,
+                on_trick_complete=on_trick_complete,
+                on_done=on_done,
+            )
+
+            assert len(dones) == 1, "on_done should be called exactly once"
+            assert dones[0]["whose_turn"] == 0 or dones[0]["phase"] == "passing"
+            assert len(plays) == len(runner.get_last_play_events())
+            assert all("player_index" in p and "card" in p for p in plays)
+            if len(plays) >= 4:
+                assert len(trick_completes) >= 1, "at least one full trick should trigger trick_complete"
+            return
+        pytest.fail("No seed in 0..79 gave AI lead after pass")
+
+    def test_submit_play_invokes_callbacks_in_order(self):
+        """submit_play (human then AI until human again) should call on_play, on_trick_complete when trick fills, on_done once."""
+        for seed in range(80):
+            runner = GameRunner.new_game(
+                RandomPassStrategy(), RandomPlayStrategy(), rng=__import__("random").Random(seed)
+            )
+            runner.submit_pass([Card.from_code(c) for c in runner.get_state_for_frontend()["human_hand"][:3]])
+            st = runner.get_state_for_frontend()
+            if st["phase"] != "playing" or st["whose_turn"] != 0:
+                continue
+            legal = st.get("legal_plays", [])
+            if not legal:
+                continue
+            card_code = legal[0]
+            plays = []
+            trick_completes = []
+            dones = []
+
+            def on_play(ev):
+                plays.append(ev)
+
+            def on_trick_complete():
+                trick_completes.append(1)
+
+            def on_done(state_dict):
+                dones.append(state_dict)
+
+            runner.submit_play(
+                Card.from_code(card_code),
+                on_play=on_play,
+                on_trick_complete=on_trick_complete,
+                on_done=on_done,
+            )
+
+            assert len(dones) == 1
+            assert dones[0]["whose_turn"] == 0 or dones[0]["phase"] == "passing"
+            assert len(plays) == len(runner.get_last_play_events())
+            assert plays[0]["player_index"] == 0 and plays[0]["card"] == card_code
+            return
+        pytest.fail("No seed in 0..79 gave human lead after pass with legal plays")

@@ -1,3 +1,4 @@
+
 """
 WebSocket handlers for game events: connect (with game_id), advance, play.
 Emits play, trick_complete, state (and error) to the client.
@@ -51,18 +52,13 @@ def register_game_socket(socketio):
         try:
             def on_play(ev):
                 emit("play", ev, namespace="/game")
-
             def on_trick_complete():
                 emit("trick_complete", {}, namespace="/game")
-
             def on_done(s):
-                emit("state", s, namespace="/game")
-
-            runner.advance_to_human_turn(
-                on_play=on_play,
-                on_trick_complete=on_trick_complete,
-                on_done=on_done,
-            )
+                payload = dict(s)
+                payload["round_just_ended"] = runner.get_last_round_ended()
+                emit("state", payload, namespace="/game")
+            runner.advance_to_human_turn(on_play=on_play, on_trick_complete=on_trick_complete, on_done=on_done)
         except Exception as e:
             emit("error", {"message": str(e)}, namespace="/game")
 
@@ -88,18 +84,12 @@ def register_game_socket(socketio):
         try:
             def on_play(ev):
                 emit("play", ev, namespace="/game")
-
             def on_trick_complete():
                 emit("trick_complete", {}, namespace="/game")
-
             def on_done(s):
-                emit("state", s, namespace="/game")
-
-            runner.submit_play(
-                card,
-                on_play=on_play,
-                on_trick_complete=on_trick_complete,
-                on_done=on_done,
-            )
+                payload = dict(s)
+                payload["round_just_ended"] = runner.get_last_round_ended()
+                emit("state", payload, namespace="/game")
+            runner.submit_play(card, on_play=on_play, on_trick_complete=on_trick_complete, on_done=on_done)
         except ValueError as e:
             emit("error", {"message": str(e)}, namespace="/game")

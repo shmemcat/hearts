@@ -1,292 +1,182 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/buttons";
 import { Hand } from "@/components/game/Hand";
 import { Trick } from "@/components/game/Trick";
 import { PageLayout, ButtonGroup } from "@/components/ui";
+import { usePlayQueue } from "@/hooks/usePlayQueue";
 import {
    advanceGame,
    getGameState,
    submitPass,
    submitPlay,
 } from "@/lib/game-api";
-import type {
-   CurrentTrickSlot,
-   GameState,
-   PlayEvent,
-   PlayResponse,
-} from "@/types/game";
+import {
+   connect as connectGameSocket,
+   disconnect as disconnectGameSocket,
+   isConnected as isGameSocketConnected,
+   onError as onGameSocketError,
+   onPlay as onGameSocketPlay,
+   onState as onGameSocketState,
+   onTrickComplete as onGameSocketTrickComplete,
+   sendAdvance as sendGameSocketAdvance,
+   sendPlay as sendGameSocketPlay,
+} from "@/lib/game-socket";
+import type { CurrentTrickSlot, GameState, PlayEvent } from "@/types/game";
+import type { GameSocketState } from "@/lib/game-socket";
 import styles from "@/styles/play.module.css";
-
-/** One second per step: each card reveal, hold after trick, and cleared board. */
-const TRICK_STEP_MS = 1000;
 
 /** PageLayout body classes without top margin (mt-10) for play page layout */
 const PLAY_PAGE_LAYOUT_CLASS =
    "w-[85vw] flex flex-col items-center justify-center text-center";
 
 /**
- * Terminology (this codebase):
- * - TRICK = four cards, one per player; when a trick is won we show a cleared table, then the next player leads.
- * - ROUND = all 13 tricks played. After a round we pass, then start the next round.
+ * Terminology:
+ * - TRICK = four cards, one per player
+ * - ROUND = all 13 tricks; after a round we pass, then start the next round
  */
 
-/** Build trick slots by player: slot 0 = player 0 (You/bottom), 1 = AI1/left, 2 = AI2/top, 3 = AI3/right. So each card appears in the correct player's position. */
-function buildSlotsFromPlays(plays: PlayEvent[]): CurrentTrickSlot[] {
-   const slots: CurrentTrickSlot[] = [null, null, null, null];
-   for (const p of plays) {
-      if (p.player_index >= 0 && p.player_index < 4)
-         slots[p.player_index] = { player_index: p.player_index, card: p.card };
-   }
-   return slots;
-}
-
-/** Reorder trick slots for table layout: API order 0,1,2,3 → display order bottom(0), top(2), left(1), right(3) so turn order is clockwise left (user→AI1→AI2→AI3). */
+/** Reorder for table layout: API order 0,1,2,3 -> display order bottom(0), top(2), left(1), right(3). */
 function reorderSlotsForTableLayout<T>(arr: T[]): T[] {
    if (arr.length < 4) return arr;
    return [arr[0], arr[2], arr[1], arr[3]];
 }
 
-/**
- * Play page flows (for maintenance):
- *
- * 1) Initial load (useEffect[gameId]): getGameState → if playing && whose_turn !== 0, advanceGame
- *    then applyPlayResponse. Else setState(data), setLoading(false).
- *
- * 2) After pass (handleSubmitPass): submitPass → setState; if playing && whose_turn !== 0, advanceGame
- *    then applyPlayResponse. submitting stays true until reveal finishes or no plays.
- *
- * 3) User plays (handlePlayCard): isSubmittingPlayRef blocks re-entry. submitPlay → applyPlayResponse.
- *    Ref cleared when reveal finishes or on error.
- *
- * 4) When it's AI's turn (useEffect): if !submitting && whose_turn !== 0, advanceGame → applyPlayResponse.
- *
- * 5) applyPlayResponse: setState(data) only (state never updated in a timer). Trick display cycle (1s each):
- *    leader card → clockwise 1 → clockwise 2 → clockwise 3 → hold 1s (full trick visible) → clear board 1s →
- *    next trick leader, etc. When reveal finishes we schedule a 1s hold then set showTrickEndClear and clear
- *    reveal; prevTrickRef is cleared so the next trick does not show previous cards. When round ends, phase
- *    passing also clears the board. Display = f(state, reveal, showTrickEndClear).
- */
 export default function PlayGamePage() {
    const router = useRouter();
    const { game_id: gameId } = router.query;
+
+   // ── Core UI state ──────────────────────────────────────────────────
    const [loading, setLoading] = useState(true);
    const [notFound, setNotFound] = useState(false);
    const [state, setState] = useState<GameState | null>(null);
    const [error, setError] = useState<string | null>(null);
-   const [submitting, setSubmitting] = useState(false);
+   const [submitting, setSubmitting] = useState(false); // pass phase only
    const [passSelection, setPassSelection] = useState<Set<string>>(new Set());
-   /** When non-null, we are revealing: plays to show, count, and cards that were already on the table (so we don't "reset" to fewer cards). */
-   const [reveal, setReveal] = useState<{
-      plays: PlayEvent[];
-      count: number;
-      existingBefore: PlayEvent[];
-   } | null>(null);
-   const revealIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-      null
-   );
-   /** Timeout for "hold 1s then clear"; cleared when a new play response arrives. */
-   const holdClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-      null
-   );
-   /** When user plays during the 1s hold, we show clear then apply this response after 1s. */
-   const pendingPlayResponseRef = useRef<PlayResponse | null>(null);
-   const deferredApplyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-      null
-   );
-   /** Block duplicate or stray card plays. */
-   const isSubmittingPlayRef = useRef(false);
-   /** Ref updated each render so applyPlayResponse can read "what was on the table" before we apply new state. */
-   const prevTrickRef = useRef<PlayEvent[]>([]);
-   /** When true, show empty table: cleared state after each trick (trick won) until first card of next trick is played. */
-   const [showTrickEndClear, setShowTrickEndClear] = useState(false);
-   /** Set when API returns round_just_ended (round = all 13 tricks); used e.g. for round-over messaging. */
-   const roundJustEndedRef = useRef(false);
 
-   useEffect(() => {
-      return () => {
-         if (revealIntervalRef.current) {
-            clearInterval(revealIntervalRef.current);
-            revealIntervalRef.current = null;
-         }
-         if (holdClearTimeoutRef.current) {
-            clearTimeout(holdClearTimeoutRef.current);
-            holdClearTimeoutRef.current = null;
-         }
-         if (deferredApplyTimeoutRef.current) {
-            clearTimeout(deferredApplyTimeoutRef.current);
-            deferredApplyTimeoutRef.current = null;
-            pendingPlayResponseRef.current = null;
-         }
-      };
+   // ── Refs for WS callbacks (stable across renders) ──────────────────
+   const pendingStateRef = useRef<GameSocketState | null>(null);
+   const lastHumanCardRef = useRef<string | null>(null);
+   const advanceSentRef = useRef(false);
+   const stateRef = useRef(state);
+   stateRef.current = state;
+
+   // ── Play queue (animation) ─────────────────────────────────────────
+   const applyPendingState = useCallback(() => {
+      const pending = pendingStateRef.current;
+      if (!pending) return;
+      pendingStateRef.current = null;
+      advanceSentRef.current = false;
+      setState(pending);
+      if (pending.phase === "passing") {
+         // Will be handled by reset below via the hook reference
+         resetRef.current();
+      }
    }, []);
 
-   if (state?.phase === "playing" && state.current_trick && !showTrickEndClear) {
-      const ct = (state.current_trick.filter(Boolean) ?? []) as PlayEvent[];
-      prevTrickRef.current = ct;
-   } else if (state?.phase === "passing") {
-      prevTrickRef.current = [];
-   }
+   // Ref indirection so the hook's onIdle can always call the latest applyPendingState
+   const applyPendingRef = useRef(applyPendingState);
+   applyPendingRef.current = applyPendingState;
 
-   useEffect(() => {
-      if (!state) return;
-      if (state.phase === "passing") {
-         // Round ended (all 13 tricks played): clear board and display state before next round.
-         setShowTrickEndClear(true);
-         setReveal(null);
-         setSubmitting(false);
-         isSubmittingPlayRef.current = false;
-         if (revealIntervalRef.current) {
-            clearInterval(revealIntervalRef.current);
-            revealIntervalRef.current = null;
-         }
-      }
-      const ct = state.current_trick?.filter(Boolean) ?? [];
-      console.log("[HEARTS] state/reveal changed", {
-         phase: state.phase,
-         current_trick_len: ct.length,
-         current_trick: ct.map((s) =>
-            s ? `${s.player_index}:${s.card}` : null
-         ),
-         reveal: reveal
-            ? { count: reveal.count, plays_len: reveal.plays.length }
-            : null,
-      });
-   }, [state?.phase, state?.current_trick, reveal]);
+   const onIdle = useCallback(() => {
+      applyPendingRef.current();
+   }, []);
 
-   /** Apply API response once; optionally reveal plays one-by-one via a single interval. State is never updated in a timer. */
-   const applyPlayResponse = useCallback((data: PlayResponse) => {
-      if (deferredApplyTimeoutRef.current) {
-         clearTimeout(deferredApplyTimeoutRef.current);
-         deferredApplyTimeoutRef.current = null;
-         pendingPlayResponseRef.current = null;
-      }
-      const plays = data.intermediate_plays ?? [];
-      const currentTrickLen = data.current_trick?.filter(Boolean).length ?? 0;
-      console.log("[HEARTS] applyPlayResponse called", {
-         plays_count: plays.length,
-         current_trick_len: currentTrickLen,
-         round_just_ended: data.round_just_ended,
-         plays: plays.map((p) => `${p.player_index}:${p.card}`),
-         current_trick: (data.current_trick ?? []).map((s) =>
-            s ? `${s.player_index}:${s.card}` : null
-         ),
-      });
-      setShowTrickEndClear(false);
-      if (holdClearTimeoutRef.current) {
-         clearTimeout(holdClearTimeoutRef.current);
-         holdClearTimeoutRef.current = null;
-         setShowTrickEndClear(true);
-         setReveal(null);
-         prevTrickRef.current = [];
-         setSubmitting(false);
-         isSubmittingPlayRef.current = false;
-         pendingPlayResponseRef.current = data;
-         deferredApplyTimeoutRef.current = setTimeout(() => {
-            deferredApplyTimeoutRef.current = null;
-            const pending = pendingPlayResponseRef.current;
-            pendingPlayResponseRef.current = null;
-            if (pending) applyPlayResponse(pending);
-         }, TRICK_STEP_MS);
-         return;
-      }
-      if (revealIntervalRef.current) {
-         clearInterval(revealIntervalRef.current);
-         revealIntervalRef.current = null;
-         console.log("[HEARTS] applyPlayResponse: cleared previous interval");
-      }
-      if (data.round_just_ended) {
-         prevTrickRef.current = [];
-      }
-      const refTrick = prevTrickRef.current ?? [];
-      const existingLen = Math.max(0, refTrick.length - plays.length + 1);
-      const existingBefore =
-         existingLen > 0 ? refTrick.slice(0, existingLen) : refTrick.slice();
-      console.log("[HEARTS] applyPlayResponse: existingBefore from ref", {
-         ref_len: refTrick.length,
-         plays_len: plays.length,
-         existingLen,
-         existingBefore_len: existingBefore.length,
-         cards: existingBefore.map((p) => `${p.player_index}:${p.card}`),
-      });
-      setState(data);
-      if (plays.length === 0) {
-         console.log(
-            "[HEARTS] applyPlayResponse: no plays, setReveal(null), submitting=false"
-         );
-         setReveal(null);
-         setSubmitting(false);
-         isSubmittingPlayRef.current = false;
-         if (data.round_just_ended) setShowTrickEndClear(true);
-         return;
-      }
-      roundJustEndedRef.current = Boolean(data.round_just_ended);
-      console.log(
-         "[HEARTS] applyPlayResponse: setReveal({ plays, count: 1, existingBefore }), starting interval"
-      );
-      setReveal({ plays, count: 1, existingBefore });
-      const id = setInterval(() => {
-         setReveal((prev) => {
-            if (!prev || prev.plays !== plays) {
-               console.log(
-                  "[HEARTS] interval tick: stale prev or different plays, skipping"
-               );
-               return prev;
-            }
-            const next = prev.count + 1;
-            if (next > plays.length) {
-               const totalShown = prev.existingBefore.length + plays.length;
-               const trickComplete = totalShown > 0 && totalShown % 4 === 0;
-               console.log("[HEARTS] interval: reveal done", {
-                  next,
-                  plays_length: plays.length,
-                  totalShown,
-                  trickComplete,
-               });
-               clearInterval(id);
-               if (revealIntervalRef.current === id)
-                  revealIntervalRef.current = null;
-               if (trickComplete) {
-                  prevTrickRef.current = [];
-                  const playsRef = plays;
-                  holdClearTimeoutRef.current = setTimeout(() => {
-                     holdClearTimeoutRef.current = null;
-                     setShowTrickEndClear(true);
-                     setSubmitting(false);
-                     isSubmittingPlayRef.current = false;
-                     if (roundJustEndedRef.current)
-                        roundJustEndedRef.current = false;
-                     setReveal((current) =>
-                        current?.plays !== playsRef ? current : null
-                     );
-                  }, TRICK_STEP_MS);
-               } else {
-                  const playsRef = plays;
-                  setTimeout(() => {
-                     setSubmitting(false);
-                     isSubmittingPlayRef.current = false;
-                     setReveal((current) =>
-                        current?.plays !== playsRef ? current : null
-                     );
-                  }, 0);
+   const {
+      displaySlots,
+      busy,
+      currentTurn,
+      enqueue,
+      showImmediately,
+      setSlots,
+      reset,
+   } = usePlayQueue({ onIdle });
+
+   // Keep a stable ref to reset so applyPendingState (created before the hook)
+   // can call it without a circular dependency.
+   const resetRef = useRef(reset);
+   resetRef.current = reset;
+
+   const busyRef = useRef(busy);
+   busyRef.current = busy;
+
+   // ── REST fallback: load intermediate_plays into the queue ──────────
+   const enqueueRestPlays = useCallback(
+      (plays: PlayEvent[], initialOnTable: number, skipFirst: boolean) => {
+         let onTable = initialOnTable;
+         for (let i = 0; i < plays.length; i++) {
+            if (skipFirst && i === 0) {
+               onTable++;
+               if (onTable === 4) {
+                  enqueue({ type: "trick_complete" });
+                  onTable = 0;
                }
-               return prev;
+               continue;
             }
-            console.log(
-               "[HEARTS] interval tick: count",
-               prev.count,
-               "->",
-               next
-            );
-            return { plays, count: next, existingBefore: prev.existingBefore };
-         });
-      }, TRICK_STEP_MS);
-      revealIntervalRef.current = id;
-   }, []);
+            enqueue({ type: "play", event: plays[i] });
+            onTable++;
+            if (onTable === 4) {
+               enqueue({ type: "trick_complete" });
+               onTable = 0;
+            }
+         }
+      },
+      [enqueue]
+   );
 
+   // ── WebSocket: connect / disconnect ────────────────────────────────
+   useEffect(() => {
+      if (typeof gameId === "string" && gameId) {
+         connectGameSocket(gameId);
+         return () => disconnectGameSocket();
+      }
+   }, [gameId]);
+
+   // ── WebSocket: event subscriptions ─────────────────────────────────
+   useEffect(() => {
+      const unsubPlay = onGameSocketPlay((ev: PlayEvent) => {
+         if (
+            ev.player_index === 0 &&
+            ev.card === lastHumanCardRef.current
+         ) {
+            lastHumanCardRef.current = null;
+            return;
+         }
+         enqueue({ type: "play", event: ev });
+      });
+
+      const unsubTrick = onGameSocketTrickComplete(() => {
+         enqueue({ type: "trick_complete" });
+      });
+
+      const unsubState = onGameSocketState((data: GameSocketState) => {
+         advanceSentRef.current = false;
+         pendingStateRef.current = data;
+         if (data.round_just_ended) {
+            enqueue({ type: "trick_complete" });
+            return;
+         }
+         if (!busyRef.current) {
+            applyPendingRef.current();
+         }
+      });
+
+      const unsubError = onGameSocketError((msg: string) => {
+         setError(msg);
+      });
+
+      return () => {
+         unsubPlay();
+         unsubTrick();
+         unsubState();
+         unsubError();
+      };
+   }, [enqueue]);
+
+   // ── Initial load ───────────────────────────────────────────────────
    useEffect(() => {
       if (typeof gameId !== "string" || !gameId) {
          setLoading(false);
@@ -296,18 +186,10 @@ export default function PlayGamePage() {
       setLoading(true);
       setNotFound(false);
       setError(null);
-      console.log("[HEARTS] initial load: getGameState", gameId);
+
       getGameState(gameId)
          .then((result) => {
             if (cancelled) return;
-            console.log("[HEARTS] getGameState result", {
-               ok: result.ok,
-               phase: result.ok ? result.data.phase : undefined,
-               whose_turn: result.ok ? result.data.whose_turn : undefined,
-               current_trick_len: result.ok
-                  ? result.data.current_trick?.length
-                  : undefined,
-            });
             if (!result.ok) {
                if (result.notFound) setNotFound(true);
                else setError(result.error);
@@ -315,69 +197,38 @@ export default function PlayGamePage() {
                return;
             }
             const data = result.data;
-            if (data.phase === "playing" && data.whose_turn !== 0) {
-               console.log(
-                  "[HEARTS] initial load: whose_turn !== 0, calling advanceGame",
-                  {
-                     whose_turn: data.whose_turn,
+            setState(data);
+            setLoading(false);
+
+            // Restore board if there are cards on the table already
+            if (data.phase === "playing" && data.current_trick) {
+               const slots: CurrentTrickSlot[] = [null, null, null, null];
+               for (const s of data.current_trick) {
+                  if (
+                     s &&
+                     typeof s.player_index === "number" &&
+                     s.player_index >= 0 &&
+                     s.player_index < 4
+                  ) {
+                     slots[s.player_index] = s;
                   }
-               );
-               advanceGame(gameId)
-                  .then((advResult) => {
-                     if (cancelled) return;
-                     if (!advResult.ok) {
-                        setError(advResult.error);
-                        setLoading(false);
-                        return;
-                     }
-                     console.log(
-                        "[HEARTS] advanceGame (initial) success, applyPlayResponse",
-                        {
-                           intermediate_plays:
-                              advResult.data.intermediate_plays?.length,
-                           round_just_ended: advResult.data.round_just_ended,
-                        }
-                     );
-                     setLoading(false);
-                     setSubmitting(true);
-                     applyPlayResponse(advResult.data);
-                  })
-                  .catch((e) => {
-                     if (cancelled) return;
-                     setError(
-                        e instanceof Error
-                           ? e.message
-                           : "Failed to advance game"
-                     );
-                     setLoading(false);
-                  });
-            } else {
-               console.log(
-                  "[HEARTS] initial load: setting state directly (no advance)",
-                  {
-                     phase: data.phase,
-                     whose_turn: data.whose_turn,
-                  }
-               );
-               setState(data);
-               setLoading(false);
+               }
+               setSlots(slots);
             }
+            // If it's the AI's turn, the AI turn effect will handle advance.
          })
          .catch((e) => {
             if (cancelled) return;
             setError(e instanceof Error ? e.message : "Failed to load game");
             setLoading(false);
          });
+
       return () => {
-         console.log(
-            "[HEARTS] initial load useEffect cleanup (cancelled=true)",
-            gameId
-         );
          cancelled = true;
       };
-   }, [gameId, applyPlayResponse]);
+   }, [gameId, setSlots]);
 
-   // When it's the AI's turn (e.g. AI won the trick and leads next), advance the game and animate their plays.
+   // ── AI turn: advance when it's not the human's turn ────────────────
    useEffect(() => {
       if (
          typeof gameId !== "string" ||
@@ -387,52 +238,55 @@ export default function PlayGamePage() {
          state.game_over ||
          state.whose_turn === 0 ||
          loading ||
-         submitting
+         busy ||
+         advanceSentRef.current
       ) {
          return;
       }
-      let cancelled = false;
-      console.log("[HEARTS] useEffect: whose_turn !== 0, calling advanceGame", {
-         whose_turn: state.whose_turn,
-      });
-      setSubmitting(true);
-      advanceGame(gameId)
-         .then((advResult) => {
-            if (cancelled) return;
-            if (!advResult.ok) {
-               setError(advResult.error);
-               setSubmitting(false);
-               isSubmittingPlayRef.current = false;
-               return;
-            }
-            console.log(
-               "[HEARTS] advanceGame (post-play) success, applyPlayResponse",
-               {
-                  intermediate_plays: advResult.data.intermediate_plays?.length,
-                  round_just_ended: advResult.data.round_just_ended,
+
+      advanceSentRef.current = true;
+
+      if (isGameSocketConnected()) {
+         sendGameSocketAdvance();
+      } else {
+         const onTable =
+            stateRef.current?.current_trick?.filter(Boolean).length ?? 0;
+         advanceGame(gameId)
+            .then((result) => {
+               if (!result.ok) {
+                  setError(result.error);
+                  advanceSentRef.current = false;
+                  return;
                }
-            );
-            applyPlayResponse(advResult.data);
-         })
-         .catch((e) => {
-            if (cancelled) return;
-            setError(e instanceof Error ? e.message : "Failed to advance game");
-            setSubmitting(false);
-            isSubmittingPlayRef.current = false;
-         });
-      return () => {
-         cancelled = true;
-      };
+               const plays = result.data.intermediate_plays ?? [];
+               enqueueRestPlays(plays, onTable, false);
+               pendingStateRef.current = result.data;
+               if (result.data.round_just_ended) {
+                  enqueue({ type: "trick_complete" });
+               }
+               if (plays.length === 0 && !result.data.round_just_ended) {
+                  applyPendingRef.current();
+               }
+            })
+            .catch((e) => {
+               setError(
+                  e instanceof Error ? e.message : "Failed to advance game"
+               );
+               advanceSentRef.current = false;
+            });
+      }
    }, [
       gameId,
       state?.phase,
       state?.whose_turn,
       state?.game_over,
       loading,
-      submitting,
-      applyPlayResponse,
+      busy,
+      enqueue,
+      enqueueRestPlays,
    ]);
 
+   // ── Handlers ───────────────────────────────────────────────────────
    const handlePassCardToggle = useCallback((code: string) => {
       setPassSelection((prev) => {
          const next = new Set(prev);
@@ -455,78 +309,68 @@ export default function PlayGamePage() {
             }
             setState(result.data);
             setPassSelection(new Set());
-            if (
-               result.data.phase === "playing" &&
-               result.data.whose_turn !== 0
-            ) {
-               console.log(
-                  "[HEARTS] handleSubmitPass: after pass, whose_turn !== 0, calling advanceGame"
-               );
-               advanceGame(gameId)
-                  .then((advResult) => {
-                     if (!advResult.ok) {
-                        setError(advResult.error);
-                        setSubmitting(false);
-                        return;
-                     }
-                     console.log(
-                        "[HEARTS] handleSubmitPass advanceGame success, applyPlayResponse"
-                     );
-                     applyPlayResponse(advResult.data);
-                  })
-                  .catch((e) => {
-                     setError(
-                        e instanceof Error ? e.message : "Advance failed"
-                     );
-                     setSubmitting(false);
-                  });
-            } else {
-               setSubmitting(false);
-            }
+            setSubmitting(false);
+            reset();
          })
          .catch((e) => {
             setError(e instanceof Error ? e.message : "Submit failed");
             setSubmitting(false);
          });
-   }, [gameId, passSelection, applyPlayResponse]);
+   }, [gameId, passSelection, reset]);
 
    const handlePlayCard = useCallback(
       (code: string) => {
          if (typeof gameId !== "string") return;
-         if (isSubmittingPlayRef.current) return;
-         isSubmittingPlayRef.current = true;
-         console.log("[HEARTS] handlePlayCard", { card: code });
-         setSubmitting(true);
-         submitPlay(gameId, { card: code })
-            .then((result) => {
-               console.log("[HEARTS] submitPlay result", {
-                  ok: result.ok,
-                  intermediate_plays: result.ok
-                     ? result.data.intermediate_plays?.length
-                     : undefined,
-                  round_just_ended: result.ok
-                     ? result.data.round_just_ended
-                     : undefined,
-                  whose_turn: result.ok ? result.data.whose_turn : undefined,
+
+         const cardsOnTable =
+            stateRef.current?.current_trick?.filter(Boolean).length ?? 0;
+
+         showImmediately({ player_index: 0, card: code });
+         lastHumanCardRef.current = code;
+
+         // Optimistically update: remove card from hand, disable further clicks.
+         // Keep whose_turn at 0 so the AI turn effect doesn't fire a spurious
+         // advance -- submit_play always runs AI until it's human's turn again.
+         setState((prev) =>
+            prev
+               ? {
+                    ...prev,
+                    human_hand: prev.human_hand.filter((c) => c !== code),
+                    legal_plays: [],
+                 }
+               : prev
+         );
+
+         if (isGameSocketConnected()) {
+            sendGameSocketPlay(code);
+         } else {
+            submitPlay(gameId, { card: code })
+               .then((result) => {
+                  if (!result.ok) {
+                     setError(result.error);
+                     return;
+                  }
+                  const plays = result.data.intermediate_plays ?? [];
+                  enqueueRestPlays(plays, cardsOnTable + 1, true);
+                  pendingStateRef.current = result.data;
+                  if (result.data.round_just_ended) {
+                     enqueue({ type: "trick_complete" });
+                  }
+                  if (plays.length <= 1 && !result.data.round_just_ended) {
+                     applyPendingRef.current();
+                  }
+               })
+               .catch((e) => {
+                  setError(
+                     e instanceof Error ? e.message : "Play failed"
+                  );
                });
-               if (!result.ok) {
-                  setError(result.error);
-                  setSubmitting(false);
-                  isSubmittingPlayRef.current = false;
-                  return;
-               }
-               applyPlayResponse(result.data);
-            })
-            .catch((e) => {
-               console.log("[HEARTS] submitPlay catch", e);
-               setError(e instanceof Error ? e.message : "Play failed");
-               setSubmitting(false);
-               isSubmittingPlayRef.current = false;
-            });
+         }
       },
-      [gameId, applyPlayResponse]
+      [gameId, showImmediately, enqueue, enqueueRestPlays]
    );
 
+   // ── Early returns ──────────────────────────────────────────────────
    if (typeof gameId !== "string" || !gameId) {
       return (
          <>
@@ -632,6 +476,22 @@ export default function PlayGamePage() {
       );
    }
 
+   // ── Derived display values ─────────────────────────────────────────
+   // During animation, use the queue's currentTurn for the seat highlight;
+   // when idle, fall back to the game state's whose_turn.
+   const whoseTurn = busy ? currentTurn : state?.whose_turn ?? null;
+
+   const slots = displaySlots;
+   const heartOrQueenOnTable = slots.some(
+      (s) =>
+         s &&
+         (s.card.toLowerCase().endsWith("h") ||
+            s.card.toLowerCase() === "qs")
+   );
+   const heartsBrokenForDisplay =
+      (state?.hearts_broken ?? false) || heartOrQueenOnTable;
+
+   // ── Main render ────────────────────────────────────────────────────
    return (
       <>
          <Head>
@@ -656,14 +516,14 @@ export default function PlayGamePage() {
                   </header>
 
                   <div className={styles.gameTable}>
-                     {/* Top (player 2 – second AI, clockwise left from user) */}
+                     {/* Top (player 2) */}
                      <div
                         className={`${styles.gameTableSeat} ${
                            styles.gameTableSeatTop
                         } ${
                            state.phase === "playing" &&
                            !state.game_over &&
-                           state.whose_turn === 2
+                           whoseTurn === 2
                               ? styles.gameTableSeatYourTurn
                               : ""
                         }`}
@@ -675,14 +535,14 @@ export default function PlayGamePage() {
                            {state.players[2]?.score ?? 0}
                         </span>
                      </div>
-                     {/* Left (player 1 – first AI, clockwise left from user) */}
+                     {/* Left (player 1) */}
                      <div
                         className={`${styles.gameTableSeat} ${
                            styles.gameTableSeatLeft
                         } ${
                            state.phase === "playing" &&
                            !state.game_over &&
-                           state.whose_turn === 1
+                           whoseTurn === 1
                               ? styles.gameTableSeatYourTurn
                               : ""
                         }`}
@@ -694,117 +554,31 @@ export default function PlayGamePage() {
                            {state.players[1]?.score ?? 0}
                         </span>
                      </div>
-                     {/* Center: trick + hearts broken */}
+                     {/* Center: trick + hearts icon */}
                      <div className={styles.tableCenter}>
-                        {(() => {
-                           const phase = state.phase;
-                           const currentTrickFiltered =
-                              (state.current_trick?.filter(Boolean) ??
-                                 []) as PlayEvent[];
-                           const hasReveal = reveal !== null;
-                           console.log("[HEARTS] slots compute", {
-                              phase,
-                              current_trick_len: currentTrickFiltered.length,
-                              reveal: hasReveal
-                                 ? {
-                                      count: reveal!.count,
-                                      plays_len: reveal!.plays.length,
-                                   }
-                                 : null,
-                           });
-                           let slots: CurrentTrickSlot[];
-                           if (showTrickEndClear) {
-                              // Cleared state: trick won, empty table until first card of next trick is played.
-                              slots = [null, null, null, null];
-                           } else if (phase === "passing") {
-                              console.log(
-                                 "[HEARTS] slots branch=passing -> empty"
-                              );
-                              slots = [null, null, null, null];
-                           } else if (reveal !== null) {
-                              const {
-                                 plays: revPlays,
-                                 count: revCount,
-                                 existingBefore,
-                              } = reveal;
-                              const n = Math.max(
-                                 1,
-                                 Math.min(revCount, revPlays.length)
-                              );
-                              const slice = revPlays.slice(0, n);
-                              const toShow = existingBefore.concat(slice);
-                              console.log("[HEARTS] slots branch=reveal", {
-                                 existingBefore_len: existingBefore.length,
-                                 revCount,
-                                 n,
-                                 slice_len: slice.length,
-                                 toShow_len: toShow.length,
-                                 toShow: toShow.map(
-                                    (p) => `${p.player_index}:${p.card}`
-                                 ),
-                              });
-                              slots = buildSlotsFromPlays(toShow);
-                           } else {
-                              const padded: CurrentTrickSlot[] = [
-                                 null,
-                                 null,
-                                 null,
-                                 null,
-                              ];
-                              for (const s of currentTrickFiltered)
-                                 if (
-                                    s &&
-                                    typeof s.player_index === "number" &&
-                                    s.player_index >= 0 &&
-                                    s.player_index < 4
-                                 )
-                                    padded[s.player_index] = s;
-                              console.log(
-                                 "[HEARTS] slots branch=state.current_trick",
-                                 {
-                                    current_trick_len:
-                                       currentTrickFiltered.length,
-                                    cards: currentTrickFiltered.map(
-                                       (p) => `${p.player_index}:${p.card}`
-                                    ),
-                                 }
-                              );
-                              slots = padded;
+                        <Trick
+                           layout="table"
+                           slots={slots}
+                           playerNames={reorderSlotsForTableLayout(
+                              state.players.map((p) => p.name)
+                           )}
+                           centerIcon={
+                              state.phase === "playing" ? (
+                                 <span
+                                    aria-hidden
+                                    style={{
+                                       fontSize: "50px",
+                                       marginTop: "-10px",
+                                       color: heartsBrokenForDisplay
+                                          ? "hsl(0, 65%, 50%)"
+                                          : "var(--darkpink)",
+                                    }}
+                                 >
+                                    ♥
+                                 </span>
+                              ) : undefined
                            }
-                           const heartOrQueenOnTable = slots.some(
-                              (s) =>
-                                 s &&
-                                 (s.card.toLowerCase().endsWith("h") ||
-                                    s.card.toLowerCase() === "qs")
-                           );
-                           const heartsBrokenForDisplay =
-                              state.hearts_broken || heartOrQueenOnTable;
-                           return (
-                              <Trick
-                                 layout="table"
-                                 slots={slots}
-                                 playerNames={reorderSlotsForTableLayout(
-                                    state.players.map((p) => p.name)
-                                 )}
-                                 centerIcon={
-                                    state.phase === "playing" ? (
-                                       <span
-                                          aria-hidden
-                                          style={{
-                                             fontSize: "50px",
-                                             marginTop: "-10px",
-                                             color: heartsBrokenForDisplay
-                                                ? "hsl(0, 65%, 50%)"
-                                                : "var(--darkpink)",
-                                          }}
-                                       >
-                                          ♥
-                                       </span>
-                                    ) : undefined
-                                 }
-                              />
-                           );
-                        })()}
+                        />
                      </div>
                      {/* Right (player 3) */}
                      <div
@@ -813,7 +587,7 @@ export default function PlayGamePage() {
                         } ${
                            state.phase === "playing" &&
                            !state.game_over &&
-                           state.whose_turn === 3
+                           whoseTurn === 3
                               ? styles.gameTableSeatYourTurn
                               : ""
                         }`}
@@ -832,7 +606,7 @@ export default function PlayGamePage() {
                         } ${
                            state.phase === "playing" &&
                            !state.game_over &&
-                           state.whose_turn === 0
+                           whoseTurn === 0
                               ? styles.gameTableSeatYourTurn
                               : ""
                         }`}
@@ -848,7 +622,7 @@ export default function PlayGamePage() {
 
                   {state.phase === "playing" && (
                      <p className={styles.playTurnHint}>
-                        {submitting
+                        {busy
                            ? "Playing…"
                            : state.whose_turn === 0 && !state.game_over
                            ? "Your turn"
@@ -885,7 +659,7 @@ export default function PlayGamePage() {
                         cards={state.human_hand}
                         legalCodes={new Set(state.legal_plays)}
                         onCardClick={
-                           !submitting &&
+                           !busy &&
                            state.whose_turn === 0 &&
                            !state.game_over
                               ? handlePlayCard
