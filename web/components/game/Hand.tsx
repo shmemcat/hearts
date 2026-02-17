@@ -15,6 +15,12 @@ export interface HandProps {
    /** When true, cards are selectable for pass (toggle up to 3). */
    selectionMode?: boolean;
    size?: "normal" | "small";
+   /** Cards animating out of hand (pass transition). */
+   exitingCodes?: Set<string>;
+   exitDirection?: "left" | "right" | "up";
+   /** Cards animating into hand (pass transition). */
+   enteringCodes?: Set<string>;
+   enterDirection?: "left" | "right" | "above";
 }
 
 export const Hand: React.FC<HandProps> = ({
@@ -24,6 +30,10 @@ export const Hand: React.FC<HandProps> = ({
    onCardClick,
    selectionMode = false,
    size = "normal",
+   exitingCodes,
+   exitDirection,
+   enteringCodes,
+   enterDirection,
 }) => {
    const sorted = React.useMemo(
       () => [...cards].sort(compareCardCodes),
@@ -38,6 +48,26 @@ export const Hand: React.FC<HandProps> = ({
       const distance = index - centerIndex;
       const rotation = distance * degPerCard;
       const translateY = Math.pow(Math.abs(distance), 2) * arcFactor;
+
+      let content = card;
+      if (exitingCodes?.has(code) && exitDirection) {
+         const cls =
+            exitDirection === "left"
+               ? styles.handExitLeft
+               : exitDirection === "right"
+               ? styles.handExitRight
+               : styles.handExitUp;
+         content = <div className={cls}>{card}</div>;
+      } else if (enteringCodes?.has(code) && enterDirection) {
+         const cls =
+            enterDirection === "left"
+               ? styles.handEnterFromLeft
+               : enterDirection === "right"
+               ? styles.handEnterFromRight
+               : styles.handEnterFromAbove;
+         content = <div className={cls}>{card}</div>;
+      }
+
       return (
          <div
             key={code}
@@ -46,7 +76,7 @@ export const Hand: React.FC<HandProps> = ({
                transform: `translateY(${translateY}px) rotate(${rotation}deg)`,
             }}
          >
-            {card}
+            {content}
          </div>
       );
    };

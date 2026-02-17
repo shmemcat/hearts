@@ -80,7 +80,6 @@ html {
    --trickslotempty: hsla(0, 0%, 18%, 0.2);
    --yourturnborder: hsl(342, 36%, 64%);
    --yourturnbackground: hsl(354, 93%, 94%);
-   --receivedcardsbackground: hsl(354, 93%, 94%);
    --infopillbg: hsla(350, 60%, 92%, 0.85);
    --infopillborder: hsl(350, 50%, 86%);
    --infopilltext: hsl(342, 30%, 40%);
@@ -126,7 +125,6 @@ html {
    --trickslotempty: hsl(231, 16%, 29%);
    --yourturnborder: hsl(230, 15%, 48%);
    --yourturnbackground: hsl(230, 16%, 29%);
-   --receivedcardsbackground: hsl(231, 17%, 23%);
    --infopillbg: hsla(232, 15%, 22%, 0.85);
    --infopillborder: hsl(232, 14%, 30%);
    --infopilltext: hsl(341, 50%, 75%);

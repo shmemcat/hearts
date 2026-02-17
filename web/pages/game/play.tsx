@@ -4,7 +4,6 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/buttons";
-import { Card } from "@/components/game/Card";
 import { Hand } from "@/components/game/Hand";
 import { Trick } from "@/components/game/Trick";
 import { PageLayout, ButtonGroup } from "@/components/ui";
@@ -62,7 +61,14 @@ export default function PlayGamePage() {
       round: number;
       players: { name: string; score: number }[];
    } | null>(null);
-   const [receivedCards, setReceivedCards] = useState<string[] | null>(null);
+   const [passTransition, setPassTransition] = useState<{
+      phase: "exiting" | "gap" | "entering";
+      displayHand: string[];
+      exitingCodes?: Set<string>;
+      exitDir?: "left" | "right" | "up";
+      enteringCodes?: Set<string>;
+      enterDir?: "left" | "right" | "above";
+   } | null>(null);
    const [heartsPerPlayer, setHeartsPerPlayer] = useState<number[]>([
       0, 0, 0, 0,
    ]);
@@ -77,9 +83,6 @@ export default function PlayGamePage() {
    const roundPendingStateRef = useRef<GameSocketState | null>(null);
    const setRoundSummaryRef = useRef(setRoundSummary);
    setRoundSummaryRef.current = setRoundSummary;
-   const receivedCardsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-      null
-   );
 
    // ── Play queue (animation) ─────────────────────────────────────────
    const applyPendingState = useCallback(() => {
@@ -284,7 +287,6 @@ export default function PlayGamePage() {
          state.whose_turn === 0 ||
          loading ||
          busy ||
-         receivedCards !== null ||
          advanceSentRef.current
       ) {
          return;
@@ -328,30 +330,31 @@ export default function PlayGamePage() {
       state?.game_over,
       loading,
       busy,
-      receivedCards,
       enqueue,
       enqueueRestPlays,
    ]);
 
-   // ── Auto-clear received cards after 3s ────────────────────────────
-   useEffect(() => {
-      if (!receivedCards) return;
-      receivedCardsTimerRef.current = setTimeout(() => {
-         setReceivedCards(null);
-      }, 3000);
-      return () => {
-         if (receivedCardsTimerRef.current) {
-            clearTimeout(receivedCardsTimerRef.current);
-            receivedCardsTimerRef.current = null;
-         }
-      };
-   }, [receivedCards]);
 
    // ── Hearts-per-player tracking (client-side, per round) ───────────
    const currentRound = state?.round;
+   const [heartsVisuallyBroken, setHeartsVisuallyBroken] = useState(false);
    useEffect(() => {
       setHeartsPerPlayer([0, 0, 0, 0]);
+      setHeartsVisuallyBroken(false);
    }, [currentRound]);
+
+   // Track when a heart/QS first appears on the visible trick table
+   useEffect(() => {
+      const hasHeartOrQs = displaySlots.some(
+         (s) =>
+            s &&
+            (s.card.toLowerCase().endsWith("h") ||
+               s.card.toLowerCase() === "qs")
+      );
+      if (hasHeartOrQs) {
+         setHeartsVisuallyBroken(true);
+      }
+   }, [displaySlots]);
 
    useEffect(() => {
       if (trickResult && trickResult.hearts > 0) {
@@ -377,31 +380,79 @@ export default function PlayGamePage() {
       if (typeof gameId !== "string" || passSelection.size !== 3) return;
       const currentState = stateRef.current;
       if (!currentState) return;
-      setSubmitting(true);
-      const oldHand = currentState.human_hand;
-      const passedCards = passSelection;
+
+      const passDir = currentState.pass_direction;
+      const exitDir: "left" | "right" | "up" =
+         passDir === "left" ? "left" : passDir === "right" ? "right" : "up";
+      const enterDir: "left" | "right" | "above" =
+         passDir === "left"
+            ? "right"
+            : passDir === "right"
+            ? "left"
+            : "above";
+
+      const oldHand = [...currentState.human_hand];
+      const passedSet = new Set(passSelection);
       const cards = Array.from(passSelection) as [string, string, string];
-      submitPass(gameId, { cards })
-         .then((result) => {
+
+      setSubmitting(true);
+      setPassSelection(new Set());
+
+      // Phase 1: slide passed cards out (keep them selected/raised for continuity)
+      setPassTransition({
+         phase: "exiting",
+         displayHand: oldHand,
+         exitingCodes: passedSet,
+         exitDir,
+      });
+
+      const apiPromise = submitPass(gameId, { cards });
+      const exitTimer = new Promise<void>((r) => setTimeout(r, 400));
+
+      Promise.all([apiPromise, exitTimer])
+         .then(([result]) => {
             if (!result.ok) {
                setError(result.error);
+               setPassTransition(null);
                setSubmitting(false);
                return;
             }
-            const oldMinusPassed = new Set(
-               oldHand.filter((c) => !passedCards.has(c))
+
+            const newHand: string[] = result.data.human_hand;
+            const remainingHand = oldHand.filter((c) => !passedSet.has(c));
+            const remainingSet = new Set(remainingHand);
+            const received = newHand.filter(
+               (c: string) => !remainingSet.has(c)
             );
-            const received = result.data.human_hand.filter(
-               (c: string) => !oldMinusPassed.has(c)
-            );
-            setReceivedCards(received);
-            setState(result.data);
-            setPassSelection(new Set());
-            setSubmitting(false);
-            reset();
+            const receivedSet = new Set(received);
+
+            // Phase 2: show hand with passed cards removed (brief gap)
+            setPassTransition({
+               phase: "gap",
+               displayHand: remainingHand,
+            });
+
+            setTimeout(() => {
+               // Phase 3: show full new hand with received cards entering
+               setPassTransition({
+                  phase: "entering",
+                  displayHand: newHand,
+                  enteringCodes: receivedSet,
+                  enterDir,
+               });
+
+               // After enter + settle animation, transition is done
+               setTimeout(() => {
+                  setPassTransition(null);
+                  setState(result.data);
+                  setSubmitting(false);
+                  reset();
+               }, 1600);
+            }, 500);
          })
          .catch((e) => {
             setError(e instanceof Error ? e.message : "Submit failed");
+            setPassTransition(null);
             setSubmitting(false);
          });
    }, [gameId, passSelection, reset]);
@@ -583,13 +634,7 @@ export default function PlayGamePage() {
    const whoseTurn = busy ? currentTurn : state?.whose_turn ?? null;
 
    const slots = displaySlots;
-   const heartOrQueenOnTable = slots.some(
-      (s) =>
-         s &&
-         (s.card.toLowerCase().endsWith("h") || s.card.toLowerCase() === "qs")
-   );
-   const heartsBrokenForDisplay =
-      (state?.hearts_broken ?? false) || heartOrQueenOnTable;
+   const heartsBrokenForDisplay = heartsVisuallyBroken;
 
    // ── Helper: seat score display ──────────────────────────────────────
    const seatScore = (i: number) => {
@@ -706,6 +751,7 @@ export default function PlayGamePage() {
                                           color: heartsBrokenForDisplay
                                              ? "hsl(0, 65%, 50%)"
                                              : "var(--darkpink)",
+                                          transition: "color 0.5s ease",
                                        }}
                                     >
                                        ♥
@@ -749,18 +795,6 @@ export default function PlayGamePage() {
                               {state.players[0]?.name ?? "You"}
                            </span>
                            {seatScore(0)}
-                           {receivedCards && (
-                              <div className={styles.receivedCardsFloat}>
-                                 <p className={styles.receivedCardsLabel}>
-                                    You received:
-                                 </p>
-                                 <div className={styles.receivedCardsList}>
-                                    {receivedCards.map((c) => (
-                                       <Card key={c} code={c} size="small" />
-                                    ))}
-                                 </div>
-                              </div>
-                           )}
                         </div>
                      </div>
 
@@ -815,30 +849,73 @@ export default function PlayGamePage() {
                      </p>
                   )}
 
-                  {/* ── Passing phase UI ────────────────────────── */}
-                  {!roundSummary && state.phase === "passing" && (
+                  {/* ── Pass transition (animated hand) ─────────── */}
+                  {passTransition && (
                      <>
-                        <p className={styles.passHint}>
-                           Select 3 cards to pass {state.pass_direction}.
-                        </p>
                         <Hand
-                           cards={state.human_hand}
-                           selectedCodes={passSelection}
-                           onCardClick={
-                              submitting ? undefined : handlePassCardToggle
+                           cards={passTransition.displayHand}
+                           selectedCodes={
+                              passTransition.phase === "exiting"
+                                 ? passTransition.exitingCodes
+                                 : undefined
                            }
-                           selectionMode
+                           selectionMode={passTransition.phase === "exiting"}
+                           exitingCodes={
+                              passTransition.phase === "exiting"
+                                 ? passTransition.exitingCodes
+                                 : undefined
+                           }
+                           exitDirection={passTransition.exitDir}
+                           enteringCodes={
+                              passTransition.phase === "entering"
+                                 ? passTransition.enteringCodes
+                                 : undefined
+                           }
+                           enterDirection={passTransition.enterDir}
                         />
-                        <div className={styles.passActions}>
+                        <div
+                           className={styles.passActions}
+                           style={{ visibility: "hidden" }}
+                           aria-hidden="true"
+                        >
                            <Button
                               name="Submit pass"
-                              disabled={passSelection.size !== 3 || submitting}
-                              onClick={handleSubmitPass}
                               style={{ width: "180px" }}
                            />
                         </div>
                      </>
                   )}
+
+                  {/* ── Passing phase UI ────────────────────────── */}
+                  {!roundSummary &&
+                     state.phase === "passing" &&
+                     !passTransition && (
+                        <>
+                           <p className={styles.passHint}>
+                              Select 3 cards to pass {state.pass_direction}.
+                           </p>
+                           <Hand
+                              cards={state.human_hand}
+                              selectedCodes={passSelection}
+                              onCardClick={
+                                 submitting
+                                    ? undefined
+                                    : handlePassCardToggle
+                              }
+                              selectionMode
+                           />
+                           <div className={styles.passActions}>
+                              <Button
+                                 name="Submit pass"
+                                 disabled={
+                                    passSelection.size !== 3 || submitting
+                                 }
+                                 onClick={handleSubmitPass}
+                                 style={{ width: "180px" }}
+                              />
+                           </div>
+                        </>
+                     )}
 
                   {/* ── Player hand (playing phase) ─────────────── */}
                   {!roundSummary && state.phase === "playing" && (
