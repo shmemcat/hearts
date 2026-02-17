@@ -4,7 +4,12 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/buttons";
+import { GameOverBlock } from "@/components/game/GameOverBlock";
+import { GameSeat } from "@/components/game/GameSeat";
 import { Hand } from "@/components/game/Hand";
+import { InfoPill } from "@/components/game/InfoPill";
+import { PhaseHint } from "@/components/game/PhaseHint";
+import { RoundSummaryOverlay } from "@/components/game/RoundSummaryOverlay";
 import { Trick } from "@/components/game/Trick";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { usePlayQueue } from "@/hooks/usePlayQueue";
@@ -72,6 +77,7 @@ export default function PlayGamePage() {
    const [heartsPerPlayer, setHeartsPerPlayer] = useState<number[]>([
       0, 0, 0, 0,
    ]);
+   const [noPassHold, setNoPassHold] = useState(false);
 
    // ── Refs for WS callbacks (stable across renders) ──────────────────
    const pendingStateRef = useRef<GameSocketState | null>(null);
@@ -287,6 +293,7 @@ export default function PlayGamePage() {
          state.whose_turn === 0 ||
          loading ||
          busy ||
+         noPassHold ||
          advanceSentRef.current
       ) {
          return;
@@ -323,6 +330,7 @@ export default function PlayGamePage() {
                advanceSentRef.current = false;
             });
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [
       gameId,
       state?.phase,
@@ -330,10 +338,10 @@ export default function PlayGamePage() {
       state?.game_over,
       loading,
       busy,
+      noPassHold,
       enqueue,
       enqueueRestPlays,
    ]);
-
 
    // ── Hearts-per-player tracking (client-side, per round) ───────────
    const currentRound = state?.round;
@@ -385,11 +393,7 @@ export default function PlayGamePage() {
       const exitDir: "left" | "right" | "up" =
          passDir === "left" ? "left" : passDir === "right" ? "right" : "up";
       const enterDir: "left" | "right" | "above" =
-         passDir === "left"
-            ? "right"
-            : passDir === "right"
-            ? "left"
-            : "above";
+         passDir === "left" ? "right" : passDir === "right" ? "left" : "above";
 
       const oldHand = [...currentState.human_hand];
       const passedSet = new Set(passSelection);
@@ -468,6 +472,10 @@ export default function PlayGamePage() {
          );
          if (pending.phase === "passing") {
             reset();
+         }
+         if (pending.pass_direction === "none") {
+            setNoPassHold(true);
+            setTimeout(() => setNoPassHold(false), 2000);
          }
       }
    }, [reset]);
@@ -636,34 +644,20 @@ export default function PlayGamePage() {
    const slots = displaySlots;
    const heartsBrokenForDisplay = heartsVisuallyBroken;
 
-   // ── Helper: seat score display ──────────────────────────────────────
-   const seatScore = (i: number) => {
-      const score = roundSummary
+   // ── Seat display helpers ────────────────────────────────────────────
+   const showHeartsOnSeats =
+      state?.phase === "playing" && !roundSummary && !state?.game_over;
+   const seatIsCurrentTurn = (i: number) =>
+      !roundSummary &&
+      state?.phase === "playing" &&
+      !state?.game_over &&
+      whoseTurn === i;
+   const seatScore = (i: number) =>
+      roundSummary
          ? roundSummary.players[i]?.score ?? 0
          : state?.players[i]?.score ?? 0;
-      const showHearts =
-         state?.phase === "playing" && !roundSummary && !state?.game_over;
-      const heartDelta =
-         trickResult && trickResult.winner === i ? trickResult.hearts : 0;
-      return (
-         <span className={styles.gameTableSeatScore}>
-            {score}
-            {showHearts && (
-               <>
-                  <span className={styles.seatScoreSep}> · </span>
-                  <span className={styles.seatHeartCount}>
-                     ♥ {heartsPerPlayer[i]}
-                  </span>
-               </>
-            )}
-            {heartDelta > 0 && (
-               <span key={trickResult!.id} className={styles.heartDeltaBadge}>
-                  +{heartDelta}
-               </span>
-            )}
-         </span>
-      );
-   };
+   const seatHeartDelta = (i: number) =>
+      trickResult && trickResult.winner === i ? trickResult.hearts : 0;
 
    // ── Main render ────────────────────────────────────────────────────
    return (
@@ -680,59 +674,37 @@ export default function PlayGamePage() {
             {state && (
                <div className={styles.playContent}>
                   {!roundSummary && (
-                     <div className={styles.playInfoPill}>
-                        <span className={styles.playInfoRound}>
-                           Round {state.round}
-                        </span>
-                        {state.pass_direction !== "none" && (
-                           <span className={styles.playInfoDetail}>
-                              Pass {state.pass_direction}
-                           </span>
-                        )}
-                        <span className={styles.playInfoPhase}>
-                           {state.phase}
-                        </span>
-                     </div>
+                     <InfoPill
+                        round={state.round}
+                        passDirection={state.pass_direction}
+                        phase={state.phase}
+                     />
                   )}
 
                   <div className={styles.gameTableWrapper}>
                      <div className={styles.gameTable}>
                         {/* Top (player 2) */}
-                        <div
-                           className={`${styles.gameTableSeat} ${
-                              styles.gameTableSeatTop
-                           } ${
-                              !roundSummary &&
-                              state.phase === "playing" &&
-                              !state.game_over &&
-                              whoseTurn === 2
-                                 ? styles.gameTableSeatYourTurn
-                                 : ""
-                           }`}
-                        >
-                           <span className={styles.gameTableSeatName}>
-                              {state.players[2]?.name ?? "—"}
-                           </span>
-                           {seatScore(2)}
-                        </div>
+                        <GameSeat
+                           name={state.players[2]?.name ?? "—"}
+                           score={seatScore(2)}
+                           position="top"
+                           isCurrentTurn={seatIsCurrentTurn(2)}
+                           showHearts={!!showHeartsOnSeats}
+                           heartCount={heartsPerPlayer[2]}
+                           heartDelta={seatHeartDelta(2)}
+                           trickResultId={trickResult?.id}
+                        />
                         {/* Left (player 1) */}
-                        <div
-                           className={`${styles.gameTableSeat} ${
-                              styles.gameTableSeatLeft
-                           } ${
-                              !roundSummary &&
-                              state.phase === "playing" &&
-                              !state.game_over &&
-                              whoseTurn === 1
-                                 ? styles.gameTableSeatYourTurn
-                                 : ""
-                           }`}
-                        >
-                           <span className={styles.gameTableSeatName}>
-                              {state.players[1]?.name ?? "—"}
-                           </span>
-                           {seatScore(1)}
-                        </div>
+                        <GameSeat
+                           name={state.players[1]?.name ?? "—"}
+                           score={seatScore(1)}
+                           position="left"
+                           isCurrentTurn={seatIsCurrentTurn(1)}
+                           showHearts={!!showHeartsOnSeats}
+                           heartCount={heartsPerPlayer[1]}
+                           heartDelta={seatHeartDelta(1)}
+                           trickResultId={trickResult?.id}
+                        />
                         {/* Center: trick + hearts icon */}
                         <div className={styles.tableCenter}>
                            <Trick
@@ -761,93 +733,57 @@ export default function PlayGamePage() {
                            />
                         </div>
                         {/* Right (player 3) */}
-                        <div
-                           className={`${styles.gameTableSeat} ${
-                              styles.gameTableSeatRight
-                           } ${
-                              !roundSummary &&
-                              state.phase === "playing" &&
-                              !state.game_over &&
-                              whoseTurn === 3
-                                 ? styles.gameTableSeatYourTurn
-                                 : ""
-                           }`}
-                        >
-                           <span className={styles.gameTableSeatName}>
-                              {state.players[3]?.name ?? "—"}
-                           </span>
-                           {seatScore(3)}
-                        </div>
+                        <GameSeat
+                           name={state.players[3]?.name ?? "—"}
+                           score={seatScore(3)}
+                           position="right"
+                           isCurrentTurn={seatIsCurrentTurn(3)}
+                           showHearts={!!showHeartsOnSeats}
+                           heartCount={heartsPerPlayer[3]}
+                           heartDelta={seatHeartDelta(3)}
+                           trickResultId={trickResult?.id}
+                        />
                         {/* Bottom (player 0 = human) */}
-                        <div
-                           className={`${styles.gameTableSeat} ${
-                              styles.gameTableSeatBottom
-                           } ${
-                              !roundSummary &&
-                              state.phase === "playing" &&
-                              !state.game_over &&
-                              whoseTurn === 0
-                                 ? styles.gameTableSeatYourTurn
-                                 : ""
-                           }`}
-                        >
-                           <span className={styles.gameTableSeatName}>
-                              {state.players[0]?.name ?? "You"}
-                           </span>
-                           {seatScore(0)}
-                        </div>
+                        <GameSeat
+                           name={state.players[0]?.name ?? "You"}
+                           score={seatScore(0)}
+                           position="bottom"
+                           isCurrentTurn={seatIsCurrentTurn(0)}
+                           showHearts={!!showHeartsOnSeats}
+                           heartCount={heartsPerPlayer[0]}
+                           heartDelta={seatHeartDelta(0)}
+                           trickResultId={trickResult?.id}
+                        />
                      </div>
 
                      {/* ── Round summary overlay ───────────────────── */}
                      {roundSummary && (
-                        <div className={styles.roundSummaryOverlay}>
-                           <div className={styles.roundSummaryBlock}>
-                              <p className={styles.roundSummaryTitle}>
-                                 Round {roundSummary.round} Complete
-                              </p>
-                              <table className={styles.scoreTable}>
-                                 <thead>
-                                    <tr>
-                                       <th>Player</th>
-                                       <th>This Round</th>
-                                       <th>Total</th>
-                                    </tr>
-                                 </thead>
-                                 <tbody>
-                                    {roundSummary.players.map((p, i) => (
-                                       <tr key={i}>
-                                          <td>{p.name}</td>
-                                          <td className={styles.scoreDelta}>
-                                             {roundSummary.deltas[i] > 0
-                                                ? `+${roundSummary.deltas[i]}`
-                                                : "0"}
-                                          </td>
-                                          <td>{p.score}</td>
-                                       </tr>
-                                    ))}
-                                 </tbody>
-                              </table>
-                              <Button
-                                 name="Continue"
-                                 onClick={handleContinueRound}
-                                 style={{ width: "180px", marginTop: "16px" }}
-                              />
-                           </div>
-                        </div>
+                        <RoundSummaryOverlay
+                           summary={roundSummary}
+                           onContinue={handleContinueRound}
+                        />
                      )}
                   </div>
                   {/* end gameTableWrapper */}
 
-                  {/* ── Playing phase UI ────────────────────────── */}
-                  {!roundSummary && state.phase === "playing" && (
-                     <p className={styles.playTurnHint}>
-                        {busy
-                           ? "Playing…"
-                           : state.whose_turn === 0 && !state.game_over
-                           ? "Your turn"
-                           : "Waiting for others…"}
-                     </p>
-                  )}
+                  {/* ── Phase hint (always in DOM to prevent layout shift) ── */}
+                  <PhaseHint
+                     text={
+                        roundSummary || state.game_over
+                           ? null
+                           : noPassHold
+                           ? "No passing this round"
+                           : state.phase === "playing"
+                           ? busy
+                              ? "Playing…"
+                              : state.whose_turn === 0
+                              ? "Your turn"
+                              : "Waiting for others…"
+                           : state.phase === "passing" && !passTransition
+                           ? `Select 3 cards to pass ${state.pass_direction}.`
+                           : null
+                     }
+                  />
 
                   {/* ── Pass transition (animated hand) ─────────── */}
                   {passTransition && (
@@ -891,16 +827,11 @@ export default function PlayGamePage() {
                      state.phase === "passing" &&
                      !passTransition && (
                         <>
-                           <p className={styles.passHint}>
-                              Select 3 cards to pass {state.pass_direction}.
-                           </p>
                            <Hand
                               cards={state.human_hand}
                               selectedCodes={passSelection}
                               onCardClick={
-                                 submitting
-                                    ? undefined
-                                    : handlePassCardToggle
+                                 submitting ? undefined : handlePassCardToggle
                               }
                               selectionMode
                            />
@@ -924,7 +855,9 @@ export default function PlayGamePage() {
                            cards={state.human_hand}
                            legalCodes={new Set(state.legal_plays)}
                            onCardClick={
-                              !busy && state.whose_turn === 0 && !state.game_over
+                              !busy &&
+                              state.whose_turn === 0 &&
+                              !state.game_over
                                  ? handlePlayCard
                                  : undefined
                            }
@@ -935,51 +868,20 @@ export default function PlayGamePage() {
                            style={{ visibility: "hidden" }}
                            aria-hidden="true"
                         >
-                           <Button name="Submit pass" style={{ width: "180px" }} />
+                           <Button
+                              name="Submit pass"
+                              style={{ width: "180px" }}
+                           />
                         </div>
                      </>
                   )}
 
                   {/* ── Game over screen with score table ───────── */}
                   {state.game_over && !roundSummary && (
-                     <div className={styles.gameOverBlock}>
-                        <p className={styles.gameOverTitle}>Game Over</p>
-                        <table className={styles.scoreTable}>
-                           <thead>
-                              <tr>
-                                 <th>Player</th>
-                                 <th>Score</th>
-                              </tr>
-                           </thead>
-                           <tbody>
-                              {[...state.players]
-                                 .map((p, i) => ({ ...p, idx: i }))
-                                 .sort((a, b) => a.score - b.score)
-                                 .map((p) => (
-                                    <tr
-                                       key={p.idx}
-                                       className={
-                                          p.idx === state.winner_index
-                                             ? styles.scoreTableWinner
-                                             : ""
-                                       }
-                                    >
-                                       <td>{p.name}</td>
-                                       <td>{p.score}</td>
-                                    </tr>
-                                 ))}
-                           </tbody>
-                        </table>
-                        <Link href="/game/create">
-                           <Button
-                              name="Create New Game"
-                              style={{
-                                 width: "250px",
-                                 marginTop: "16px",
-                              }}
-                           />
-                        </Link>
-                     </div>
+                     <GameOverBlock
+                        players={state.players}
+                        winnerIndex={state.winner_index}
+                     />
                   )}
                </div>
             )}

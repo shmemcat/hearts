@@ -51,6 +51,15 @@
    margin-bottom: 8px;
 }
 
+/* Unified hint line between game table and hand; always in the DOM to prevent layout shift */
+.phaseHint {
+   font-size: 0.9rem;
+   color: var(--header);
+   opacity: 0.9;
+   margin-top: 8px;
+   margin-bottom: 0;
+}
+
 .playHeartsBroken {
    font-size: 0.8rem;
    padding: 4px 10px;
