@@ -22,13 +22,13 @@ const bodyContentClasses =
 
 const titleBlockInlineStyles = {
    logo: {
-      marginTop: "-100px",
+      marginTop: "-95px",
       display: "block" as const,
       marginLeft: "auto",
       marginRight: "auto",
       userSelect: "none" as const,
    },
-   h1: { marginTop: "-180px" },
+   h1: { marginTop: "-153px" },
 };
 
 export const PageLayout: React.FC<PageLayoutProps> = ({
@@ -54,7 +54,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
       >
          {!hideTitleBlock && (
             <div className={containers["title-container"]}>
-               <HeartsLogo style={titleBlockInlineStyles.logo} />
+               <HeartsLogo style={titleBlockInlineStyles.logo} size={212} />
                <h1 style={titleBlockInlineStyles.h1}>{title}</h1>
             </div>
          )}

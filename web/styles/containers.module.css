@@ -43,7 +43,7 @@
 .title-container {
    display: flex;
    flex-direction: column;
-   height: 150px;
+   height: 130px;
    width: 90vw;
 }
 

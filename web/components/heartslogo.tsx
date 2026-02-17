@@ -3,17 +3,18 @@ import colors from "@/styles/design_tokens";
 
 export interface HeartsLogoProps {
    style?: React.CSSProperties;
+   size?: number;
 }
 
-export const HeartsLogo: React.FC<HeartsLogoProps> = (props) => {
+export const HeartsLogo: React.FC<HeartsLogoProps> = ({ style, size = 250 }) => {
    const fillColor = colors.heartslogo;
 
    return (
-      <div style={props.style} aria-hidden>
+      <div style={style} aria-hidden>
          <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="250"
-            height="250"
+            width={size}
+            height={size}
             viewBox="0 0 742 742"
             aria-label="Hearts Logo"
          >
