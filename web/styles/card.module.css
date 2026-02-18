@@ -23,12 +23,12 @@
 }
 
 .cardMedium {
-   width: 56px;
-   min-width: 56px;
-   height: 78px;
-   border-radius: 6px;
+   width: 64px;
+   min-width: 64px;
+   height: 90px;
+   border-radius: 7px;
    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-   font-size: 1rem;
+   font-size: 1.05rem;
 }
 
 .cardSelected {
