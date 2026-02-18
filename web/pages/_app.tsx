@@ -5,6 +5,7 @@ import "@/styles/base_style.css";
 import localFont from "next/font/local";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/context/AuthContext";
+import { CardStyleProvider } from "@/context/CardStyleContext";
 import type { AppProps } from "next/app";
 
 /* Fontawesome */
@@ -43,9 +44,11 @@ export default function App({ Component, pageProps }: AppProps) {
       </Head>
       <ThemeProvider>
         <AuthProvider>
-          <div className={terminalDosis.className}>
-            <Component {...pageProps} />
-          </div>
+          <CardStyleProvider>
+            <div className={terminalDosis.className}>
+              <Component {...pageProps} />
+            </div>
+          </CardStyleProvider>
         </AuthProvider>
       </ThemeProvider>
     </>

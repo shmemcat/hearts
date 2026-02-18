@@ -79,6 +79,9 @@ function UserInfo() {
             </div>
             <StatsPanel />
             <ButtonGroup padding="loose">
+               <Link href="/options">
+                  <Button name="Options" />
+               </Link>
                <Button name="Sign Out" onClick={() => logout()} />
                <Link href="/">
                   <Button name="Home" />

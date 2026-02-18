@@ -40,8 +40,38 @@
    line-height: 1.5rem;
 }
 
+/* ── Image card variant ───────────────────────────────────── */
+.cardImage {
+   position: relative;
+   padding: 0;
+   overflow: hidden;
+   background: transparent;
+}
+
+.cardImg {
+   width: 100%;
+   height: 100%;
+   object-fit: cover;
+   pointer-events: none;
+}
+
+.cardImage.cardDisabled::after {
+   content: "";
+   position: absolute;
+   inset: 0;
+   background: var(--contentbox);
+   opacity: 0.5;
+   pointer-events: none;
+   border-radius: 4px;
+}
+
 .cardSelected {
    border-color: var(--cardhighlight);
+   transform: translateY(-6px);
+}
+
+.cardImage.cardSelected {
+   border: 2px solid var(--cardhighlight);
    transform: translateY(-6px);
 }
 
@@ -82,9 +112,17 @@
       gap: 0;
    }
 
+   .cardImage {
+      padding: 0;
+   }
+
    .cardLarge {
       align-items: center;
       justify-content: center;
       padding: 6px 8px;
+   }
+
+   .cardImage.cardLarge {
+      padding: 0;
    }
 }

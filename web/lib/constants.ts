@@ -9,6 +9,10 @@ export const USERNAME_RE = /^[a-zA-Z0-9_]{3,64}$/;
 
 export const STORAGE_KEY = "hearts_token";
 
+/* ── Preferences ─────────────────────────────────────────────────────── */
+
+export const CARD_STYLE_KEY = "hearts_card_style";
+
 /* ── Card / Game ──────────────────────────────────────────────────────── */
 
 export const SUIT_SYMBOL: Record<string, string> = {

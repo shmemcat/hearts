@@ -2,6 +2,7 @@
 
 import React from "react";
 
+import { useCardStyle, type CardStyle } from "@/context/CardStyleContext";
 import { SUIT_RED, SUIT_SYMBOL } from "@/lib/constants";
 import styles from "@/styles/card.module.css";
 
@@ -22,6 +23,8 @@ export interface CardProps {
   /** Card size: normal (hand), medium (table trick), large (mobile trick) */
   size?: "normal" | "medium" | "large";
   className?: string;
+  /** Override the global card style for preview purposes. */
+  styleOverride?: CardStyle;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -31,10 +34,15 @@ export const Card: React.FC<CardProps> = ({
   onClick,
   size = "normal",
   className,
+  styleOverride,
 }) => {
+  const { cardStyle: globalStyle } = useCardStyle();
+  const cardStyle = styleOverride ?? globalStyle;
+
   const { rank, suit } = parseCode(code);
   const isRed = SUIT_RED.has(suit);
   const symbol = SUIT_SYMBOL[suit] ?? "?";
+  const isImage = cardStyle === "flourish";
 
   const handleClick = () => {
     if (disabled || !onClick) return;
@@ -46,6 +54,7 @@ export const Card: React.FC<CardProps> = ({
       type="button"
       className={[
         styles.card,
+        isImage ? styles.cardImage : "",
         size === "medium" ? styles.cardMedium : size === "large" ? styles.cardLarge : "",
         selected ? styles.cardSelected : "",
         disabled && onClick ? styles.cardDisabled : "",
@@ -57,8 +66,19 @@ export const Card: React.FC<CardProps> = ({
       disabled={disabled && !!onClick}
       aria-label={`Card ${rank} of ${suit}`}
     >
-      <span className={isRed ? styles.rankRed : styles.rankBlack}>{rank}</span>
-      <span className={isRed ? styles.suitRed : styles.suitBlack}>{symbol}</span>
+      {isImage ? (
+        <img
+          src={`/cards/${code}.png`}
+          alt={`${rank} of ${suit}`}
+          className={styles.cardImg}
+          draggable={false}
+        />
+      ) : (
+        <>
+          <span className={isRed ? styles.rankRed : styles.rankBlack}>{rank}</span>
+          <span className={isRed ? styles.suitRed : styles.suitBlack}>{symbol}</span>
+        </>
+      )}
     </button>
   );
 };
