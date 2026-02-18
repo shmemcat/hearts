@@ -18,7 +18,7 @@ export const LoginWarning: React.FC = () => {
 
    if (!user) {
       return (
-         <div>
+         <div className="mt-4">
             <h2>
                <FontAwesomeIcon
                   icon={fasExclamationCircle}
