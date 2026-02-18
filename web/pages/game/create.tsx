@@ -31,6 +31,7 @@ export default function CreateGamePage() {
       try {
          const result = await startGame({
             player_name: user?.name || undefined,
+            difficulty: difficulty === "My Mom" ? "hard" : difficulty.toLowerCase(),
          });
          if (result.ok) {
             const gameId = result.data.game_id;

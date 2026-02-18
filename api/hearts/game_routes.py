@@ -10,7 +10,7 @@ from flask import Blueprint, request, jsonify, current_app
 
 from hearts.game.card import Card
 from hearts.game.runner import GameRunner
-from hearts.ai.random_ai import RandomPassStrategy, RandomPlayStrategy
+from hearts.ai.factory import create_strategies
 
 games_bp = Blueprint("games", __name__, url_prefix="/games")
 
@@ -33,6 +33,7 @@ def start_game():
     Returns { "game_id": "<id>" }."""
     data = request.get_json() or {}
     player_name = (data.get("player_name") or "You").strip() or "You"
+    difficulty = data.get("difficulty", "easy")
     game_id = uuid.uuid4().hex
     rng = None
     if current_app.config.get("TESTING") and "seed" in data:
@@ -40,8 +41,7 @@ def start_game():
             rng = random.Random(int(data["seed"]))
         except (TypeError, ValueError):
             pass
-    pass_strategy = RandomPassStrategy(rng=rng) if rng else RandomPassStrategy()
-    play_strategy = RandomPlayStrategy(rng=rng) if rng else RandomPlayStrategy()
+    pass_strategy, play_strategy = create_strategies(difficulty, rng=rng)
     runner = GameRunner.new_game(
         pass_strategy,
         play_strategy,

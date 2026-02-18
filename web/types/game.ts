@@ -39,6 +39,7 @@ export type StartGameResponse = {
 /** Body for POST /games/start (optional) */
 export type StartGameBody = {
   player_name?: string;
+  difficulty?: string;
 };
 
 /** Body for POST /games/:id/pass */
