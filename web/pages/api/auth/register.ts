@@ -1,9 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { ApiErrorResponse } from "@/types/api";
+import { SERVER_API_URL } from "@/lib/constants";
 
 type RegisterApiBody = { email: string; password: string };
-
-const apiUrl = process.env.API_URL || "http://localhost:5001";
 
 export default async function handler(
   req: NextApiRequest,
@@ -17,7 +16,7 @@ export default async function handler(
     return res.status(400).json({ error: "Email and password required" });
   }
   try {
-    const response = await fetch(`${apiUrl}/register`, {
+    const response = await fetch(`${SERVER_API_URL}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),

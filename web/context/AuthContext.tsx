@@ -2,12 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-const STORAGE_KEY = "hearts_token";
-
-const getApiUrl = () =>
-  typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL
-    ? process.env.NEXT_PUBLIC_API_URL
-    : "http://localhost:5001";
+import { getApiUrl } from "@/lib/api";
+import { STORAGE_KEY } from "@/lib/constants";
 
 type User = { id: string; email: string; name?: string };
 

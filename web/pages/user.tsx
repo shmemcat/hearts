@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
-import { Button } from "@/components/buttons";
+import { Button } from "@/components/Buttons";
 import { FormInput } from "@/components/FormInput";
 import { StyledLink } from "@/components/StyledLink";
 import {
@@ -18,12 +18,6 @@ export default function UserPage() {
       <>
          <Head>
             <title>User | Hearts</title>
-            <link rel="icon" href="/images/favicon.ico" />
-            <meta name="description" content="Hearts web application" />
-            <meta
-               name="viewport"
-               content="width=device-width, initial-scale=1"
-            />
          </Head>
          <PageLayout title="USER">
             <UserInfo />
@@ -125,7 +119,6 @@ function UserInfo() {
                <Button
                   name={loading ? "Signing in…" : "Sign In"}
                   disabled={loading}
-                  onClick={() => {}}
                />
             </div>
          </FormContainer>

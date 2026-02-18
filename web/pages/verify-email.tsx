@@ -4,13 +4,9 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 import type { VerifyEmailQuery } from "@/types/api";
-import { Button } from "@/components/buttons";
+import { Button } from "@/components/Buttons";
 import { PageLayout, ButtonGroup } from "@/components/ui";
-
-const getApiUrl = () =>
-   typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL
-      ? process.env.NEXT_PUBLIC_API_URL
-      : "http://localhost:5001";
+import { getApiUrl } from "@/lib/api";
 
 export default function VerifyEmailPage() {
    const router = useRouter();
@@ -51,11 +47,6 @@ export default function VerifyEmailPage() {
       <>
          <Head>
             <title>Verify email | Hearts</title>
-            <link rel="icon" href="/images/favicon.ico" />
-            <meta
-               name="viewport"
-               content="width=device-width, initial-scale=1"
-            />
          </Head>
          <PageLayout title="VERIFY EMAIL">
             {status === "loading" && <p>Verifying…</p>}

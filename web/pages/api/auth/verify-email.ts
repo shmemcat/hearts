@@ -4,8 +4,7 @@ import type {
   ApiErrorResponse,
   ApiMessageResponse,
 } from "@/types/api";
-
-const apiUrl = process.env.API_URL || "http://localhost:5001";
+import { SERVER_API_URL } from "@/lib/constants";
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,7 +18,7 @@ export default async function handler(
     return res.status(400).json({ error: "Token required" });
   }
   try {
-    const response = await fetch(`${apiUrl}/verify-email`, {
+    const response = await fetch(`${SERVER_API_URL}/verify-email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),

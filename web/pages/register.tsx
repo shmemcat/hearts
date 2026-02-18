@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/router";
 
-import { Button } from "@/components/buttons";
+import { Button } from "@/components/Buttons";
 import { FormInput } from "@/components/FormInput";
 import { StyledLink } from "@/components/StyledLink";
 import {
@@ -13,13 +13,8 @@ import {
    ButtonGroup,
 } from "@/components/ui";
 
-const MIN_PASSWORD_LEN = 8;
-const USERNAME_RE = /^[a-zA-Z0-9_]{3,64}$/;
-
-const getApiUrl = () =>
-   typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL
-      ? process.env.NEXT_PUBLIC_API_URL
-      : "http://localhost:5001";
+import { getApiUrl } from "@/lib/api";
+import { MIN_PASSWORD_LEN, USERNAME_RE } from "@/lib/constants";
 
 export default function RegisterPage() {
    const router = useRouter();
@@ -96,12 +91,6 @@ export default function RegisterPage() {
       <>
          <Head>
             <title>Register | Hearts</title>
-            <link rel="icon" href="/images/favicon.ico" />
-            <meta name="description" content="Hearts web application" />
-            <meta
-               name="viewport"
-               content="width=device-width, initial-scale=1"
-            />
          </Head>
          <PageLayout title="REGISTER">
             {success ? (
@@ -172,7 +161,6 @@ export default function RegisterPage() {
                   <Button
                      name={loading ? "Creating account…" : "Create account"}
                      disabled={loading}
-                     onClick={() => {}}
                   />
                </FormContainer>
             )}

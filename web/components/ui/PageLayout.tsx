@@ -1,7 +1,7 @@
 import React from "react";
 import containers from "@/styles/containers.module.css";
-import { Navbar } from "@/components/navbar";
-import { HeartsLogo } from "@/components/heartslogo";
+import { Navbar } from "@/components/Navbar";
+import { HeartsLogo } from "@/components/HeartsLogo";
 
 export type PageLayoutVariant = "default" | "menu";
 

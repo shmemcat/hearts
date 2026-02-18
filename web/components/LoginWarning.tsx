@@ -5,11 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faExclamationCircle as fasExclamationCircle } from "@fortawesome/pro-solid-svg-icons";
 import { StyledLink } from "@/components/StyledLink";
 
-export interface LoginWarningProps {
-   className?: string;
-}
-
-export const LoginWarning: React.FC<LoginWarningProps> = () => {
+export const LoginWarning: React.FC = () => {
    const { user, status } = useAuth();
    const [mounted, setMounted] = React.useState(false);
 
@@ -17,8 +13,8 @@ export const LoginWarning: React.FC<LoginWarningProps> = () => {
       setMounted(true);
    }, []);
 
-   if (!mounted) return <></>;
-   if (status === "loading") return <></>;
+   if (!mounted) return null;
+   if (status === "loading") return null;
 
    if (!user) {
       return (
@@ -41,5 +37,5 @@ export const LoginWarning: React.FC<LoginWarningProps> = () => {
          </div>
       );
    }
-   return <div></div>;
+   return null;
 };

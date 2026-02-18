@@ -4,8 +4,8 @@ import React from "react";
 import party from "party-js";
 
 import containers from "@/styles/containers.module.css";
-import { RulesButton } from "@/components/buttons";
-import { Button } from "@/components/buttons";
+import { RulesButton } from "@/components/Buttons";
+import { Button } from "@/components/Buttons";
 import { PageLayout } from "@/components/ui";
 
 export default function RulesPage() {
@@ -13,12 +13,6 @@ export default function RulesPage() {
       <>
          <Head>
             <title>Rules | Hearts</title>
-            <link rel="icon" href="/images/favicon.ico" />
-            <meta name="description" content="Hearts web application" />
-            <meta
-               name="viewport"
-               content="width=device-width, initial-scale=1"
-            />
          </Head>
          <PageLayout
             title="RULES"

@@ -2,16 +2,8 @@
 
 import React from "react";
 
+import { SUIT_RED, SUIT_SYMBOL } from "@/lib/constants";
 import styles from "@/styles/card.module.css";
-
-const SUIT_SYMBOL: Record<string, string> = {
-  c: "♣",
-  d: "♦",
-  s: "♠",
-  h: "♥",
-};
-
-const SUIT_RED = new Set(["d", "h"]);
 
 /** Parse card code "2c" | "10d" | "Js" | "Ah" into rank and suit. */
 function parseCode(code: string): { rank: string; suit: string } {

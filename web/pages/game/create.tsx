@@ -3,16 +3,16 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import React from "react";
 
-import { Button } from "@/components/buttons";
+import { Button } from "@/components/Buttons";
 import {
    CreateGameSelections,
    type NumAiPlayers,
-} from "@/components/create-game-selections";
-import { LoginWarning } from "@/components/loginwarning";
+} from "@/components/CreateGameSelections";
+import { LoginWarning } from "@/components/LoginWarning";
 import { Tooltip } from "@/components/Tooltip";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
-import { startGame } from "@/lib/game-api";
+import { startGame } from "@/lib/gameApi";
 
 export default function CreateGamePage() {
    const router = useRouter();
@@ -50,12 +50,6 @@ export default function CreateGamePage() {
       <>
          <Head>
             <title>Create Game | Hearts</title>
-            <link rel="icon" href="/images/favicon.ico" />
-            <meta name="description" content="Hearts web application" />
-            <meta
-               name="viewport"
-               content="width=device-width, initial-scale=1"
-            />
          </Head>
          <PageLayout title="CREATE GAME">
             <div className="flex flex-col w-[440px] max-md:w-[300px]">

@@ -2,21 +2,15 @@ import Head from "next/head";
 import Link from "next/link";
 
 import containers from "@/styles/containers.module.css";
-import { Button } from "@/components/buttons";
-import { HeartsLogo } from "@/components/heartslogo";
-import { Navbar } from "@/components/navbar";
+import { Button } from "@/components/Buttons";
+import { HeartsLogo } from "@/components/HeartsLogo";
+import { Navbar } from "@/components/Navbar";
 
 export default function Home() {
    return (
       <>
          <Head>
             <title>Hearts</title>
-            <link rel="icon" href="/images/favicon.ico" />
-            <meta name="description" content="Hearts web application" />
-            <meta
-               name="viewport"
-               content="width=device-width, initial-scale=1"
-            />
          </Head>
          <main className={containers["content-border-container-menu"]}>
             <Navbar />

@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { ForgotPasswordBody, ApiErrorResponse } from "@/types/api";
-
-const apiUrl = process.env.API_URL || "http://localhost:5001";
+import { SERVER_API_URL } from "@/lib/constants";
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,7 +14,7 @@ export default async function handler(
     return res.status(400).json({ error: "Email required" });
   }
   try {
-    const response = await fetch(`${apiUrl}/forgot-password`, {
+    const response = await fetch(`${SERVER_API_URL}/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: email.trim().toLowerCase() }),

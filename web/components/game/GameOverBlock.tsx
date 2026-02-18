@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 
-import { Button } from "@/components/buttons";
+import { Button } from "@/components/Buttons";
 import type { GamePlayer } from "@/types/game";
 import styles from "@/styles/play.module.css";
 

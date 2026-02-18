@@ -2,8 +2,8 @@ import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 
-import { Button } from "@/components/buttons";
-import { Sparkle } from "@/components/sparkle";
+import { Button } from "@/components/Buttons";
+import { Sparkle } from "@/components/Sparkle";
 import { StyledLink } from "@/components/StyledLink";
 import { PageLayout } from "@/components/ui";
 
@@ -12,12 +12,6 @@ export default function About() {
       <>
          <Head>
             <title>About | Hearts</title>
-            <link rel="icon" href="/images/favicon.ico" />
-            <meta name="description" content="Hearts web application" />
-            <meta
-               name="viewport"
-               content="width=device-width, initial-scale=1"
-            />
          </Head>
          <PageLayout
             title="ABOUT"

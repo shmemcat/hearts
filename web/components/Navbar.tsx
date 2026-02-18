@@ -7,18 +7,16 @@ import { useRouter } from "next/router";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import "@fortawesome/fontawesome-svg-core/styles.css";
-import { faUser as fasUser } from "@fortawesome/pro-solid-svg-icons";
 import { faUser as farUser } from "@fortawesome/pro-regular-svg-icons";
-import { faMoon as fasMoon } from "@fortawesome/pro-solid-svg-icons";
-import { faSunBright as fasSunBright } from "@fortawesome/pro-solid-svg-icons";
-import { faMusicNote as fasMusicNote } from "@fortawesome/pro-solid-svg-icons";
-import { faMusicNoteSlash as fasMusicNoteSlash } from "@fortawesome/pro-solid-svg-icons";
-import { faHeart as fasHeart } from "@fortawesome/pro-solid-svg-icons";
+import {
+   faUser as fasUser,
+   faMoon as fasMoon,
+   faSunBright as fasSunBright,
+   faMusicNote as fasMusicNote,
+   faMusicNoteSlash as fasMusicNoteSlash,
+   faHeart as fasHeart,
+} from "@fortawesome/pro-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-
-export interface NavbarProps {
-   className?: string;
-}
 
 /** Props passed to FontAwesomeIcon for icon-select-bounce (CSS .icon[clicked="1"]) */
 interface IconAnimationProps {
@@ -26,7 +24,7 @@ interface IconAnimationProps {
    onAnimationEnd: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = () => {
+export const Navbar: React.FC = () => {
    const router = useRouter();
    return (
       <div className="flex flex-row justify-between">

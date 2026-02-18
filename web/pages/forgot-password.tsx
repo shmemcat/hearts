@@ -2,7 +2,8 @@ import Head from "next/head";
 import Link from "next/link";
 import { useState } from "react";
 
-import { Button } from "@/components/buttons";
+import { Button } from "@/components/Buttons";
+import { FormInput } from "@/components/FormInput";
 import { StyledLink } from "@/components/StyledLink";
 import {
    PageLayout,
@@ -44,11 +45,6 @@ export default function ForgotPasswordPage() {
       <>
          <Head>
             <title>Forgot password | Hearts</title>
-            <link rel="icon" href="/images/favicon.ico" />
-            <meta
-               name="viewport"
-               content="width=device-width, initial-scale=1"
-            />
          </Head>
          <PageLayout title="FORGOT PASSWORD">
             {sent ? (
@@ -60,20 +56,17 @@ export default function ForgotPasswordPage() {
                <>
                   <p>Enter your email and we&apos;ll send a reset link.</p>
                   <FormContainer onSubmit={handleSubmit}>
-                     <input
+                     <FormInput
                         type="email"
                         placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        required
                         autoComplete="email"
-                        className="px-3 py-2"
                      />
                      {error && <ErrorMessage>{error}</ErrorMessage>}
                      <Button
                         name={loading ? "Sending…" : "Send reset link"}
                         disabled={loading}
-                        onClick={() => {}}
                      />
                   </FormContainer>
                </>

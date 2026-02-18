@@ -1,34 +1,14 @@
 import { useCallback, useRef, useState } from "react";
 import type { CurrentTrickSlot, PlayEvent } from "@/types/game";
-
-/** How long all 4 cards are shown before the collect sweep begins. */
-const HOLD_MS = 1000;
-/** Delay before each queued card reveal (turn highlight → card appears). */
-const CARD_DELAY_MS = 500;
-/** Duration of the collect-to-winner sweep animation (matches Trick.tsx COLLECT_DURATION + buffer). */
-const COLLECT_MS = 450;
-/** Extra time the heart-delta badge lingers after the sweep finishes (total badge = COLLECT_MS + BADGE_LINGER_MS). */
-const BADGE_LINGER_MS = 550;
-/** Duration of the empty-board flash between tricks. */
-const CLEAR_MS = 300;
-
-/* ── Client-side trick winner detection ──────────────────────────────── */
-
-const RANK_ORDER: Record<string, number> = {
-   "2": 2,
-   "3": 3,
-   "4": 4,
-   "5": 5,
-   "6": 6,
-   "7": 7,
-   "8": 8,
-   "9": 9,
-   "10": 10,
-   J: 11,
-   Q: 12,
-   K: 13,
-   A: 14,
-};
+import {
+   HOLD_MS,
+   CARD_DELAY_MS,
+   COLLECT_MS,
+   BADGE_LINGER_MS,
+   CLEAR_MS,
+   RANK_ORDER,
+   EMPTY_SLOTS,
+} from "@/lib/constants";
 
 function cardSuit(code: string): string {
    return code.slice(-1).toLowerCase();
@@ -79,8 +59,6 @@ export interface TrickResult {
    /** Monotonically increasing id so React can re-key animations. */
    id: number;
 }
-
-const EMPTY_SLOTS: CurrentTrickSlot[] = [null, null, null, null];
 
 export interface UsePlayQueueOptions {
    onIdle: () => void;

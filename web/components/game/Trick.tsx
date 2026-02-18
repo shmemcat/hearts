@@ -27,9 +27,7 @@ const TABLE_SLOT_ORDER: Array<{ index: number; className: string }> = [
   { index: 3, className: styles.trickTableSlotRight },
 ];
 
-/* ── Collect animation via Web Animations API ──────────────────────── */
-
-const COLLECT_DURATION = 350;
+import { COLLECT_DURATION } from "@/lib/constants";
 
 type Endpoint = { x: number; y: number; midX?: number; midY?: number };
 

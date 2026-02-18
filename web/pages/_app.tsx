@@ -1,3 +1,4 @@
+import Head from "next/head";
 import "@/styles/tailwind.css";
 import "@/styles/reset_css.css";
 import "@/styles/base_style.css";
@@ -35,6 +36,11 @@ const terminalDosis = localFont({
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
+      <Head>
+        <link rel="icon" href="/images/favicon.ico" />
+        <meta name="description" content="Hearts web application" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
       <ThemeProvider>
         <AuthProvider>
           <div className={terminalDosis.className}>

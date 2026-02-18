@@ -1,9 +1,9 @@
 import Head from "next/head";
 import Link from "next/link";
 
-import { Button } from "@/components/buttons";
+import { Button } from "@/components/Buttons";
 import { FormInput } from "@/components/FormInput";
-import { LoginWarning } from "@/components/loginwarning";
+import { LoginWarning } from "@/components/LoginWarning";
 import { Tooltip } from "@/components/Tooltip";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 
@@ -12,12 +12,6 @@ export default function JoinGamePage() {
       <>
          <Head>
             <title>Join Game | Hearts</title>
-            <link rel="icon" href="/images/favicon.ico" />
-            <meta name="description" content="Hearts web application" />
-            <meta
-               name="viewport"
-               content="width=device-width, initial-scale=1"
-            />
          </Head>
          <PageLayout title="JOIN GAME">
             <h2>Enter the lobby code</h2>

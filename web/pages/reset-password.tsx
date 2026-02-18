@@ -4,7 +4,8 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 
 import type { ResetPasswordQuery } from "@/types/api";
-import { Button } from "@/components/buttons";
+import { Button } from "@/components/Buttons";
+import { FormInput } from "@/components/FormInput";
 import { StyledLink } from "@/components/StyledLink";
 import {
    PageLayout,
@@ -12,8 +13,7 @@ import {
    ErrorMessage,
    ButtonGroup,
 } from "@/components/ui";
-
-const MIN_PASSWORD_LEN = 8;
+import { MIN_PASSWORD_LEN } from "@/lib/constants";
 
 export default function ResetPasswordPage() {
    const router = useRouter();
@@ -63,11 +63,6 @@ export default function ResetPasswordPage() {
       <>
          <Head>
             <title>Reset password | Hearts</title>
-            <link rel="icon" href="/images/favicon.ico" />
-            <meta
-               name="viewport"
-               content="width=device-width, initial-scale=1"
-            />
          </Head>
          <PageLayout title="RESET PASSWORD">
             {success ? (
@@ -78,31 +73,24 @@ export default function ResetPasswordPage() {
                <>
                   <p>Enter your new password.</p>
                   <FormContainer onSubmit={handleSubmit} className="gap-3">
-                     <input
+                     <FormInput
                         type="password"
                         placeholder="New password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        required
-                        minLength={MIN_PASSWORD_LEN}
                         autoComplete="new-password"
-                        className="px-3 py-2"
                      />
-                     <input
+                     <FormInput
                         type="password"
                         placeholder="Confirm new password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        minLength={MIN_PASSWORD_LEN}
                         autoComplete="new-password"
-                        className="px-3 py-2"
                      />
                      {error && <ErrorMessage>{error}</ErrorMessage>}
                      <Button
                         name={loading ? "Updating…" : "Update password"}
                         disabled={loading}
-                        onClick={() => {}}
                      />
                   </FormContainer>
                </>

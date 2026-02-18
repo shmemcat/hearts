@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { Button } from "@/components/buttons";
+import { Button } from "@/components/Buttons";
 import styles from "@/styles/play.module.css";
 
 export interface RoundSummaryData {

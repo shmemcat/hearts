@@ -1,12 +1,13 @@
 import React from "react";
 import button from "@/styles/buttons.module.css";
-import colors from "@/styles/design_tokens";
+import colors from "@/styles/designTokens";
 
 export interface ButtonProps {
    name: string;
    disabled?: boolean;
    onClick?: () => void;
    style?: React.CSSProperties;
+   type?: "button" | "submit" | "reset";
 }
 
 export const Button: React.FC<ButtonProps> = (props) => {
@@ -15,7 +16,7 @@ export const Button: React.FC<ButtonProps> = (props) => {
          className={button["menu-button"]}
          disabled={props.disabled}
          onClick={props.onClick}
-         role="button"
+         type={props.type}
          style={props.style}
          aria-label={props.name}
          tabIndex={-1}
@@ -45,7 +46,7 @@ export const RulesButton: React.FC<RulesButtonProps> = (props) => {
          onMouseEnter={() => setIsHovered(true)}
          onMouseLeave={() => setIsHovered(false)}
          onClick={props.onClick}
-         role="button"
+         type="button"
          aria-label={props.name}
          className={`${
             props.selected
@@ -86,21 +87,15 @@ interface PipingBagProps {
 
 const PipingBag: React.FC<PipingBagProps> = (props) => {
    const fillColor = props.isHovered ? colors.tan : colors.rulesbuttonselected;
-   const width = props.width;
-   const height = props.height;
-   let className = button["piping-bag"];
-
-   if (props.left) {
-      className = button["piping-bag"];
-   } else if (props.right) {
-      className = button["piping-bag-right"];
-   }
+   const className = props.right
+      ? button["piping-bag-right"]
+      : button["piping-bag"];
 
    return (
       <span className={className} style={props.style}>
          <svg
-            width={width}
-            height={height}
+            width={props.width}
+            height={props.height}
             viewBox="0 0 578 322"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"

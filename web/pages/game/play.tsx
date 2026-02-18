@@ -3,14 +3,16 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/buttons";
-import { GameOverBlock } from "@/components/game/GameOverBlock";
-import { GameSeat } from "@/components/game/GameSeat";
-import { Hand } from "@/components/game/Hand";
-import { InfoPill } from "@/components/game/InfoPill";
-import { PhaseHint } from "@/components/game/PhaseHint";
-import { RoundSummaryOverlay } from "@/components/game/RoundSummaryOverlay";
-import { Trick } from "@/components/game/Trick";
+import { Button } from "@/components/Buttons";
+import {
+   GameOverBlock,
+   GameSeat,
+   Hand,
+   InfoPill,
+   PhaseHint,
+   RoundSummaryOverlay,
+   Trick,
+} from "@/components/game";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { usePlayQueue } from "@/hooks/usePlayQueue";
 import {
@@ -18,7 +20,7 @@ import {
    getGameState,
    submitPass,
    submitPlay,
-} from "@/lib/game-api";
+} from "@/lib/gameApi";
 import {
    connect as connectGameSocket,
    disconnect as disconnectGameSocket,
@@ -29,15 +31,12 @@ import {
    onTrickComplete as onGameSocketTrickComplete,
    sendAdvance as sendGameSocketAdvance,
    sendPlay as sendGameSocketPlay,
-} from "@/lib/game-socket";
+} from "@/lib/gameSocket";
 import type { CurrentTrickSlot, GameState, PlayEvent } from "@/types/game";
-import type { GameSocketState } from "@/lib/game-socket";
+import type { GameSocketState } from "@/lib/gameSocket";
+import { PLAY_PAGE_LAYOUT_CLASS } from "@/lib/constants";
 import handStyles from "@/components/game/Hand.module.css";
 import styles from "@/styles/play.module.css";
-
-/** PageLayout body classes without top margin (mt-10) for play page layout */
-const PLAY_PAGE_LAYOUT_CLASS =
-   "w-full px-2 flex flex-col items-center justify-center text-center";
 
 /**
  * Terminology:
@@ -571,7 +570,6 @@ export default function PlayGamePage() {
          <>
             <Head>
                <title>Play Game | Hearts</title>
-               <link rel="icon" href="/images/favicon.ico" />
             </Head>
             <PageLayout
                title="PLAY GAME"
@@ -597,7 +595,6 @@ export default function PlayGamePage() {
          <>
             <Head>
                <title>Play Game | Hearts</title>
-               <link rel="icon" href="/images/favicon.ico" />
             </Head>
             <PageLayout
                title="PLAY GAME"
@@ -605,9 +602,9 @@ export default function PlayGamePage() {
                className={PLAY_PAGE_LAYOUT_CLASS}
             >
                <div className="animate-pulse flex flex-col gap-4 w-full max-w-md">
-                  <div className="h-8 bg-gray-200 rounded w-1/3" />
-                  <div className="h-24 bg-gray-200 rounded" />
-                  <div className="h-32 bg-gray-200 rounded" />
+                  <div className="h-8 bg-mediumpink rounded w-1/3" />
+                  <div className="h-24 bg-mediumpink rounded" />
+                  <div className="h-32 bg-mediumpink rounded" />
                </div>
             </PageLayout>
          </>
@@ -619,7 +616,6 @@ export default function PlayGamePage() {
          <>
             <Head>
                <title>Game Not Found | Hearts</title>
-               <link rel="icon" href="/images/favicon.ico" />
             </Head>
             <PageLayout
                title="PLAY GAME"
@@ -645,7 +641,6 @@ export default function PlayGamePage() {
          <>
             <Head>
                <title>Play Game | Hearts</title>
-               <link rel="icon" href="/images/favicon.ico" />
             </Head>
             <PageLayout
                title="PLAY GAME"
@@ -699,7 +694,6 @@ export default function PlayGamePage() {
       <>
          <Head>
             <title>Play Game | Hearts</title>
-            <link rel="icon" href="/images/favicon.ico" />
          </Head>
          <PageLayout
             title="PLAY GAME"

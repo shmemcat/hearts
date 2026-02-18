@@ -1,5 +1,5 @@
 import React from "react";
-import colors from "@/styles/design_tokens";
+import colors from "@/styles/designTokens";
 
 export interface HeartsLogoProps {
    style?: React.CSSProperties;
