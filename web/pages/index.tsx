@@ -5,6 +5,7 @@ import containers from "@/styles/containers.module.css";
 import { Button } from "@/components/Buttons";
 import { HeartsLogo } from "@/components/HeartsLogo";
 import { Navbar } from "@/components/Navbar";
+import { motion } from "framer-motion";
 
 export default function Home() {
    return (
@@ -14,7 +15,14 @@ export default function Home() {
          </Head>
          <main className={containers["content-border-container-menu"]}>
             <Navbar />
-            <div id="index" className={containers["index-container"]}>
+            <motion.div
+               id="index"
+               className={containers["index-container"]}
+               initial={{ opacity: 0, y: -12 }}
+               animate={{ opacity: 1, y: 0 }}
+               exit={{ opacity: 0, y: 12 }}
+               transition={{ duration: 0.25, ease: "easeOut" }}
+            >
                <div className={containers["title-container"]}>
                   <HeartsLogo
                      style={{
@@ -42,7 +50,7 @@ export default function Home() {
                      <Button name="About" />
                   </Link>
                </div>
-            </div>
+            </motion.div>
          </main>
       </>
    );

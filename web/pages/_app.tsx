@@ -7,6 +7,8 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/context/AuthContext";
 import { CardStyleProvider } from "@/context/CardStyleContext";
 import type { AppProps } from "next/app";
+import { useRouter } from "next/router";
+import { AnimatePresence, motion } from "framer-motion";
 
 /* Fontawesome */
 import { config } from "@fortawesome/fontawesome-svg-core";
@@ -35,6 +37,8 @@ const terminalDosis = localFont({
 });
 
 export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+
   return (
     <>
       <Head>
@@ -46,7 +50,16 @@ export default function App({ Component, pageProps }: AppProps) {
         <AuthProvider>
           <CardStyleProvider>
             <div className={terminalDosis.className}>
-              <Component {...pageProps} />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={router.pathname}
+                  initial={false}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                >
+                  <Component {...pageProps} />
+                </motion.div>
+              </AnimatePresence>
             </div>
           </CardStyleProvider>
         </AuthProvider>

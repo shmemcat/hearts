@@ -2,6 +2,7 @@ import React from "react";
 import containers from "@/styles/containers.module.css";
 import { Navbar } from "@/components/Navbar";
 import { HeartsLogo } from "@/components/HeartsLogo";
+import { motion } from "framer-motion";
 
 export type PageLayoutVariant = "default" | "menu";
 
@@ -36,7 +37,11 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
       }
    >
       <Navbar />
-      <div
+      <motion.div
+         initial={{ opacity: 0, y: -12 }}
+         animate={{ opacity: 1, y: 0 }}
+         exit={{ opacity: 0, y: 12 }}
+         transition={{ duration: 0.25, ease: "easeOut" }}
          className={`flex flex-col items-center justify-center ${
             hideTitleBlock ? "mt-2 sm:mt-6" : "mt-[50px] sm:mt-[140px]"
          } ${contentClassName ?? ""}`.trim()}
@@ -48,6 +53,6 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
             </div>
          )}
          <div className={className ?? bodyContentClasses}>{children}</div>
-      </div>
+      </motion.div>
    </div>
 );
