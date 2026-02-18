@@ -11,8 +11,10 @@ import {
    InfoPill,
    PhaseHint,
    RoundSummaryOverlay,
+   ShootTheMoonOverlay,
    Trick,
 } from "@/components/game";
+import type { ShootTheMoonData } from "@/components/game/ShootTheMoonOverlay";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { usePlayQueue } from "@/hooks/usePlayQueue";
 import {
@@ -74,6 +76,9 @@ export default function PlayGamePage() {
       enteringCodes?: Set<string>;
       enterDir?: "left" | "right" | "above";
    } | null>(null);
+   const [shootTheMoon, setShootTheMoon] = useState<ShootTheMoonData | null>(
+      null
+   );
    const [heartsPerPlayer, setHeartsPerPlayer] = useState<number[]>([
       0, 0, 0, 0,
    ]);
@@ -93,6 +98,8 @@ export default function PlayGamePage() {
    const roundPendingStateRef = useRef<GameSocketState | null>(null);
    const setRoundSummaryRef = useRef(setRoundSummary);
    setRoundSummaryRef.current = setRoundSummary;
+   const setShootTheMoonRef = useRef(setShootTheMoon);
+   setShootTheMoonRef.current = setShootTheMoon;
 
    // ── Play queue (animation) ─────────────────────────────────────────
    const applyPendingState = useCallback(() => {
@@ -112,15 +119,31 @@ export default function PlayGamePage() {
          );
          roundPendingStateRef.current = pending;
          const currentRound = stateRef.current?.round ?? 1;
+         const roundPlayers = pending.players.map(
+            (p: { name: string; score: number }) => ({
+               name: p.name,
+               score: p.score,
+            })
+         );
+
+         // Detect shoot-the-moon: one player at 0 and all others at +26
+         const zeroCount = deltas.filter((d: number) => d === 0).length;
+         const twentySixCount = deltas.filter((d: number) => d === 26).length;
+         if (zeroCount === 1 && twentySixCount === 3) {
+            setShootTheMoonRef.current({
+               shooterIndex: deltas.indexOf(0),
+               deltas,
+               round: currentRound,
+               players: roundPlayers,
+            });
+         } else {
+            setShootTheMoonRef.current(null);
+         }
+
          setRoundSummaryRef.current({
             deltas,
             round: currentRound,
-            players: pending.players.map(
-               (p: { name: string; score: number }) => ({
-                  name: p.name,
-                  score: p.score,
-               })
-            ),
+            players: roundPlayers,
          });
          return;
       }
@@ -494,6 +517,7 @@ export default function PlayGamePage() {
       const pending = roundPendingStateRef.current;
       roundPendingStateRef.current = null;
       setRoundSummary(null);
+      setShootTheMoon(null);
       if (pending) {
          setState(pending);
          prevScoresRef.current = pending.players.map(
@@ -786,8 +810,16 @@ export default function PlayGamePage() {
                         />
                      </div>
 
+                     {/* ── Shoot the Moon overlay ────────────────────── */}
+                     {roundSummary && shootTheMoon && (
+                        <ShootTheMoonOverlay
+                           {...shootTheMoon}
+                           onContinue={handleContinueRound}
+                        />
+                     )}
+
                      {/* ── Round summary overlay ───────────────────── */}
-                     {roundSummary && (
+                     {roundSummary && !shootTheMoon && (
                         <RoundSummaryOverlay
                            summary={roundSummary}
                            onContinue={handleContinueRound}

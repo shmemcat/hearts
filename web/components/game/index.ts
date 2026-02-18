@@ -5,4 +5,5 @@ export { Hand } from "./Hand";
 export { InfoPill } from "./InfoPill";
 export { PhaseHint } from "./PhaseHint";
 export { RoundSummaryOverlay } from "./RoundSummaryOverlay";
+export { ShootTheMoonOverlay } from "./ShootTheMoonOverlay";
 export { Trick } from "./Trick";
