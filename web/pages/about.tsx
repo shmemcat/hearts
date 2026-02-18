@@ -15,7 +15,7 @@ export default function About() {
          </Head>
          <PageLayout
             title="ABOUT"
-            className="mt-10 w-[90vw] max-w-[900px] flex flex-row gap-10 items-start max-md:flex-col-reverse max-md:items-center"
+            className="mt-8 w-[90vw] max-w-[900px] flex flex-row gap-10 items-start max-md:flex-col-reverse max-md:items-center sm:mt-10"
          >
             <div className="flex-1 min-w-0 text-base tracking-[1.5px] leading-snug ml-2.5 max-md:mx-5 max-md:text-center">
                <span className="m-0 block mb-4">

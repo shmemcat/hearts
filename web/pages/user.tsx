@@ -65,7 +65,7 @@ function UserInfo() {
 
    if (status === "loading") {
       return (
-         <div className="mt-10 w-[85vw] flex flex-col items-center justify-center text-center">
+         <div className="mt-8 w-[85vw] flex flex-col items-center justify-center text-center sm:mt-10">
             Loading…
          </div>
       );

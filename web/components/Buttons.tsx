@@ -68,6 +68,7 @@ export const RulesButton: React.FC<RulesButtonProps> = (props) => {
          {(isHovered || props.selected) && (
             <PipingBag
                isHovered={isHovered && !props.selected}
+               style={{ marginLeft: "7px" }}
                width="27"
                height="16"
                right

@@ -18,18 +18,7 @@ export interface PageLayoutProps {
 }
 
 const bodyContentClasses =
-   "mt-10 w-full px-2 flex flex-col items-center justify-center text-center";
-
-const titleBlockInlineStyles = {
-   logo: {
-      marginTop: "-95px",
-      display: "block" as const,
-      marginLeft: "auto",
-      marginRight: "auto",
-      userSelect: "none" as const,
-   },
-   h1: { marginTop: "-153px" },
-};
+   "mt-8 w-full px-2 flex flex-col items-center justify-center text-center sm:mt-10";
 
 export const PageLayout: React.FC<PageLayoutProps> = ({
    title,
@@ -49,13 +38,13 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
       <Navbar />
       <div
          className={`flex flex-col items-center justify-center ${
-            hideTitleBlock ? "mt-2 sm:mt-6" : "mt-[100px] sm:mt-[140px]"
+            hideTitleBlock ? "mt-2 sm:mt-6" : "mt-[50px] sm:mt-[140px]"
          } ${contentClassName ?? ""}`.trim()}
       >
          {!hideTitleBlock && (
             <div className={containers["title-container"]}>
-               <HeartsLogo style={titleBlockInlineStyles.logo} size={212} />
-               <h1 style={titleBlockInlineStyles.h1}>{title}</h1>
+               <HeartsLogo size={212} />
+               <h1>{title}</h1>
             </div>
          )}
          <div className={className ?? bodyContentClasses}>{children}</div>
