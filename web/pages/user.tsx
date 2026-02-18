@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 import { Button } from "@/components/Buttons";
@@ -12,6 +12,8 @@ import {
    ErrorMessage,
    ButtonGroup,
 } from "@/components/ui";
+import { fetchStats, type UserStatsResponse } from "@/lib/gameApi";
+import containers from "@/styles/containers.module.css";
 
 export default function UserPage() {
    return (
@@ -72,7 +74,10 @@ function UserInfo() {
    if (user) {
       return (
          <>
-            <div>Welcome {user.name ?? user.email}!</div>
+            <div className="mb-4">
+               Welcome <span className="bold">{user.name ?? user.email}</span>!
+            </div>
+            <StatsPanel />
             <ButtonGroup padding="loose">
                <Button name="Sign Out" onClick={() => logout()} />
                <Link href="/">
@@ -133,5 +138,76 @@ function UserInfo() {
             </Link>
          </ButtonGroup>
       </>
+   );
+}
+
+function StatsPanel() {
+   const { token } = useAuth();
+   const [stats, setStats] = useState<UserStatsResponse | null>(null);
+
+   useEffect(() => {
+      if (!token) return;
+      fetchStats(token).then((res) => {
+         if (res.ok) setStats(res.data);
+      });
+   }, [token]);
+
+   if (!stats) return null;
+
+   const fmt = (val: number | null | undefined): string =>
+      val != null ? String(val) : "--";
+
+   const winRate =
+      stats.games_played > 0
+         ? `${Math.round((stats.games_won / stats.games_played) * 100)}%`
+         : "--";
+
+   return (
+      <div className={containers["stats-card"]}>
+         <p className={containers["stats-card-title"]}>Your Stats</p>
+         <div className={containers["stats-grid"]}>
+            <div className={containers["stats-row"]}>
+               <span className={containers["stats-label"]}>Games Played</span>
+               <span className={containers["stats-value"]}>
+                  {fmt(stats.games_played)}
+               </span>
+            </div>
+            <div className={containers["stats-row"]}>
+               <span className={containers["stats-label"]}>Games Won</span>
+               <span className={containers["stats-value"]}>
+                  {fmt(stats.games_won)}
+               </span>
+            </div>
+            <div className={containers["stats-row"]}>
+               <span className={containers["stats-label"]}>Win Rate</span>
+               <span className={containers["stats-value"]}>{winRate}</span>
+            </div>
+            <hr className={containers["stats-divider"]} />
+            <div className={containers["stats-row"]}>
+               <span className={containers["stats-label"]}>Shot the Moon</span>
+               <span className={containers["stats-value"]}>
+                  {fmt(stats.moon_shots)}
+               </span>
+            </div>
+            <div className={containers["stats-row"]}>
+               <span className={containers["stats-label"]}>Best Score</span>
+               <span className={containers["stats-value"]}>
+                  {fmt(stats.best_score)}
+               </span>
+            </div>
+            <div className={containers["stats-row"]}>
+               <span className={containers["stats-label"]}>Worst Score</span>
+               <span className={containers["stats-value"]}>
+                  {fmt(stats.worst_score)}
+               </span>
+            </div>
+            <div className={containers["stats-row"]}>
+               <span className={containers["stats-label"]}>Avg Score</span>
+               <span className={containers["stats-value"]}>
+                  {fmt(stats.average_score)}
+               </span>
+            </div>
+         </div>
+      </div>
    );
 }

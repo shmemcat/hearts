@@ -20,9 +20,11 @@ import { usePlayQueue } from "@/hooks/usePlayQueue";
 import {
    advanceGame,
    getGameState,
+   recordGameStats,
    submitPass,
    submitPlay,
 } from "@/lib/gameApi";
+import { useAuth } from "@/context/AuthContext";
 import {
    connect as connectGameSocket,
    disconnect as disconnectGameSocket,
@@ -55,6 +57,11 @@ function reorderSlotsForTableLayout<T>(arr: T[]): T[] {
 export default function PlayGamePage() {
    const router = useRouter();
    const { game_id: gameId } = router.query;
+   const { token } = useAuth();
+
+   // ── Stats tracking ──────────────────────────────────────────────────
+   const humanMoonShotsRef = useRef(0);
+   const statsRecordedRef = useRef(false);
 
    // ── Core UI state ──────────────────────────────────────────────────
    const [loading, setLoading] = useState(true);
@@ -130,8 +137,12 @@ export default function PlayGamePage() {
          const zeroCount = deltas.filter((d: number) => d === 0).length;
          const twentySixCount = deltas.filter((d: number) => d === 26).length;
          if (zeroCount === 1 && twentySixCount === 3) {
+            const shooterIdx = deltas.indexOf(0);
+            if (shooterIdx === 0) {
+               humanMoonShotsRef.current += 1;
+            }
             setShootTheMoonRef.current({
-               shooterIndex: deltas.indexOf(0),
+               shooterIndex: shooterIdx,
                deltas,
                round: currentRound,
                players: roundPlayers,
@@ -317,6 +328,26 @@ export default function PlayGamePage() {
          cancelled = true;
       };
    }, [gameId, setSlots]);
+
+   // ── Record stats when game ends ───────────────────────────────────
+   useEffect(() => {
+      if (
+         !state?.game_over ||
+         statsRecordedRef.current ||
+         !token ||
+         typeof gameId !== "string"
+      )
+         return;
+      statsRecordedRef.current = true;
+      const humanScore = state.players[0]?.score ?? 0;
+      const won = state.winner_index === 0;
+      recordGameStats(token, {
+         game_id: gameId,
+         final_score: humanScore,
+         won,
+         moon_shots: humanMoonShotsRef.current,
+      });
+   }, [state?.game_over, state?.winner_index, state?.players, token, gameId]);
 
    // ── AI turn: advance when it's not the human's turn ────────────────
    useEffect(() => {
@@ -529,7 +560,7 @@ export default function PlayGamePage() {
          }
          if (pending.pass_direction === "none") {
             setNoPassHold(true);
-            setTimeout(() => setNoPassHold(false), 2000);
+            setTimeout(() => setNoPassHold(false), 2500);
          }
       }
    }, [reset]);

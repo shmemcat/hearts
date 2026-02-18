@@ -19,11 +19,9 @@ export const InfoPill: React.FC<InfoPillProps> = ({
    return (
       <div className={styles.playInfoPill}>
          <span className={styles.playInfoRound}>Round {round}</span>
-         {passDirection !== "none" && (
-            <span className={styles.playInfoDetail}>
-               Pass {passDirection}
-            </span>
-         )}
+         <span className={styles.playInfoDetail}>
+            {passDirection === "none" ? "No pass" : `Pass ${passDirection}`}
+         </span>
          <span className={styles.playInfoPhase}>{phase}</span>
       </div>
    );

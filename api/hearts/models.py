@@ -16,6 +16,8 @@ class User(db.Model):
     verification_expires = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    stats = db.relationship("UserStats", uselist=False, back_populates="user", lazy="joined")
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -28,6 +30,35 @@ class User(db.Model):
     def set_verification_token(self, expires_hours=24):
         self.verification_token = secrets.token_urlsafe(32)
         self.verification_expires = datetime.utcnow() + timedelta(hours=expires_hours)
+
+
+class UserStats(db.Model):
+    __tablename__ = "user_stats"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
+    games_played = db.Column(db.Integer, default=0, nullable=False)
+    games_won = db.Column(db.Integer, default=0, nullable=False)
+    moon_shots = db.Column(db.Integer, default=0, nullable=False)
+    best_score = db.Column(db.Integer, nullable=True)
+    worst_score = db.Column(db.Integer, nullable=True)
+    total_points = db.Column(db.Integer, default=0, nullable=False)
+
+    user = db.relationship("User", back_populates="stats")
+
+    def to_dict(self):
+        return {
+            "games_played": self.games_played,
+            "games_won": self.games_won,
+            "moon_shots": self.moon_shots,
+            "best_score": self.best_score,
+            "worst_score": self.worst_score,
+            "average_score": (
+                round(self.total_points / self.games_played, 1)
+                if self.games_played > 0
+                else None
+            ),
+        }
 
 
 class PasswordResetToken(db.Model):

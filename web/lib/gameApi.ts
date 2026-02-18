@@ -117,3 +117,46 @@ export async function submitPlay(
   }
   return { ok: true, data: data as PlayResponse };
 }
+
+// ── Stats ──────────────────────────────────────────────────────────────
+
+export type UserStatsResponse = {
+  games_played: number;
+  games_won: number;
+  moon_shots: number;
+  best_score: number | null;
+  worst_score: number | null;
+  average_score: number | null;
+};
+
+export async function fetchStats(
+  token: string
+): Promise<{ ok: true; data: UserStatsResponse } | { ok: false; error: string }> {
+  const res = await fetch(`${base()}/stats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await parseJson<{ stats: UserStatsResponse } & GameApiError>(res);
+  if (!res.ok) {
+    return { ok: false, error: (data as GameApiError).error ?? `Request failed (${res.status})` };
+  }
+  return { ok: true, data: (data as { stats: UserStatsResponse }).stats };
+}
+
+export async function recordGameStats(
+  token: string,
+  body: { game_id: string; final_score: number; won: boolean; moon_shots: number }
+): Promise<{ ok: true; data: UserStatsResponse } | { ok: false; error: string }> {
+  const res = await fetch(`${base()}/stats/record`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await parseJson<{ stats: UserStatsResponse } & GameApiError>(res);
+  if (!res.ok) {
+    return { ok: false, error: (data as GameApiError).error ?? `Request failed (${res.status})` };
+  }
+  return { ok: true, data: (data as { stats: UserStatsResponse }).stats };
+}
