@@ -17,10 +17,14 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
+COPY entrypoint.sh ./
+RUN chmod +x entrypoint.sh
+
 COPY gunicorn_conf.py ./
 COPY hearts ./hearts
 COPY migrations ./migrations
 
 EXPOSE 5000
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["gunicorn", "-c", "gunicorn_conf.py", "hearts:app"]

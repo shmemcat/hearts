@@ -36,3 +36,6 @@ yarn-error.log*
 # pycache
 *.pyc
 */__pycache__/
+
+# Deploy docs (local reference only)
+DEPLOY.md

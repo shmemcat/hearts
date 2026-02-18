@@ -9,10 +9,6 @@ export const USERNAME_RE = /^[a-zA-Z0-9_]{3,64}$/;
 
 export const STORAGE_KEY = "hearts_token";
 
-/* ── Server API (Next.js API routes only) ─────────────────────────────── */
-
-export const SERVER_API_URL = process.env.API_URL || "http://localhost:5001";
-
 /* ── Card / Game ──────────────────────────────────────────────────────── */
 
 export const SUIT_SYMBOL: Record<string, string> = {

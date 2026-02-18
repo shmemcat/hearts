@@ -2,6 +2,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useState } from "react";
 
+import { getApiUrl } from "@/lib/api";
 import { Button } from "@/components/Buttons";
 import { FormInput } from "@/components/FormInput";
 import { StyledLink } from "@/components/StyledLink";
@@ -23,7 +24,7 @@ export default function ForgotPasswordPage() {
       setError("");
       setLoading(true);
       try {
-         const res = await fetch("/api/auth/forgot-password", {
+         const res = await fetch(`${getApiUrl()}/forgot-password`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: email.trim().toLowerCase() }),
