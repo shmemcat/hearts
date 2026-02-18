@@ -36,7 +36,7 @@ import styles from "@/styles/play.module.css";
 
 /** PageLayout body classes without top margin (mt-10) for play page layout */
 const PLAY_PAGE_LAYOUT_CLASS =
-   "w-[85vw] flex flex-col items-center justify-center text-center";
+   "w-full px-2 flex flex-col items-center justify-center text-center";
 
 /**
  * Terminology:

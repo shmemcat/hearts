@@ -52,9 +52,7 @@ export const GameSeat: React.FC<GameSeatProps> = ({
             {showHearts && (
                <>
                   <span className={styles.seatScoreSep}> · </span>
-                  <span className={styles.seatHeartCount}>
-                     ♥ {heartCount}
-                  </span>
+                  <span className={styles.seatHeartCount}>♥ {heartCount}</span>
                </>
             )}
             {heartDelta > 0 && (

@@ -14,7 +14,7 @@ export interface HandProps {
    onCardClick?: (code: string) => void;
    /** When true, cards are selectable for pass (toggle up to 3). */
    selectionMode?: boolean;
-   size?: "normal" | "small";
+   size?: "normal" | "medium";
    /** Cards animating out of hand (pass transition). */
    exitingCodes?: Set<string>;
    exitDirection?: "left" | "right" | "up";

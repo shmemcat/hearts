@@ -27,8 +27,8 @@ export interface CardProps {
   selected?: boolean;
   disabled?: boolean;
   onClick?: () => void;
-  /** Card size: normal (hand), small (row trick), medium (table trick) */
-  size?: "normal" | "small" | "medium";
+  /** Card size: normal (hand), medium (table trick) */
+  size?: "normal" | "medium";
   className?: string;
 }
 
@@ -54,7 +54,6 @@ export const Card: React.FC<CardProps> = ({
       type="button"
       className={[
         styles.card,
-        size === "small" ? styles.cardSmall : "",
         size === "medium" ? styles.cardMedium : "",
         selected ? styles.cardSelected : "",
         disabled && onClick ? styles.cardDisabled : "",

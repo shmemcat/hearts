@@ -65,7 +65,7 @@ export const Trick: React.FC<TrickProps> = ({
         <div key={i} className={styles.trickSlot}>
           <span className={styles.trickSlotLabel}>{labels[i]}</span>
           {slot ? (
-            <Card code={slot.card} size="small" />
+            <Card code={slot.card} size="medium" />
           ) : (
             <div className={styles.trickSlotEmpty} aria-hidden="true" />
           )}

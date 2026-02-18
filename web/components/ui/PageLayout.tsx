@@ -18,7 +18,7 @@ export interface PageLayoutProps {
 }
 
 const bodyContentClasses =
-   "mt-10 w-[85vw] flex flex-col items-center justify-center text-center";
+   "mt-10 w-full px-2 flex flex-col items-center justify-center text-center";
 
 const titleBlockInlineStyles = {
    logo: {

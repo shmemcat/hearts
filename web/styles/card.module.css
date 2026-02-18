@@ -12,7 +12,7 @@
    justify-content: center;
    gap: 2px;
    font-weight: 700;
-   font-size: 1.1rem;
+   font-size: 1.2rem;
    cursor: pointer;
    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -22,17 +22,12 @@
    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.cardSmall {
-   width: 48px;
-   min-width: 48px;
-   height: 68px;
-   font-size: 0.9rem;
-}
-
 .cardMedium {
    width: 56px;
    min-width: 56px;
    height: 78px;
+   border-radius: 6px;
+   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
    font-size: 1rem;
 }
 

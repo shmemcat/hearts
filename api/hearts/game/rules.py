@@ -1,7 +1,7 @@
 """
 Pure rule functions for Hearts. No I/O, no mutation.
-Bicycle rules: follow suit, first trick no hearts/Q♠ unless void in clubs,
-hearts cannot be led until broken, trick winner = highest in lead suit.
+Bicycle rules: follow suit, first trick must lead 2♣,
+leading a heart breaks hearts, trick winner = highest in lead suit.
 """
 
 from typing import List, Tuple
@@ -24,7 +24,7 @@ def get_legal_plays(
     """
     Return the list of cards the current player may play.
     - first_lead_of_round: if True and hand contains 2♣, only 2♣ is legal (first lead after pass).
-    - If leading (trick empty): cannot lead hearts until hearts_broken, unless hand is all hearts.
+    - If leading (trick empty): any card may be led (leading a heart breaks hearts).
     - If following: must follow suit if possible.
     """
     if not hand:
@@ -36,11 +36,7 @@ def get_legal_plays(
             return [two_c]
 
     if not trick:
-        # Leading
-        lead_hearts_ok = hearts_broken or all(c.suit == Suit.HEARTS for c in hand)
-        if lead_hearts_ok:
-            return list(hand)
-        return [c for c in hand if c.suit != Suit.HEARTS]
+        return list(hand)
 
     lead_card = trick[0][1]
     lead_suit = lead_card.suit

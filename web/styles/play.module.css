@@ -302,7 +302,7 @@
    align-items: center;
    justify-content: center;
    z-index: 10;
-   background: rgba(255, 240, 245, 0.92);
+   background: var(--roundsummarybackground);
    border-radius: 16px;
    animation: overlaySlideDown 0.35s ease-out;
 }
@@ -346,7 +346,7 @@
 .scoreTable td {
    padding: 8px 16px;
    text-align: center;
-   border-bottom: 1px solid var(--mediumpink);
+   border-bottom: 1px solid var(--roundsummarydividers);
 }
 .scoreTable th {
    font-weight: 600;
@@ -380,11 +380,12 @@
 .heartDeltaBadge {
    position: absolute;
    top: 0px;
-   right: -5px;
-   padding: 3px 8px;
+   right: 1px;
+   padding: 3px 6px;
    font-size: 0.7rem;
    font-weight: 700;
    color: #fff;
+   min-width: 30px;
    background: var(--cardredsuit);
    border-radius: 8px;
    pointer-events: none;
