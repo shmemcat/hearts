@@ -8,7 +8,10 @@ import {
    GameOverBlock,
    GameSeat,
    Hand,
+   InfoButton,
+   InfoModal,
    InfoPill,
+   MobileGameTable,
    PhaseHint,
    RoundSummaryOverlay,
    ShootTheMoonOverlay,
@@ -39,6 +42,7 @@ import {
 import type { CurrentTrickSlot, GameState, PlayEvent } from "@/types/game";
 import type { GameSocketState } from "@/lib/gameSocket";
 import { PLAY_PAGE_LAYOUT_CLASS } from "@/lib/constants";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import handStyles from "@/components/game/Hand.module.css";
 import styles from "@/styles/play.module.css";
 
@@ -54,10 +58,22 @@ function reorderSlotsForTableLayout<T>(arr: T[]): T[] {
    return [arr[0], arr[2], arr[1], arr[3]];
 }
 
+/** Derive compact badge label for mobile: "AI 1" → "A1", "Guest 1" → "G1", "shmemcat" → "S". */
+function getShortName(name: string): string {
+   const trimmed = name.trim();
+   const aiMatch = trimmed.match(/^AI\s*(\d+)$/i);
+   if (aiMatch) return `A${aiMatch[1]}`;
+   const guestMatch = trimmed.match(/^Guest\s*(\d+)$/i);
+   if (guestMatch) return `G${guestMatch[1]}`;
+   if (trimmed === "You") return "Y";
+   return trimmed.charAt(0).toUpperCase();
+}
+
 export default function PlayGamePage() {
    const router = useRouter();
    const { game_id: gameId } = router.query;
    const { token } = useAuth();
+   const isMobile = useIsMobile();
 
    // ── Stats tracking ──────────────────────────────────────────────────
    const humanMoonShotsRef = useRef(0);
@@ -69,6 +85,7 @@ export default function PlayGamePage() {
    const [state, setState] = useState<GameState | null>(null);
    const [error, setError] = useState<string | null>(null);
    const [submitting, setSubmitting] = useState(false); // pass phase only
+   const [infoModalOpen, setInfoModalOpen] = useState(false);
    const [passSelection, setPassSelection] = useState<Set<string>>(new Set());
    const [roundSummary, setRoundSummary] = useState<{
       deltas: number[];
@@ -757,89 +774,186 @@ export default function PlayGamePage() {
          >
             {state && (
                <div className={styles.playContent}>
-                  {!roundSummary && (
+                  {!roundSummary && !isMobile && (
                      <InfoPill
                         round={state.round}
                         passDirection={state.pass_direction}
                         phase={state.phase}
                      />
                   )}
+                  {!roundSummary && isMobile && (
+                     <InfoButton onClick={() => setInfoModalOpen(true)} />
+                  )}
+                  {infoModalOpen && isMobile && (
+                     <InfoModal
+                        round={state.round}
+                        passDirection={state.pass_direction}
+                        phase={state.phase}
+                        players={state.players}
+                        onClose={() => setInfoModalOpen(false)}
+                     />
+                  )}
 
                   <div className={styles.gameTableWrapper}>
-                     <div className={styles.gameTable}>
-                        {/* Top (player 2) */}
-                        <GameSeat
-                           name={state.players[2]?.name ?? "—"}
-                           score={seatScore(2)}
-                           position="top"
-                           isCurrentTurn={seatIsCurrentTurn(2)}
-                           showHearts={!!showHeartsOnSeats}
-                           heartCount={heartsPerPlayer[2]}
-                           heartDelta={seatHeartDelta(2)}
-                           trickResultId={trickResult?.id}
+                     {isMobile ? (
+                        <MobileGameTable
+                           seats={[
+                              {
+                                 name: state.players[0]?.name ?? "You",
+                                 shortName: getShortName(state.players[0]?.name ?? "You"),
+                                 seatIndex: 0,
+                                 score: seatScore(0),
+                                 position: "bottom" as const,
+                                 isCurrentTurn: seatIsCurrentTurn(0),
+                                 showHearts: !!showHeartsOnSeats,
+                                 heartCount: heartsPerPlayer[0],
+                                 heartDelta: seatHeartDelta(0),
+                                 trickResultId: trickResult?.id,
+                              },
+                              {
+                                 name: state.players[1]?.name ?? "—",
+                                 shortName: getShortName(state.players[1]?.name ?? "—"),
+                                 seatIndex: 1,
+                                 score: seatScore(1),
+                                 position: "left" as const,
+                                 isCurrentTurn: seatIsCurrentTurn(1),
+                                 showHearts: !!showHeartsOnSeats,
+                                 heartCount: heartsPerPlayer[1],
+                                 heartDelta: seatHeartDelta(1),
+                                 trickResultId: trickResult?.id,
+                              },
+                              {
+                                 name: state.players[2]?.name ?? "—",
+                                 shortName: getShortName(state.players[2]?.name ?? "—"),
+                                 seatIndex: 2,
+                                 score: seatScore(2),
+                                 position: "top" as const,
+                                 isCurrentTurn: seatIsCurrentTurn(2),
+                                 showHearts: !!showHeartsOnSeats,
+                                 heartCount: heartsPerPlayer[2],
+                                 heartDelta: seatHeartDelta(2),
+                                 trickResultId: trickResult?.id,
+                              },
+                              {
+                                 name: state.players[3]?.name ?? "—",
+                                 shortName: getShortName(state.players[3]?.name ?? "—"),
+                                 seatIndex: 3,
+                                 score: seatScore(3),
+                                 position: "right" as const,
+                                 isCurrentTurn: seatIsCurrentTurn(3),
+                                 showHearts: !!showHeartsOnSeats,
+                                 heartCount: heartsPerPlayer[3],
+                                 heartDelta: seatHeartDelta(3),
+                                 trickResultId: trickResult?.id,
+                              },
+                           ]}
+                           trickSlots={slots}
+                           collectTarget={collectTarget}
+                           playerNames={reorderSlotsForTableLayout(
+                              state.players.map((p) => p.name)
+                           )}
+                           centerIcon={
+                              !roundSummary && state.phase === "playing" ? (
+                                 <span
+                                    aria-hidden
+                                    style={{
+                                       fontSize: "50px",
+                                       marginTop: "-10px",
+                                       color: heartsBrokenForDisplay
+                                          ? "hsl(0, 65%, 50%)"
+                                          : "var(--darkpink)",
+                                       transition: "color 0.5s ease",
+                                    }}
+                                 >
+                                    ♥
+                                 </span>
+                              ) : undefined
+                           }
                         />
-                        {/* Left (player 1) */}
-                        <GameSeat
-                           name={state.players[1]?.name ?? "—"}
-                           score={seatScore(1)}
-                           position="left"
-                           isCurrentTurn={seatIsCurrentTurn(1)}
-                           showHearts={!!showHeartsOnSeats}
-                           heartCount={heartsPerPlayer[1]}
-                           heartDelta={seatHeartDelta(1)}
-                           trickResultId={trickResult?.id}
-                        />
-                        {/* Center: trick + hearts icon */}
-                        <div className={styles.tableCenter}>
-                           <Trick
-                              layout="table"
-                              slots={slots}
-                              collectTarget={collectTarget}
-                              playerNames={reorderSlotsForTableLayout(
-                                 state.players.map((p) => p.name)
-                              )}
-                              centerIcon={
-                                 !roundSummary && state.phase === "playing" ? (
-                                    <span
-                                       aria-hidden
-                                       style={{
-                                          fontSize: "50px",
-                                          marginTop: "-10px",
-                                          color: heartsBrokenForDisplay
-                                             ? "hsl(0, 65%, 50%)"
-                                             : "var(--darkpink)",
-                                          transition: "color 0.5s ease",
-                                       }}
-                                    >
-                                       ♥
-                                    </span>
-                                 ) : undefined
-                              }
+                     ) : (
+                        <div className={styles.gameTable}>
+                           {/* Top (player 2) */}
+                           <GameSeat
+                              name={state.players[2]?.name ?? "—"}
+                              shortName={getShortName(state.players[2]?.name ?? "—")}
+                              seatIndex={2}
+                              score={seatScore(2)}
+                              position="top"
+                              isCurrentTurn={seatIsCurrentTurn(2)}
+                              showHearts={!!showHeartsOnSeats}
+                              heartCount={heartsPerPlayer[2]}
+                              heartDelta={seatHeartDelta(2)}
+                              trickResultId={trickResult?.id}
+                           />
+                           {/* Left (player 1) */}
+                           <GameSeat
+                              name={state.players[1]?.name ?? "—"}
+                              shortName={getShortName(state.players[1]?.name ?? "—")}
+                              seatIndex={1}
+                              score={seatScore(1)}
+                              position="left"
+                              isCurrentTurn={seatIsCurrentTurn(1)}
+                              showHearts={!!showHeartsOnSeats}
+                              heartCount={heartsPerPlayer[1]}
+                              heartDelta={seatHeartDelta(1)}
+                              trickResultId={trickResult?.id}
+                           />
+                           {/* Center: trick + hearts icon */}
+                           <div className={styles.tableCenter}>
+                              <Trick
+                                 layout="table"
+                                 slots={slots}
+                                 collectTarget={collectTarget}
+                                 playerNames={reorderSlotsForTableLayout(
+                                    state.players.map((p) => p.name)
+                                 )}
+                                 centerIcon={
+                                    !roundSummary && state.phase === "playing" ? (
+                                       <span
+                                          aria-hidden
+                                          style={{
+                                             fontSize: "50px",
+                                             marginTop: "-10px",
+                                             color: heartsBrokenForDisplay
+                                                ? "hsl(0, 65%, 50%)"
+                                                : "var(--darkpink)",
+                                             transition: "color 0.5s ease",
+                                          }}
+                                       >
+                                          ♥
+                                       </span>
+                                    ) : undefined
+                                 }
+                              />
+                           </div>
+                           {/* Right (player 3) */}
+                           <GameSeat
+                              name={state.players[3]?.name ?? "—"}
+                              shortName={getShortName(state.players[3]?.name ?? "—")}
+                              seatIndex={3}
+                              score={seatScore(3)}
+                              position="right"
+                              isCurrentTurn={seatIsCurrentTurn(3)}
+                              showHearts={!!showHeartsOnSeats}
+                              heartCount={heartsPerPlayer[3]}
+                              heartDelta={seatHeartDelta(3)}
+                              trickResultId={trickResult?.id}
+                           />
+                           {/* Bottom (player 0 = human) */}
+                           <GameSeat
+                              name={state.players[0]?.name ?? "You"}
+                              shortName={getShortName(state.players[0]?.name ?? "You")}
+                              seatIndex={0}
+                              score={seatScore(0)}
+                              position="bottom"
+                              isCurrentTurn={seatIsCurrentTurn(0)}
+                              showHearts={!!showHeartsOnSeats}
+                              heartCount={heartsPerPlayer[0]}
+                              heartDelta={seatHeartDelta(0)}
+                              trickResultId={trickResult?.id}
                            />
                         </div>
-                        {/* Right (player 3) */}
-                        <GameSeat
-                           name={state.players[3]?.name ?? "—"}
-                           score={seatScore(3)}
-                           position="right"
-                           isCurrentTurn={seatIsCurrentTurn(3)}
-                           showHearts={!!showHeartsOnSeats}
-                           heartCount={heartsPerPlayer[3]}
-                           heartDelta={seatHeartDelta(3)}
-                           trickResultId={trickResult?.id}
-                        />
-                        {/* Bottom (player 0 = human) */}
-                        <GameSeat
-                           name={state.players[0]?.name ?? "You"}
-                           score={seatScore(0)}
-                           position="bottom"
-                           isCurrentTurn={seatIsCurrentTurn(0)}
-                           showHearts={!!showHeartsOnSeats}
-                           heartCount={heartsPerPlayer[0]}
-                           heartDelta={seatHeartDelta(0)}
-                           trickResultId={trickResult?.id}
-                        />
-                     </div>
+                     )}
 
                      {/* ── Shoot the Moon overlay ────────────────────── */}
                      {roundSummary && shootTheMoon && (
@@ -877,13 +991,14 @@ export default function PlayGamePage() {
                         state.game_over
                            ? null
                            : noPassHold
-                           ? "No passing this round"
+                           ? (isMobile ? null : "No passing this round")
                            : state.phase === "playing"
-                           ? busy
+                           ? (isMobile ? null
+                              : busy
                               ? "Playing…"
                               : state.whose_turn === 0
                               ? "Your turn"
-                              : "Waiting for others…"
+                              : "Waiting for others…")
                            : state.phase === "passing" && !passTransition
                            ? `Select 3 cards to pass ${state.pass_direction}.`
                            : null

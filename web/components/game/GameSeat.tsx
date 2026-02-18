@@ -2,11 +2,16 @@
 
 import React from "react";
 
+import { useIsMobile } from "@/hooks/useIsMobile";
 import styles from "./GameSeat.module.css";
 
 export interface GameSeatProps {
    /** Display name for the player. */
    name: string;
+   /** Short label for mobile (e.g. "S", "A1", "G1"). */
+   shortName?: string;
+   /** Seat index 0-3, used to pick badge color. */
+   seatIndex?: number;
    /** Cumulative score for the game. */
    score: number;
    /** Table position. */
@@ -30,8 +35,17 @@ const POSITION_CLASS: Record<GameSeatProps["position"], string> = {
    bottom: styles.gameTableSeatBottom,
 };
 
+const SEAT_COLOR_VAR = [
+   "var(--seatcolor0)",
+   "var(--seatcolor1)",
+   "var(--seatcolor2)",
+   "var(--seatcolor3)",
+];
+
 export const GameSeat: React.FC<GameSeatProps> = ({
    name,
+   shortName,
+   seatIndex = 0,
    score,
    position,
    isCurrentTurn,
@@ -40,6 +54,39 @@ export const GameSeat: React.FC<GameSeatProps> = ({
    heartDelta,
    trickResultId,
 }) => {
+   const isMobile = useIsMobile();
+
+   if (isMobile) {
+      const label = shortName ?? name;
+      const badgeColor = SEAT_COLOR_VAR[0];
+
+      return (
+         <div
+            className={`${styles.gameTableSeat} ${POSITION_CLASS[position]} ${styles.gameTableSeatMobile} ${styles.seatMobileRow} ${isCurrentTurn ? styles.seatMobileTurn : ""}`}
+         >
+            <span
+               className={styles.seatBadge}
+               style={{ background: badgeColor }}
+            >
+               {label}
+            </span>
+            {showHearts && (
+               <span className={styles.seatMobileHearts}>
+                  <span className={styles.seatHeartCount}>♥ {heartCount}</span>
+                  {heartDelta > 0 && (
+                     <span
+                        key={trickResultId}
+                        className={styles.heartDeltaBadge}
+                     >
+                        +{heartDelta}
+                     </span>
+                  )}
+               </span>
+            )}
+         </div>
+      );
+   }
+
    return (
       <div
          className={`${styles.gameTableSeat} ${POSITION_CLASS[position]} ${

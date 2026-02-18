@@ -1,0 +1,48 @@
+/* Mobile game table — absolute positioning layout */
+
+.container {
+   position: relative;
+   width: 100%;
+   height: 530px;
+   margin-top: 50px;
+   min-height: 340px;
+}
+
+/* ── Trick center area ────────────────────────────────── */
+.trickCenter {
+   position: absolute;
+   left: 50%;
+   top: 50%;
+   transform: translate(-50%, -50%);
+   width: 200px;
+   height: 260px;
+}
+
+/* ── Seat positions ───────────────────────────────────── */
+.seatTop {
+   position: absolute;
+   top: 4px;
+   left: 50%;
+   transform: translateX(-50%);
+}
+
+.seatBottom {
+   position: absolute;
+   bottom: 4px;
+   left: 50%;
+   transform: translateX(-50%);
+}
+
+.seatLeft {
+   position: absolute;
+   top: 49%;
+   left: 4px;
+   transform: translateY(calc(-50% - 80px));
+}
+
+.seatRight {
+   position: absolute;
+   top: 49%;
+   right: 8px;
+   transform: translateY(calc(-50% - 80px));
+}

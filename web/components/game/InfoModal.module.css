@@ -1,0 +1,117 @@
+/* Info modal (mobile round info) */
+
+.backdrop {
+   position: fixed;
+   inset: 0;
+   z-index: 100;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   background: rgba(0, 0, 0, 0.4);
+   backdrop-filter: blur(4px);
+   -webkit-backdrop-filter: blur(4px);
+   animation: fadeIn 0.2s ease-out;
+}
+
+.modal {
+   background: var(--contentbox);
+   border-radius: 16px;
+   padding: 24px 28px;
+   min-width: 260px;
+   max-width: 320px;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 14px;
+   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+   animation: slideUp 0.2s ease-out;
+}
+
+.title {
+   font-size: 1.5rem;
+   font-weight: 700;
+   color: var(--header);
+}
+
+.row {
+   display: flex;
+   align-items: center;
+   gap: 6px;
+   font-size: 1rem;
+   color: var(--text);
+}
+
+.rowLabel {
+   opacity: 0.6;
+   font-weight: 600;
+   text-transform: uppercase;
+   font-size: 1rem;
+   letter-spacing: 0.5px;
+}
+.divider {
+   width: 100%;
+   height: 1px;
+   background: var(--roundsummarydividers);
+}
+
+.scoresGrid {
+   display: grid;
+   grid-template-columns: auto auto;
+   gap: 6px 16px;
+   width: 70%;
+   font-size: 0.85rem;
+}
+
+.scoreName {
+   font-weight: 600;
+   font-size: 1rem;
+   color: var(--header);
+}
+
+.scoreValue {
+   text-align: center;
+   font-size: 1rem;
+   color: var(--text);
+}
+
+/* ── Icon button (top-right corner) ───────────────────── */
+
+.infoBtn {
+   position: absolute;
+   top: 4px;
+   right: 4px;
+   z-index: 2;
+   width: 36px;
+   height: 36px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   border: 1px solid var(--infopillborder);
+   border-radius: 10px;
+   background: var(--infopillbg);
+   color: var(--infopilltext);
+   font-size: 1rem;
+   cursor: pointer;
+   backdrop-filter: blur(6px);
+   -webkit-backdrop-filter: blur(6px);
+}
+
+@keyframes fadeIn {
+   from {
+      opacity: 0;
+   }
+   to {
+      opacity: 1;
+   }
+}
+
+@keyframes slideUp {
+   from {
+      opacity: 0;
+      transform: translateY(12px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}

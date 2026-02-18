@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from "react";
 
 import { Card } from "@/components/game/Card";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import type { CurrentTrickSlot } from "@/types/game";
 import styles from "./Trick.module.css";
 
@@ -43,35 +44,36 @@ type Endpoint = { x: number; y: number; midX?: number; midY?: number };
  * Diagonal: 3-point keyframes — midpoint biased toward the cross-axis
  * so the card arcs inward before swooping to the target slot.
  */
-function getCollectEndpoints(target: number): Record<number, Endpoint> {
+function getCollectEndpoints(target: number, scale = 1): Record<number, Endpoint> {
+  const s = scale;
   switch (target) {
-    case 0: // → bottom slot
+    case 0:
       return {
         0: { x: 0, y: 0 },
-        2: { x: 0, y: 190 },
-        1: { x: 102, y: 95, midX: 61, midY: 24 },
-        3: { x: -102, y: 95, midX: -61, midY: 24 },
+        2: { x: 0, y: 190 * s },
+        1: { x: 102 * s, y: 95 * s, midX: 61 * s, midY: 24 * s },
+        3: { x: -102 * s, y: 95 * s, midX: -61 * s, midY: 24 * s },
       };
-    case 2: // → top slot
+    case 2:
       return {
         2: { x: 0, y: 0 },
-        0: { x: 0, y: -190 },
-        1: { x: 102, y: -95, midX: 61, midY: -24 },
-        3: { x: -102, y: -95, midX: -61, midY: -24 },
+        0: { x: 0, y: -190 * s },
+        1: { x: 102 * s, y: -95 * s, midX: 61 * s, midY: -24 * s },
+        3: { x: -102 * s, y: -95 * s, midX: -61 * s, midY: -24 * s },
       };
-    case 1: // → left slot
+    case 1:
       return {
         1: { x: 0, y: 0 },
-        3: { x: -204, y: 0 },
-        0: { x: -102, y: -95, midX: -26, midY: -57 },
-        2: { x: -102, y: 95, midX: -26, midY: 57 },
+        3: { x: -204 * s, y: 0 },
+        0: { x: -102 * s, y: -95 * s, midX: -26 * s, midY: -57 * s },
+        2: { x: -102 * s, y: 95 * s, midX: -26 * s, midY: 57 * s },
       };
-    case 3: // → right slot
+    case 3:
       return {
         3: { x: 0, y: 0 },
-        1: { x: 204, y: 0 },
-        0: { x: 102, y: -95, midX: 26, midY: -57 },
-        2: { x: 102, y: 95, midX: 26, midY: 57 },
+        1: { x: 204 * s, y: 0 },
+        0: { x: 102 * s, y: -95 * s, midX: 26 * s, midY: -57 * s },
+        2: { x: 102 * s, y: 95 * s, midX: 26 * s, midY: 57 * s },
       };
     default:
       return {};
@@ -86,12 +88,13 @@ export const Trick: React.FC<TrickProps> = ({
   centerIcon,
   collectTarget,
 }) => {
+  const isMobile = useIsMobile();
   const labels = playerNames ?? ["You", "Top", "Left", "Right"];
   const cardRefs = useRef<(HTMLDivElement | null)[]>([null, null, null, null]);
 
   useEffect(() => {
     if (collectTarget == null) return;
-    const endpoints = getCollectEndpoints(collectTarget);
+    const endpoints = getCollectEndpoints(collectTarget, isMobile ? 0.8 : 1);
     const anims: Animation[] = [];
 
     for (let i = 0; i < 4; i++) {
@@ -125,7 +128,7 @@ export const Trick: React.FC<TrickProps> = ({
     }
 
     return () => anims.forEach((a) => a.cancel());
-  }, [collectTarget]);
+  }, [collectTarget, isMobile]);
 
   if (layout === "table") {
     return (
@@ -140,7 +143,7 @@ export const Trick: React.FC<TrickProps> = ({
                   ref={(el) => { cardRefs.current[index] = el; }}
                   className={styles.trickSlotCard}
                 >
-                  <Card code={slot.card} size="medium" />
+                  <Card code={slot.card} size={isMobile ? "large" : "medium"} />
                 </div>
               )}
             </div>

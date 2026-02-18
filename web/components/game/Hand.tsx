@@ -3,6 +3,7 @@
 import React from "react";
 
 import { Card } from "@/components/game/Card";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import styles from "./Hand.module.css";
 
 export interface HandProps {
@@ -35,6 +36,7 @@ export const Hand: React.FC<HandProps> = ({
    enteringCodes,
    enterDirection,
 }) => {
+   const isMobile = useIsMobile();
    const sorted = React.useMemo(
       () => [...cards].sort(compareCardCodes),
       [cards]
@@ -42,8 +44,8 @@ export const Hand: React.FC<HandProps> = ({
 
    /* Subtle arc: slight rotation + parabolic vertical offset for a gentle curve. */
    const centerIndex = (sorted.length - 1) / 2;
-   const degPerCard = 1.2;
-   const arcFactor = 0.5;
+   const degPerCard = isMobile ? 0.8 : 1.2;
+   const arcFactor = isMobile ? 0.3 : 0.5;
    const wrap = (code: string, index: number, card: React.ReactNode) => {
       const distance = index - centerIndex;
       const rotation = distance * degPerCard;

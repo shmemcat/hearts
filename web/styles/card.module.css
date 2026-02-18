@@ -31,6 +31,15 @@
    font-size: 1.05rem;
 }
 
+.cardLarge {
+   width: 90px;
+   min-width: 90px;
+   height: 126px;
+   border-radius: 9px;
+   font-size: 1.75rem;
+   line-height: 1.5rem;
+}
+
 .cardSelected {
    border-color: var(--cardhighlight);
    transform: translateY(-6px);
@@ -62,4 +71,20 @@
 .rankRed,
 .suitRed {
    color: var(--cardredsuit);
+}
+
+/* ── Mobile: rank + suit pinned to top-left ───────────────── */
+@media only screen and (max-width: 768px) {
+   .card {
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 4px 6px;
+      gap: 0;
+   }
+
+   .cardLarge {
+      align-items: center;
+      justify-content: center;
+      padding: 6px 8px;
+   }
 }

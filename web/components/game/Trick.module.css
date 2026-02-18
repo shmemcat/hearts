@@ -140,4 +140,34 @@
    pointer-events: none;
    font-size: 2rem;
    opacity: 0.5;
+   animation: centerIconFadeIn 0.6s ease-out;
+}
+
+@keyframes centerIconFadeIn {
+   from {
+      opacity: 0;
+   }
+   to {
+      opacity: 0.5;
+   }
+}
+
+/* ── Mobile: large trick slots ─────────────────────────── */
+@media only screen and (max-width: 768px) {
+   .trickSlotEmpty {
+      width: 90px;
+      height: 126px;
+   }
+   .trickTableSlotBottom {
+      transform: translate(-50%, 70%);
+   }
+   .trickTableSlotTop {
+      transform: translate(-50%, -70%);
+   }
+   .trickTableSlotLeft {
+      transform: translate(-70%, -50%);
+   }
+   .trickTableSlotRight {
+      transform: translate(70%, -50%);
+   }
 }

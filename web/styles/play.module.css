@@ -171,3 +171,33 @@
    align-items: center;
    justify-content: center;
 }
+
+/* ── Mobile overrides (independent of game table layout) ───── */
+@media only screen and (max-width: 768px) {
+   .playContent {
+      width: 100%;
+      padding: 0 4px;
+      padding-bottom: 140px;
+   }
+   .phaseHint {
+      position: fixed;
+      bottom: 130px;
+      left: 0;
+      right: 0;
+      z-index: 21;
+      font-size: 1.1rem;
+      margin-bottom: 15px;
+      text-align: center;
+   }
+   .passActions[aria-hidden="true"] {
+      display: none;
+   }
+   .passActions:not([aria-hidden="true"]) {
+      position: fixed;
+      bottom: 185px;
+      left: 0;
+      right: 0;
+      z-index: 21;
+      margin-top: 0;
+   }
+}

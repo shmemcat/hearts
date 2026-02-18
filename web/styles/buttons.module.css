@@ -193,10 +193,11 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
 /* for mobile and mobile-sized windows */
 @media only screen and (max-width: 768px) {
    .menu-button {
-      font-size: 12px;
+      font-size: 14px;
       letter-spacing: 4px;
       font-weight: 900;
-      width: 175px;
+      width: 190px;
+      height: 44px;
    }
 
    .rules-button {
