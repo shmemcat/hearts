@@ -1,0 +1,143 @@
+/* Trick display — row layout */
+
+.trick {
+   display: flex;
+   flex-wrap: wrap;
+   align-items: center;
+   justify-content: center;
+   gap: 16px 24px;
+   margin-bottom: 28px;
+   min-height: 100px;
+}
+
+.trickSlot {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 6px;
+}
+
+.trickSlotLabel {
+   font-size: 0.75rem;
+   text-transform: uppercase;
+   letter-spacing: 1px;
+   color: var(--header);
+   opacity: 0.9;
+}
+
+.trickSlotEmpty {
+   width: 64px;
+   height: 90px;
+   border: 2px dashed var(--trickslotempty);
+   border-radius: 8px;
+   background: transparent;
+}
+
+/* Trick display — table layout (slots around center) */
+
+.trickTable {
+   position: absolute;
+   width: 100%;
+   height: 100%;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}
+.trickTableSlot {
+   position: absolute;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 4px;
+}
+.trickSlotCard {
+   position: absolute;
+   inset: 0;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}
+.trickTableSlotBottom {
+   left: 50%;
+   bottom: 0;
+   transform: translate(-50%, 100%);
+}
+.trickTableSlotBottom .trickSlotCard {
+   animation: cardSlideUp 0.22s;
+}
+.trickTableSlotTop {
+   left: 50%;
+   top: 0;
+   transform: translate(-50%, -100%);
+}
+.trickTableSlotTop .trickSlotCard {
+   animation: cardSlideDown 0.22s;
+}
+.trickTableSlotLeft {
+   left: 0;
+   top: 50%;
+   transform: translate(-100%, -50%);
+}
+.trickTableSlotLeft .trickSlotCard {
+   animation: cardSlideFromLeft 0.22s;
+}
+.trickTableSlotRight {
+   right: 0;
+   top: 50%;
+   transform: translate(100%, -50%);
+}
+.trickTableSlotRight .trickSlotCard {
+   animation: cardSlideFromRight 0.22s;
+}
+
+@keyframes cardSlideUp {
+   from {
+      opacity: 0;
+      transform: translateY(14px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+@keyframes cardSlideDown {
+   from {
+      opacity: 0;
+      transform: translateY(-14px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+@keyframes cardSlideFromLeft {
+   from {
+      opacity: 0;
+      transform: translateX(-14px);
+   }
+   to {
+      opacity: 1;
+      transform: translateX(0);
+   }
+}
+@keyframes cardSlideFromRight {
+   from {
+      opacity: 0;
+      transform: translateX(14px);
+   }
+   to {
+      opacity: 1;
+      transform: translateX(0);
+   }
+}
+
+.trickTableCenterIcon {
+   position: absolute;
+   inset: 0;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   pointer-events: none;
+   font-size: 2rem;
+   opacity: 0.5;
+}

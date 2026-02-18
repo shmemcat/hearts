@@ -1,0 +1,89 @@
+/* Game table seat positions + score display */
+
+.gameTableSeat {
+   position: relative;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 4px;
+   padding: 6px 10px;
+   border-radius: 12px;
+   min-width: 70px;
+}
+.gameTableSeatBottom {
+   grid-area: seatBottom;
+   margin-top: 40px;
+}
+.gameTableSeatTop {
+   grid-area: seatTop;
+   margin-bottom: 40px;
+}
+.gameTableSeatLeft {
+   grid-area: seatLeft;
+   justify-self: end;
+   margin-right: 75px;
+}
+.gameTableSeatRight {
+   grid-area: seatRight;
+   justify-self: start;
+   margin-left: 75px;
+}
+
+.gameTableSeatName {
+   font-weight: 600;
+   font-size: 0.95rem;
+   color: var(--header);
+}
+.gameTableSeatScore {
+   position: relative;
+   font-size: 0.9rem;
+   opacity: 0.9;
+}
+.gameTableSeatYourTurn {
+   outline: 2px solid var(--yourturnborder);
+   outline-offset: 4px;
+   background: var(--yourturnbackground);
+}
+
+/* Hearts counter + trick-end delta animation */
+
+.seatScoreSep {
+   opacity: 0.5;
+}
+.seatHeartCount {
+   color: var(--cardredsuit);
+   font-weight: 600;
+}
+.heartDeltaBadge {
+   position: absolute;
+   top: 0px;
+   right: 0px;
+   padding: 3px 6px;
+   font-size: 0.7rem;
+   font-weight: 700;
+   color: #fff;
+   min-width: 32px;
+   background: var(--cardredsuit);
+   border-radius: 8px;
+   pointer-events: none;
+   animation: heartDeltaPop 1s ease-out forwards;
+}
+
+@keyframes heartDeltaPop {
+   0% {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.85);
+   }
+   10% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+   }
+   70% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+   }
+   100% {
+      opacity: 0;
+      transform: translateY(0) scale(1);
+   }
+}

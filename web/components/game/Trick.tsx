@@ -4,7 +4,7 @@ import React, { useRef, useEffect } from "react";
 
 import { Card } from "@/components/game/Card";
 import type { CurrentTrickSlot } from "@/types/game";
-import styles from "@/styles/play.module.css";
+import styles from "./Trick.module.css";
 
 export interface TrickProps {
   /** Slots in play order: [0]=1st (bottom), [1]=2nd (left), [2]=3rd (top), [3]=4th (right). null = no card. */

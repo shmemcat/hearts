@@ -47,17 +47,6 @@
    width: 90vw;
 }
 
-.body-container {
-   font-family: "appFont";
-   display: flex;
-   margin-top: 40px;
-   width: 85vw;
-   align-items: center;
-   justify-content: center;
-   flex-direction: column;
-   text-align: center;
-}
-
 /* Rules */
 
 .rules-body-container {
@@ -86,30 +75,6 @@
    letter-spacing: 1.5px;
    margin-left: 10px;
    gap: 15px;
-}
-
-/* About */
-
-.about-body-container {
-   margin-top: 40px;
-   display: flex;
-   flex-direction: row;
-   gap: 40px;
-   width: 900px;
-   align-items: flex-start;
-}
-
-.about-text-body {
-   flex: 1 1 auto;
-   min-width: 0;
-   font-size: 16px;
-   letter-spacing: 1.5px;
-   margin-left: 10px;
-}
-
-.about-image-wrapper {
-   flex: 0 0 auto;
-   width: 300px;
 }
 
 /* Create Game */
@@ -204,22 +169,12 @@
    .rules-body-container {
       width: 85vw;
    }
-
-   .about-body-container {
-      width: 85vw;
-   }
 }
 
 /* for mobile and mobile-sized windows */
 @media only screen and (max-width: 768px) {
    .index-container {
       margin-top: 25vh;
-   }
-
-   .nav {
-      position: absolute;
-      top: 30px;
-      right: 40px;
    }
 
    .menu-button-container {
@@ -232,10 +187,6 @@
 
    .title-container {
       padding-top: 15px;
-   }
-
-   .body-container {
-      margin-top: 20px;
    }
 
    .rules-body-container {
@@ -253,23 +204,6 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-   }
-
-   .about-body-container {
-      margin-top: 20px;
-      width: 90vw;
-      flex-direction: column-reverse;
-      align-items: center;
-   }
-
-   .about-text-body {
-      margin: 20px;
-      text-align: center;
-   }
-
-   .about-image-wrapper {
-      width: 100%;
-      max-width: 420px;
    }
 
    .rules-text-body {

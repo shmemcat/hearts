@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import styles from "@/styles/play.module.css";
+import styles from "./GameSeat.module.css";
 
 export interface GameSeatProps {
    /** Display name for the player. */

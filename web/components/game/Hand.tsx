@@ -3,7 +3,7 @@
 import React from "react";
 
 import { Card } from "@/components/game/Card";
-import styles from "@/styles/play.module.css";
+import styles from "./Hand.module.css";
 
 export interface HandProps {
    cards: string[];

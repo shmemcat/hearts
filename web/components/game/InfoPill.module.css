@@ -1,0 +1,44 @@
+/* Floating info pill (top-right corner) */
+
+.playInfoPill {
+   position: absolute;
+   top: 0;
+   right: -35px;
+   display: flex;
+   align-items: center;
+   gap: 6px;
+   padding: 5px 12px;
+   background: var(--infopillbg);
+   border: 1px solid var(--infopillborder);
+   border-radius: 20px;
+   font-size: 0.75rem;
+   color: var(--infopilltext);
+   letter-spacing: 1px;
+   z-index: 2;
+   backdrop-filter: blur(6px);
+   -webkit-backdrop-filter: blur(6px);
+   pointer-events: none;
+}
+.playInfoRound {
+   font-weight: 700;
+}
+.playInfoDetail {
+   opacity: 0.7;
+}
+.playInfoDetail::before {
+   content: "·";
+   margin-right: 6px;
+   opacity: 0.5;
+}
+.playInfoPhase {
+   text-transform: uppercase;
+   font-weight: 600;
+   opacity: 0.55;
+   font-size: 0.75rem;
+   letter-spacing: 1px;
+}
+.playInfoPhase::before {
+   content: "·";
+   margin-right: 6px;
+   opacity: 0.5;
+}

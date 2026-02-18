@@ -3,7 +3,7 @@
 import React from "react";
 
 import type { GamePhase, PassDirection } from "@/types/game";
-import styles from "@/styles/play.module.css";
+import styles from "./InfoPill.module.css";
 
 export interface InfoPillProps {
    round: number;

@@ -199,13 +199,6 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
       width: 175px;
    }
 
-   .menu-button-selected {
-      font-size: 12px;
-      letter-spacing: 4px;
-      font-weight: 700;
-      width: 175px;
-   }
-
    .rules-button {
       height: 20px;
       text-align: center;

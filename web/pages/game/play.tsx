@@ -32,6 +32,7 @@ import {
 } from "@/lib/game-socket";
 import type { CurrentTrickSlot, GameState, PlayEvent } from "@/types/game";
 import type { GameSocketState } from "@/lib/game-socket";
+import handStyles from "@/components/game/Hand.module.css";
 import styles from "@/styles/play.module.css";
 
 /** PageLayout body classes without top margin (mt-10) for play page layout */
@@ -835,9 +836,9 @@ export default function PlayGamePage() {
                   {/* ── Hand placeholder (preserves layout during round summary / banner) ── */}
                   {(roundSummary || roundBanner) && !passTransition && (
                      <>
-                        <div className={styles.hand} aria-hidden="true">
-                           <div key={0} className={styles.handCardWrap}>
-                              <div className={styles.handSlotEmpty} />
+                        <div className={handStyles.hand} aria-hidden="true">
+                           <div key={0} className={handStyles.handCardWrap}>
+                              <div className={handStyles.handSlotEmpty} />
                            </div>
                         </div>
                         <div
@@ -893,13 +894,13 @@ export default function PlayGamePage() {
                   {/* ── Deal-in animation (hand expanding from center) ── */}
                   {dealingHand && !roundSummary && (
                      <>
-                        <div className={styles.handStack}>
-                           <div className={styles.hand} aria-hidden="true">
-                              <div className={styles.handCardWrap}>
-                                 <div className={styles.handSlotEmpty} />
+                        <div className={handStyles.handStack}>
+                           <div className={handStyles.hand} aria-hidden="true">
+                              <div className={handStyles.handCardWrap}>
+                                 <div className={handStyles.handSlotEmpty} />
                               </div>
                            </div>
-                           <div className={styles.handDealIn}>
+                           <div className={handStyles.handDealIn}>
                               <Hand cards={state.human_hand} />
                            </div>
                         </div>
@@ -950,10 +951,10 @@ export default function PlayGamePage() {
                      !dealingHand &&
                      state.phase === "playing" && (
                         <>
-                           <div className={styles.handStack}>
-                              <div className={styles.hand} aria-hidden="true">
-                                 <div className={styles.handCardWrap}>
-                                    <div className={styles.handSlotEmpty} />
+                           <div className={handStyles.handStack}>
+                              <div className={handStyles.hand} aria-hidden="true">
+                                 <div className={handStyles.handCardWrap}>
+                                    <div className={handStyles.handSlotEmpty} />
                                  </div>
                               </div>
                               {state.human_hand.length > 0 && (
