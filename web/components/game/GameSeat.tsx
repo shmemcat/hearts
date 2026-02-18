@@ -63,7 +63,7 @@ export const GameSeat: React.FC<GameSeatProps> = ({
             <span className={styles.seatBadge}>{label}</span>
             {showHearts && (
                <span className={styles.seatMobileHearts}>
-                  <span className={styles.seatHeartCount}>
+                  <span className={styles.seatMobileHeartCount}>
                      {" "}
                      &nbsp;♥ {heartCount}
                   </span>
