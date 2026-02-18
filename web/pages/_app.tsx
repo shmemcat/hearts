@@ -51,12 +51,7 @@ export default function App({ Component, pageProps }: AppProps) {
           <CardStyleProvider>
             <div className={terminalDosis.className}>
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={router.pathname}
-                  initial={false}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                >
+                <motion.div key={router.pathname}>
                   <Component {...pageProps} />
                 </motion.div>
               </AnimatePresence>
