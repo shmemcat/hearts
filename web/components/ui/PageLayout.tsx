@@ -49,7 +49,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
       <Navbar />
       <div
          className={`flex flex-col items-center justify-center ${
-            hideTitleBlock ? "mt-6" : "mt-[140px]"
+            hideTitleBlock ? "mt-2 sm:mt-6" : "mt-[100px] sm:mt-[140px]"
          } ${contentClassName ?? ""}`.trim()}
       >
          {!hideTitleBlock && (

@@ -8,14 +8,6 @@
    margin-bottom: 0;
 }
 
-.passActions {
-   margin-top: 8px;
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   gap: 12px;
-}
-
 .gameOverBlock {
    margin-top: 20px;
    display: flex;
@@ -172,6 +164,21 @@
    justify-content: center;
 }
 
+/* ── Centered pass button in trick table ────────────────── */
+.passCenter {
+   position: absolute;
+   inset: 0;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   z-index: 5;
+   pointer-events: none;
+}
+
+.passCenter > * {
+   pointer-events: auto;
+}
+
 /* ── Mobile overrides (independent of game table layout) ───── */
 @media only screen and (max-width: 768px) {
    .playContent {
@@ -186,18 +193,16 @@
       right: 0;
       z-index: 21;
       font-size: 1.1rem;
-      margin-bottom: 15px;
+      margin-bottom: 16px;
       text-align: center;
    }
-   .passActions[aria-hidden="true"] {
-      display: none;
-   }
-   .passActions:not([aria-hidden="true"]) {
-      position: fixed;
-      bottom: 185px;
-      left: 0;
-      right: 0;
-      z-index: 21;
-      margin-top: 0;
+   .roundSummaryBlock {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 12px 12px;
+      max-width: 420px;
+      width: 90%;
    }
 }

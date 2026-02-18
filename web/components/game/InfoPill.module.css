@@ -3,7 +3,7 @@
 .playInfoPill {
    position: absolute;
    top: 0;
-   right: -35px;
+   right: -45px;
    display: flex;
    align-items: center;
    gap: 6px;

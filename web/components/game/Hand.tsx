@@ -44,8 +44,8 @@ export const Hand: React.FC<HandProps> = ({
 
    /* Subtle arc: slight rotation + parabolic vertical offset for a gentle curve. */
    const centerIndex = (sorted.length - 1) / 2;
-   const degPerCard = isMobile ? 0.8 : 1.2;
-   const arcFactor = isMobile ? 0.3 : 0.5;
+   const degPerCard = 1.2;
+   const arcFactor = isMobile ? 0.2 : 0.5;
    const wrap = (code: string, index: number, card: React.ReactNode) => {
       const distance = index - centerIndex;
       const rotation = distance * degPerCard;

@@ -8,6 +8,7 @@ export interface ButtonProps {
    onClick?: () => void;
    style?: React.CSSProperties;
    type?: "button" | "submit" | "reset";
+   children?: React.ReactNode;
 }
 
 export const Button: React.FC<ButtonProps> = (props) => {
@@ -22,7 +23,7 @@ export const Button: React.FC<ButtonProps> = (props) => {
          tabIndex={-1}
       >
          <ButtonShine />
-         {props.name}
+         {props.children ?? props.name}
       </button>
    );
 };

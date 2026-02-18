@@ -955,6 +955,27 @@ export default function PlayGamePage() {
                         </div>
                      )}
 
+                     {/* ── Centered pass button in table ──────────── */}
+                     {!roundSummary &&
+                        !roundBanner &&
+                        !dealingHand &&
+                        state.phase === "passing" &&
+                        !passTransition && (
+                           <div className={styles.passCenter}>
+                              <Button
+                                 name="Submit Pass"
+                                 disabled={
+                                    passSelection.size !== 3 || submitting
+                                 }
+                                 onClick={handleSubmitPass}
+                                 style={{ height: "52px", width: "110px", lineHeight: "1.2", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+                              >
+                                 <span>submit</span>
+                                 <span>pass</span>
+                              </Button>
+                           </div>
+                        )}
+
                      {/* ── Shoot the Moon overlay ────────────────────── */}
                      {roundSummary && shootTheMoon && (
                         <ShootTheMoonOverlay
@@ -1007,86 +1028,50 @@ export default function PlayGamePage() {
 
                   {/* ── Hand placeholder (preserves layout during round summary / banner) ── */}
                   {(roundSummary || roundBanner) && !passTransition && (
-                     <>
-                        <div className={handStyles.hand} aria-hidden="true">
-                           <div key={0} className={handStyles.handCardWrap}>
-                              <div className={handStyles.handSlotEmpty} />
-                           </div>
+                     <div className={handStyles.hand} aria-hidden="true">
+                        <div key={0} className={handStyles.handCardWrap}>
+                           <div className={handStyles.handSlotEmpty} />
                         </div>
-                        <div
-                           className={styles.passActions}
-                           style={{ visibility: "hidden" }}
-                           aria-hidden="true"
-                        >
-                           <Button
-                              name="Submit pass"
-                              style={{ width: "180px" }}
-                           />
-                        </div>
-                     </>
+                     </div>
                   )}
 
                   {/* ── Pass transition (animated hand) ─────────── */}
                   {passTransition && (
-                     <>
-                        <Hand
-                           cards={passTransition.displayHand}
-                           selectedCodes={
-                              passTransition.phase === "exiting"
-                                 ? passTransition.exitingCodes
-                                 : undefined
-                           }
-                           selectionMode={passTransition.phase === "exiting"}
-                           exitingCodes={
-                              passTransition.phase === "exiting"
-                                 ? passTransition.exitingCodes
-                                 : undefined
-                           }
-                           exitDirection={passTransition.exitDir}
-                           enteringCodes={
-                              passTransition.phase === "entering"
-                                 ? passTransition.enteringCodes
-                                 : undefined
-                           }
-                           enterDirection={passTransition.enterDir}
-                        />
-                        <div
-                           className={styles.passActions}
-                           style={{ visibility: "hidden" }}
-                           aria-hidden="true"
-                        >
-                           <Button
-                              name="Submit pass"
-                              style={{ width: "180px" }}
-                           />
-                        </div>
-                     </>
+                     <Hand
+                        cards={passTransition.displayHand}
+                        selectedCodes={
+                           passTransition.phase === "exiting"
+                              ? passTransition.exitingCodes
+                              : undefined
+                        }
+                        selectionMode={passTransition.phase === "exiting"}
+                        exitingCodes={
+                           passTransition.phase === "exiting"
+                              ? passTransition.exitingCodes
+                              : undefined
+                        }
+                        exitDirection={passTransition.exitDir}
+                        enteringCodes={
+                           passTransition.phase === "entering"
+                              ? passTransition.enteringCodes
+                              : undefined
+                        }
+                        enterDirection={passTransition.enterDir}
+                     />
                   )}
 
                   {/* ── Deal-in animation (hand expanding from center) ── */}
                   {dealingHand && !roundSummary && (
-                     <>
-                        <div className={handStyles.handStack}>
-                           <div className={handStyles.hand} aria-hidden="true">
-                              <div className={handStyles.handCardWrap}>
-                                 <div className={handStyles.handSlotEmpty} />
-                              </div>
-                           </div>
-                           <div className={handStyles.handDealIn}>
-                              <Hand cards={state.human_hand} />
+                     <div className={handStyles.handStack}>
+                        <div className={handStyles.hand} aria-hidden="true">
+                           <div className={handStyles.handCardWrap}>
+                              <div className={handStyles.handSlotEmpty} />
                            </div>
                         </div>
-                        <div
-                           className={styles.passActions}
-                           style={{ visibility: "hidden" }}
-                           aria-hidden="true"
-                        >
-                           <Button
-                              name="Submit pass"
-                              style={{ width: "180px" }}
-                           />
+                        <div className={handStyles.handDealIn}>
+                           <Hand cards={state.human_hand} />
                         </div>
-                     </>
+                     </div>
                   )}
 
                   {/* ── Passing phase UI ────────────────────────── */}
@@ -1095,26 +1080,14 @@ export default function PlayGamePage() {
                      !dealingHand &&
                      state.phase === "passing" &&
                      !passTransition && (
-                        <>
-                           <Hand
-                              cards={state.human_hand}
-                              selectedCodes={passSelection}
-                              onCardClick={
-                                 submitting ? undefined : handlePassCardToggle
-                              }
-                              selectionMode
-                           />
-                           <div className={styles.passActions}>
-                              <Button
-                                 name="Submit pass"
-                                 disabled={
-                                    passSelection.size !== 3 || submitting
-                                 }
-                                 onClick={handleSubmitPass}
-                                 style={{ width: "180px" }}
-                              />
-                           </div>
-                        </>
+                        <Hand
+                           cards={state.human_hand}
+                           selectedCodes={passSelection}
+                           onCardClick={
+                              submitting ? undefined : handlePassCardToggle
+                           }
+                           selectionMode
+                        />
                      )}
 
                   {/* ── Player hand (playing phase) ─────────────── */}
@@ -1122,39 +1095,26 @@ export default function PlayGamePage() {
                      !roundBanner &&
                      !dealingHand &&
                      state.phase === "playing" && (
-                        <>
-                           <div className={handStyles.handStack}>
-                              <div className={handStyles.hand} aria-hidden="true">
-                                 <div className={handStyles.handCardWrap}>
-                                    <div className={handStyles.handSlotEmpty} />
-                                 </div>
+                        <div className={handStyles.handStack}>
+                           <div className={handStyles.hand} aria-hidden="true">
+                              <div className={handStyles.handCardWrap}>
+                                 <div className={handStyles.handSlotEmpty} />
                               </div>
-                              {state.human_hand.length > 0 && (
-                                 <Hand
-                                    cards={state.human_hand}
-                                    legalCodes={new Set(state.legal_plays)}
-                                    onCardClick={
-                                       !busy &&
-                                       state.whose_turn === 0 &&
-                                       !state.game_over
-                                          ? handlePlayCard
-                                          : undefined
-                                    }
-                                 />
-                              )}
                            </div>
-                           {/* Placeholder matching passActions height so layout doesn't shift when transitioning from passing */}
-                           <div
-                              className={styles.passActions}
-                              style={{ visibility: "hidden" }}
-                              aria-hidden="true"
-                           >
-                              <Button
-                                 name="Submit pass"
-                                 style={{ width: "180px" }}
+                           {state.human_hand.length > 0 && (
+                              <Hand
+                                 cards={state.human_hand}
+                                 legalCodes={new Set(state.legal_plays)}
+                                 onCardClick={
+                                    !busy &&
+                                    state.whose_turn === 0 &&
+                                    !state.game_over
+                                       ? handlePlayCard
+                                       : undefined
+                                 }
                               />
-                           </div>
-                        </>
+                           )}
+                        </div>
                      )}
 
                   {/* ── Game over screen with score table ───────── */}
