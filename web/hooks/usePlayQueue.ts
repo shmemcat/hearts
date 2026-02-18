@@ -244,6 +244,9 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
       setDisplaySlots(EMPTY_SLOTS);
    }, []);
 
+   /** Synchronous check — true when the queue is draining (no React-state lag). */
+   const isActive = useCallback(() => processingRef.current, []);
+
    return {
       displaySlots,
       busy,
@@ -254,5 +257,6 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
       showImmediately,
       setSlots,
       reset,
+      isActive,
    };
 }

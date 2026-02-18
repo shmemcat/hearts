@@ -109,6 +109,15 @@
    background: transparent;
 }
 
+/* Stack the empty hand slot behind the fanned cards */
+.handStack {
+   display: grid;
+}
+.handStack > * {
+   grid-column: 1;
+   grid-row: 1;
+}
+
 /* Curved fan: gentle arc via rotation + vertical offset */
 .hand {
    display: flex;
@@ -322,6 +331,48 @@
    to {
       opacity: 1;
       transform: translateY(0);
+   }
+}
+
+/* ── Round banner (start-of-round indicator) ─────────────── */
+.roundBannerOverlay {
+   position: absolute;
+   inset: 0;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   z-index: 10;
+   pointer-events: none;
+}
+.roundBannerText {
+   font-size: 1.4rem;
+   font-weight: 700;
+   color: var(--header);
+   animation: roundBannerSlideIn 0.5s ease-out;
+}
+@keyframes roundBannerSlideIn {
+   from {
+      opacity: 0;
+      transform: translateY(-20px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+
+/* ── Hand deal-in animation ─────────────────────────────── */
+.handDealIn {
+   animation: handDealIn 0.35s ease-out;
+}
+@keyframes handDealIn {
+   from {
+      opacity: 0;
+      transform: scale(0.3);
+   }
+   to {
+      opacity: 1;
+      transform: scale(1);
    }
 }
 

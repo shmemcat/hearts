@@ -78,6 +78,10 @@ export default function PlayGamePage() {
       0, 0, 0, 0,
    ]);
    const [noPassHold, setNoPassHold] = useState(false);
+   const [roundBanner, setRoundBanner] = useState<{
+      round: number;
+   } | null>(null);
+   const [dealingHand, setDealingHand] = useState(false);
 
    // ── Refs for WS callbacks (stable across renders) ──────────────────
    const pendingStateRef = useRef<GameSocketState | null>(null);
@@ -148,6 +152,7 @@ export default function PlayGamePage() {
       showImmediately,
       setSlots,
       reset,
+      isActive,
    } = usePlayQueue({ onIdle });
 
    // Keep a stable ref to reset so applyPendingState (created before the hook)
@@ -160,11 +165,14 @@ export default function PlayGamePage() {
 
    // ── REST fallback: load intermediate_plays into the queue ──────────
    const enqueueRestPlays = useCallback(
-      (plays: PlayEvent[], initialOnTable: number, skipFirst: boolean) => {
+      (
+         plays: PlayEvent[],
+         initialOnTable: number,
+         skipFirst: boolean
+      ): number => {
          let onTable = initialOnTable;
          for (let i = 0; i < plays.length; i++) {
             if (skipFirst && i === 0) {
-               onTable++;
                if (onTable === 4) {
                   enqueue({ type: "trick_complete" });
                   onTable = 0;
@@ -178,6 +186,7 @@ export default function PlayGamePage() {
                onTable = 0;
             }
          }
+         return onTable;
       },
       [enqueue]
    );
@@ -208,7 +217,9 @@ export default function PlayGamePage() {
          advanceSentRef.current = false;
          pendingStateRef.current = data;
          if (data.round_just_ended) {
-            enqueue({ type: "trick_complete" });
+            if (!isActive()) {
+               applyPendingRef.current();
+            }
             return;
          }
          if (!busyRef.current) {
@@ -226,7 +237,7 @@ export default function PlayGamePage() {
          unsubState();
          unsubError();
       };
-   }, [enqueue]);
+   }, [enqueue, isActive]);
 
    // ── Initial load ───────────────────────────────────────────────────
    useEffect(() => {
@@ -254,6 +265,7 @@ export default function PlayGamePage() {
             prevScoresRef.current = data.players.map(
                (p: { score: number }) => p.score
             );
+            setRoundBanner({ round: data.round });
 
             // Restore board if there are cards on the table already
             if (data.phase === "playing" && data.current_trick) {
@@ -315,9 +327,9 @@ export default function PlayGamePage() {
                   return;
                }
                const plays = result.data.intermediate_plays ?? [];
-               enqueueRestPlays(plays, onTable, false);
+               const finalOnTable = enqueueRestPlays(plays, onTable, false);
                pendingStateRef.current = result.data;
-               if (result.data.round_just_ended) {
+               if (result.data.round_just_ended && finalOnTable !== 0) {
                   enqueue({ type: "trick_complete" });
                }
                if (plays.length === 0 && !result.data.round_just_ended) {
@@ -343,6 +355,22 @@ export default function PlayGamePage() {
       enqueue,
       enqueueRestPlays,
    ]);
+
+   // ── Round banner → deal timer ─────────────────────────────────────
+   useEffect(() => {
+      if (!roundBanner) return;
+      const t = setTimeout(() => {
+         setRoundBanner(null);
+         setDealingHand(true);
+      }, 1000);
+      return () => clearTimeout(t);
+   }, [roundBanner]);
+
+   useEffect(() => {
+      if (!dealingHand) return;
+      const t = setTimeout(() => setDealingHand(false), 350);
+      return () => clearTimeout(t);
+   }, [dealingHand]);
 
    // ── Hearts-per-player tracking (client-side, per round) ───────────
    const currentRound = state?.round;
@@ -471,6 +499,7 @@ export default function PlayGamePage() {
          prevScoresRef.current = pending.players.map(
             (p: { score: number }) => p.score
          );
+         setRoundBanner({ round: pending.round });
          if (pending.phase === "passing") {
             reset();
          }
@@ -514,9 +543,13 @@ export default function PlayGamePage() {
                      return;
                   }
                   const plays = result.data.intermediate_plays ?? [];
-                  enqueueRestPlays(plays, cardsOnTable + 1, true);
+                  const finalOnTable = enqueueRestPlays(
+                     plays,
+                     cardsOnTable + 1,
+                     true
+                  );
                   pendingStateRef.current = result.data;
-                  if (result.data.round_just_ended) {
+                  if (result.data.round_just_ended && finalOnTable !== 0) {
                      enqueue({ type: "trick_complete" });
                   }
                   if (plays.length <= 1 && !result.data.round_just_ended) {
@@ -765,13 +798,25 @@ export default function PlayGamePage() {
                            onContinue={handleContinueRound}
                         />
                      )}
+
+                     {/* ── Round banner (start-of-round) ────────────── */}
+                     {roundBanner && !roundSummary && (
+                        <div className={styles.roundBannerOverlay}>
+                           <span className={styles.roundBannerText}>
+                              Round {roundBanner.round}
+                           </span>
+                        </div>
+                     )}
                   </div>
                   {/* end gameTableWrapper */}
 
                   {/* ── Phase hint (always in DOM to prevent layout shift) ── */}
                   <PhaseHint
                      text={
-                        roundSummary || state.game_over
+                        roundSummary ||
+                        roundBanner ||
+                        dealingHand ||
+                        state.game_over
                            ? null
                            : noPassHold
                            ? "No passing this round"
@@ -787,8 +832,8 @@ export default function PlayGamePage() {
                      }
                   />
 
-                  {/* ── Hand placeholder (preserves layout during round summary) ── */}
-                  {roundSummary && !passTransition && (
+                  {/* ── Hand placeholder (preserves layout during round summary / banner) ── */}
+                  {(roundSummary || roundBanner) && !passTransition && (
                      <>
                         <div className={styles.hand} aria-hidden="true">
                            <div key={0} className={styles.handCardWrap}>
@@ -845,8 +890,36 @@ export default function PlayGamePage() {
                      </>
                   )}
 
+                  {/* ── Deal-in animation (hand expanding from center) ── */}
+                  {dealingHand && !roundSummary && (
+                     <>
+                        <div className={styles.handStack}>
+                           <div className={styles.hand} aria-hidden="true">
+                              <div className={styles.handCardWrap}>
+                                 <div className={styles.handSlotEmpty} />
+                              </div>
+                           </div>
+                           <div className={styles.handDealIn}>
+                              <Hand cards={state.human_hand} />
+                           </div>
+                        </div>
+                        <div
+                           className={styles.passActions}
+                           style={{ visibility: "hidden" }}
+                           aria-hidden="true"
+                        >
+                           <Button
+                              name="Submit pass"
+                              style={{ width: "180px" }}
+                           />
+                        </div>
+                     </>
+                  )}
+
                   {/* ── Passing phase UI ────────────────────────── */}
                   {!roundSummary &&
+                     !roundBanner &&
+                     !dealingHand &&
                      state.phase === "passing" &&
                      !passTransition && (
                         <>
@@ -872,32 +945,44 @@ export default function PlayGamePage() {
                      )}
 
                   {/* ── Player hand (playing phase) ─────────────── */}
-                  {!roundSummary && state.phase === "playing" && (
-                     <>
-                        <Hand
-                           cards={state.human_hand}
-                           legalCodes={new Set(state.legal_plays)}
-                           onCardClick={
-                              !busy &&
-                              state.whose_turn === 0 &&
-                              !state.game_over
-                                 ? handlePlayCard
-                                 : undefined
-                           }
-                        />
-                        {/* Placeholder matching passActions height so layout doesn't shift when transitioning from passing */}
-                        <div
-                           className={styles.passActions}
-                           style={{ visibility: "hidden" }}
-                           aria-hidden="true"
-                        >
-                           <Button
-                              name="Submit pass"
-                              style={{ width: "180px" }}
-                           />
-                        </div>
-                     </>
-                  )}
+                  {!roundSummary &&
+                     !roundBanner &&
+                     !dealingHand &&
+                     state.phase === "playing" && (
+                        <>
+                           <div className={styles.handStack}>
+                              <div className={styles.hand} aria-hidden="true">
+                                 <div className={styles.handCardWrap}>
+                                    <div className={styles.handSlotEmpty} />
+                                 </div>
+                              </div>
+                              {state.human_hand.length > 0 && (
+                                 <Hand
+                                    cards={state.human_hand}
+                                    legalCodes={new Set(state.legal_plays)}
+                                    onCardClick={
+                                       !busy &&
+                                       state.whose_turn === 0 &&
+                                       !state.game_over
+                                          ? handlePlayCard
+                                          : undefined
+                                    }
+                                 />
+                              )}
+                           </div>
+                           {/* Placeholder matching passActions height so layout doesn't shift when transitioning from passing */}
+                           <div
+                              className={styles.passActions}
+                              style={{ visibility: "hidden" }}
+                              aria-hidden="true"
+                           >
+                              <Button
+                                 name="Submit pass"
+                                 style={{ width: "180px" }}
+                              />
+                           </div>
+                        </>
+                     )}
 
                   {/* ── Game over screen with score table ───────── */}
                   {state.game_over && !roundSummary && (
