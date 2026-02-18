@@ -20,7 +20,7 @@ export default function CreateGamePage() {
    const [gameType, setGameType] = React.useState("Versus AI");
    const [difficulty, setDifficulty] = React.useState("Easy");
    const [aiPlayersEnabled, setAiPlayersEnabled] = React.useState(false);
-   const [numAiPlayers, setNumAiPlayers] = React.useState<NumAiPlayers>(0);
+   const [numAiPlayers, setNumAiPlayers] = React.useState<NumAiPlayers>(1);
    const [submitting, setSubmitting] = React.useState(false);
    const [error, setError] = React.useState<string | null>(null);
 

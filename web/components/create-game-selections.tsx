@@ -2,7 +2,7 @@ import React from "react";
 import containers from "@/styles/containers.module.css";
 import { Select, Toggle, type SelectOption } from "@/components/ui";
 
-export type NumAiPlayers = 0 | 1 | 2;
+export type NumAiPlayers = 1 | 2 | 3;
 
 export interface CreateGameSelectionsProps {
    className?: string;
@@ -31,7 +31,7 @@ export const CreateGameSelections: React.FC<CreateGameSelectionsProps> = ({
    const [internalGameType, setInternalGameType] = React.useState("Versus AI");
    const [internalDifficulty, setInternalDifficulty] = React.useState("Easy");
    const [internalAiEnabled, setInternalAiEnabled] = React.useState(false);
-   const [internalNumAi, setInternalNumAi] = React.useState<NumAiPlayers>(0);
+   const [internalNumAi, setInternalNumAi] = React.useState<NumAiPlayers>(1);
 
    const gameType = controlledGameType ?? internalGameType;
    const setGameType = onGameTypeChange ?? setInternalGameType;
@@ -85,6 +85,8 @@ export const CreateGameSelections: React.FC<CreateGameSelectionsProps> = ({
                onAiPlayersEnabledChange={setAiPlayersEnabled}
                numAiPlayers={numAiPlayers}
                onNumAiPlayersChange={setNumAiPlayers}
+               difficulty={difficulty}
+               onDifficultyChange={setDifficulty}
             />
          ) : null}
       </>
@@ -149,54 +151,66 @@ const OnlineAiOptions: React.FC<{
    onAiPlayersEnabledChange: (value: boolean) => void;
    numAiPlayers: NumAiPlayers;
    onNumAiPlayersChange: (value: NumAiPlayers) => void;
+   difficulty: string;
+   onDifficultyChange: (value: string) => void;
 }> = ({
    aiPlayersEnabled,
    onAiPlayersEnabledChange,
    numAiPlayers,
    onNumAiPlayersChange,
+   difficulty,
+   onDifficultyChange,
 }) => {
    const numOptions: SelectOption<NumAiPlayers>[] = [
-      { value: 0, label: "0" },
       { value: 1, label: "1" },
       { value: 2, label: "2" },
+      { value: 3, label: "3" },
    ];
 
    return (
-      <div className={containers["create-online-ai-section"]}>
-         <h2>AI Players</h2>
-         <div className={containers["create-online-ai-inner"]}>
-            <div className={containers["create-toggle-row"]}>
-               <span className={containers["create-toggle-label"]}>
-                  <span className={containers["create-toggle-label-long"]}>
-                     Include AI players
+      <>
+         <div className={containers["create-online-ai-section"]}>
+            <h2>AI Players</h2>
+            <div className={containers["create-online-ai-inner"]}>
+               <div className={containers["create-toggle-row"]}>
+                  <span className={containers["create-toggle-label"]}>
+                     <span className={containers["create-toggle-label-long"]}>
+                        Include AI players
+                     </span>
+                     <span className={containers["create-toggle-label-short"]}>
+                        Include
+                     </span>
                   </span>
-                  <span className={containers["create-toggle-label-short"]}>
-                     Include
-                  </span>
-               </span>
-               <Toggle
-                  checked={aiPlayersEnabled}
-                  onCheckedChange={onAiPlayersEnabledChange}
-                  aria-label="Include AI players"
-               />
-            </div>
-            <div className={containers["create-select-row"]}>
-               <label
-                  htmlFor="num-ai-players"
-                  className={containers["create-select-label"]}
-               >
-                  Number
-               </label>
-               <Select<NumAiPlayers>
-                  id="num-ai-players"
-                  value={numAiPlayers}
-                  onChange={onNumAiPlayersChange}
-                  options={numOptions}
-                  disabled={!aiPlayersEnabled}
-                  aria-label="Number of AI players"
-               />
+                  <Toggle
+                     checked={aiPlayersEnabled}
+                     onCheckedChange={onAiPlayersEnabledChange}
+                     aria-label="Include AI players"
+                  />
+               </div>
+               <div className={containers["create-select-row"]}>
+                  <label
+                     htmlFor="num-ai-players"
+                     className={containers["create-select-label"]}
+                  >
+                     Number
+                  </label>
+                  <Select<NumAiPlayers>
+                     id="num-ai-players"
+                     value={numAiPlayers}
+                     onChange={onNumAiPlayersChange}
+                     options={numOptions}
+                     disabled={!aiPlayersEnabled}
+                     aria-label="Number of AI players"
+                  />
+               </div>
             </div>
          </div>
-      </div>
+         {aiPlayersEnabled && (
+            <Difficulty
+               difficulty={difficulty}
+               onDifficultyChange={onDifficultyChange}
+            />
+         )}
+      </>
    );
 };
