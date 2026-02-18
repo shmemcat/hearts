@@ -1,10 +1,16 @@
 import { useCallback, useRef, useState } from "react";
 import type { CurrentTrickSlot, PlayEvent } from "@/types/game";
 
-/** Delay before each card reveal; also the hold duration after a completed trick. */
-const STEP_MS = 1000;
+/** How long all 4 cards are shown before the collect sweep begins. */
+const HOLD_MS = 1000;
+/** Delay before each queued card reveal (turn highlight → card appears). */
+const CARD_DELAY_MS = 500;
+/** Duration of the collect-to-winner sweep animation (matches Trick.tsx COLLECT_DURATION + buffer). */
+const COLLECT_MS = 450;
+/** Extra time the heart-delta badge lingers after the sweep finishes (total badge = COLLECT_MS + BADGE_LINGER_MS). */
+const BADGE_LINGER_MS = 550;
 /** Duration of the empty-board flash between tricks. */
-const CLEAR_MS = 500;
+const CLEAR_MS = 300;
 
 /* ── Client-side trick winner detection ──────────────────────────────── */
 
@@ -84,8 +90,10 @@ export interface UsePlayQueueOptions {
  * Queue-based trick animation hook.
  *
  * Drain model: "delay BEFORE show".
- *   play   -> wait 1s, show card, immediately process next
- *   trick_complete -> compute trick result, wait 1s (hold), clear board, wait 0.5s, process next
+ *   play   -> wait 0.5s, show card, immediately process next
+ *   trick_complete -> compute result, wait 1s (hold), sweep cards toward
+ *                     winner over 0.45s, badge lingers 0.55s more, clear,
+ *                     wait 0.3s, process next
  *
  * This means:
  *   - There is always a 1s gap after the human's instant card (the delay
@@ -96,7 +104,8 @@ export interface UsePlayQueueOptions {
  * Trick result tracking:
  *   - Every play (queued or immediate) is recorded in trickPlaysRef.
  *   - On trick_complete, the winner and heart count are computed client-side.
- *   - trickResult is set during the 1s hold and cleared when the board clears.
+ *   - collectTarget + trickResult are set when the sweep animation starts;
+ *     both are cleared when the board clears after the sweep.
  */
 export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
    const [displaySlots, setDisplaySlots] =
@@ -104,8 +113,10 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
    const [busy, setBusy] = useState(false);
    /** Player index of whoever is "active" during animation (for turn indicator). */
    const [currentTurn, setCurrentTurn] = useState<number | null>(null);
-   /** Result of the most recently completed trick (set during the hold). */
+   /** Result of the most recently completed trick (set when collect animation starts). */
    const [trickResult, setTrickResult] = useState<TrickResult | null>(null);
+   /** Player index cards are sweeping toward (null = no animation). */
+   const [collectTarget, setCollectTarget] = useState<number | null>(null);
 
    const queueRef = useRef<QueueItem[]>([]);
    const processingRef = useRef(false);
@@ -130,7 +141,6 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
       const item = queue[0]; // peek — don't shift until the delay fires
 
       if (item.type === "play") {
-         // Highlight this player's seat during the 1s lead-in
          setCurrentTurn(item.event.player_index);
 
          timerRef.current = setTimeout(() => {
@@ -147,28 +157,39 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
                }
                return next;
             });
-            processNext(); // immediately check for next item
-         }, STEP_MS);
+            processNext();
+         }, CARD_DELAY_MS);
       } else if (item.type === "trick_complete") {
          queue.shift();
 
-         // Compute who won the trick and how many hearts were in it
          const result = computeTrickResult(trickPlaysRef.current);
          trickPlaysRef.current = [];
-         if (result && result.hearts > 0) {
-            setTrickResult({
-               ...result,
-               id: ++trickCounterRef.current,
-            });
-         }
 
-         // Hold 1s so user can see all 4 cards, then clear, then 0.5s empty
+         // Hold so user can see all 4 cards, then sweep toward winner
          timerRef.current = setTimeout(() => {
-            setTrickResult(null);
-            setDisplaySlots(EMPTY_SLOTS);
-            setCurrentTurn(null);
-            timerRef.current = setTimeout(processNext, CLEAR_MS);
-         }, STEP_MS);
+            if (result) {
+               setCollectTarget(result.winner);
+               if (result.hearts > 0) {
+                  setTrickResult({
+                     ...result,
+                     id: ++trickCounterRef.current,
+                  });
+               }
+            }
+
+            // After the sweep, clear the board but let the badge linger
+            timerRef.current = setTimeout(() => {
+               setCollectTarget(null);
+               setDisplaySlots(EMPTY_SLOTS);
+               setCurrentTurn(null);
+
+               const linger = result && result.hearts > 0 ? BADGE_LINGER_MS : 0;
+               timerRef.current = setTimeout(() => {
+                  setTrickResult(null);
+                  timerRef.current = setTimeout(processNext, CLEAR_MS);
+               }, linger);
+            }, COLLECT_MS);
+         }, HOLD_MS);
       }
    }, []);
 
@@ -219,6 +240,7 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
       setBusy(false);
       setCurrentTurn(null);
       setTrickResult(null);
+      setCollectTarget(null);
       setDisplaySlots(EMPTY_SLOTS);
    }, []);
 
@@ -227,6 +249,7 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
       busy,
       currentTurn,
       trickResult,
+      collectTarget,
       enqueue,
       showImmediately,
       setSlots,

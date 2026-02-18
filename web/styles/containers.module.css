@@ -9,7 +9,7 @@
 }
 
 .menu-button-container {
-   margin-top: -40px;
+   margin-top: -20px;
    margin-left: 200px;
    display: flex;
    flex-direction: column;
@@ -223,7 +223,8 @@
    }
 
    .menu-button-container {
-      margin-top: -40px;
+      margin-top: -20px;
+      padding-top: 10px;
       margin-left: 130px;
       align-items: center;
       justify-content: center;
@@ -238,7 +239,7 @@
    }
 
    .rules-body-container {
-      margin-top: 20px;
+      margin-top: 25px;
       width: 90vw;
       justify-content: center;
       align-items: center;

@@ -143,6 +143,7 @@ export default function PlayGamePage() {
       busy,
       currentTurn,
       trickResult,
+      collectTarget,
       enqueue,
       showImmediately,
       setSlots,
@@ -710,6 +711,7 @@ export default function PlayGamePage() {
                            <Trick
                               layout="table"
                               slots={slots}
+                              collectTarget={collectTarget}
                               playerNames={reorderSlotsForTableLayout(
                                  state.players.map((p) => p.name)
                               )}
@@ -784,6 +786,27 @@ export default function PlayGamePage() {
                            : null
                      }
                   />
+
+                  {/* ── Hand placeholder (preserves layout during round summary) ── */}
+                  {roundSummary && !passTransition && (
+                     <>
+                        <div className={styles.hand} aria-hidden="true">
+                           <div key={0} className={styles.handCardWrap}>
+                              <div className={styles.handSlotEmpty} />
+                           </div>
+                        </div>
+                        <div
+                           className={styles.passActions}
+                           style={{ visibility: "hidden" }}
+                           aria-hidden="true"
+                        >
+                           <Button
+                              name="Submit pass"
+                              style={{ width: "180px" }}
+                           />
+                        </div>
+                     </>
+                  )}
 
                   {/* ── Pass transition (animated hand) ─────────── */}
                   {passTransition && (
