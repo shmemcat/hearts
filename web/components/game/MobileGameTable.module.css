@@ -3,8 +3,8 @@
 .container {
    position: relative;
    width: 100%;
-   height: 530px;
-   margin-top: 50px;
+   height: 550px;
+   margin-top: 60px;
    min-height: 340px;
 }
 
@@ -35,14 +35,14 @@
 
 .seatLeft {
    position: absolute;
-   top: 49%;
-   left: 4px;
+   top: 47.5%;
+   left: -10px;
    transform: translateY(calc(-50% - 80px));
 }
 
 .seatRight {
    position: absolute;
-   top: 49%;
-   right: 8px;
+   top: 47.5%;
+   right: -12px;
    transform: translateY(calc(-50% - 80px));
 }

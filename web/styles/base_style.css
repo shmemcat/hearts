@@ -86,11 +86,8 @@ html {
    --infopillborder: hsl(350, 50%, 86%);
    --infopilltext: hsl(342, 30%, 40%);
    --statsdivider: hsla(342, 36%, 64%, 0.5);
-   --seatcolor0: hsl(342, 50%, 55%);
-   --seatcolor1: hsl(210, 45%, 50%);
-   --seatcolor2: hsl(160, 40%, 42%);
-   --seatcolor3: hsl(35, 55%, 50%);
-   --seatcolorbadgetext: #fff;
+   --seatcolorbadgebg: hsl(341, 81%, 84%);
+   --seatcolorbadgetext: hsl(12, 6%, 33%);
 }
 
 [data-theme="dark"] {
@@ -139,11 +136,8 @@ html {
    --infopillborder: hsl(232, 14%, 30%);
    --infopilltext: hsl(341, 50%, 75%);
    --statsdivider: hsl(231, 16%, 29%);
-   --seatcolor0: hsl(342, 45%, 65%);
-   --seatcolor1: hsl(210, 50%, 65%);
-   --seatcolor2: hsl(160, 40%, 55%);
-   --seatcolor3: hsl(35, 50%, 60%);
-   --seatcolorbadgetext: #fff;
+   --seatcolorbadgebg: hsl(335, 19%, 45%);
+   --seatcolorbadgetext: hsl(341, 81%, 84%);
 }
 
 body {

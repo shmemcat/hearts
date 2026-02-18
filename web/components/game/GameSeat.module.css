@@ -91,7 +91,7 @@
 /* ── Mobile: compact colored badge + heart count ──────── */
 
 .gameTableSeatMobile {
-   padding: 4px;
+   padding: 8px 10px;
    min-width: auto;
    gap: 2px;
 }
@@ -104,9 +104,10 @@
    height: 30px;
    padding: 0 6px;
    border-radius: 8px;
-   font-size: 0.85rem;
+   font-size: 1.25rem;
    font-weight: 700;
    color: var(--seatcolorbadgetext);
+   background: var(--seatcolorbadgebg);
    letter-spacing: 0.5px;
    line-height: 1;
 }
@@ -135,3 +136,23 @@
    border-radius: 10px;
 }
 
+.seatHeartCount {
+   color: var(--cardredsuit);
+   font-size: 1.25rem;
+   font-weight: 600;
+}
+
+.heartDeltaBadge {
+   position: absolute;
+   top: -4px;
+   right: 0px;
+   padding: 4px 6px;
+   font-size: 1.25rem;
+   font-weight: 700;
+   color: #fff;
+   min-width: 32px;
+   background: var(--cardredsuit);
+   border-radius: 8px;
+   pointer-events: none;
+   animation: heartDeltaPop 1s ease-out forwards;
+}

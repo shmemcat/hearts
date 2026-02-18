@@ -35,13 +35,6 @@ const POSITION_CLASS: Record<GameSeatProps["position"], string> = {
    bottom: styles.gameTableSeatBottom,
 };
 
-const SEAT_COLOR_VAR = [
-   "var(--seatcolor0)",
-   "var(--seatcolor1)",
-   "var(--seatcolor2)",
-   "var(--seatcolor3)",
-];
-
 export const GameSeat: React.FC<GameSeatProps> = ({
    name,
    shortName,
@@ -58,21 +51,22 @@ export const GameSeat: React.FC<GameSeatProps> = ({
 
    if (isMobile) {
       const label = shortName ?? name;
-      const badgeColor = SEAT_COLOR_VAR[0];
 
       return (
          <div
-            className={`${styles.gameTableSeat} ${POSITION_CLASS[position]} ${styles.gameTableSeatMobile} ${styles.seatMobileRow} ${isCurrentTurn ? styles.seatMobileTurn : ""}`}
+            className={`${styles.gameTableSeat} ${POSITION_CLASS[position]} ${
+               styles.gameTableSeatMobile
+            } ${styles.seatMobileRow} ${
+               isCurrentTurn ? styles.seatMobileTurn : ""
+            }`}
          >
-            <span
-               className={styles.seatBadge}
-               style={{ background: badgeColor }}
-            >
-               {label}
-            </span>
+            <span className={styles.seatBadge}>{label}</span>
             {showHearts && (
                <span className={styles.seatMobileHearts}>
-                  <span className={styles.seatHeartCount}>♥ {heartCount}</span>
+                  <span className={styles.seatHeartCount}>
+                     {" "}
+                     &nbsp;♥ {heartCount}
+                  </span>
                   {heartDelta > 0 && (
                      <span
                         key={trickResultId}
