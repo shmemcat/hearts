@@ -1,12 +1,13 @@
 import Head from "next/head";
 import Link from "next/link";
-import React from "react";
+import React, { useRef, useCallback } from "react";
 import party from "party-js";
 
 import containers from "@/styles/containers.module.css";
 import { RulesButton } from "@/components/Buttons";
 import { Button } from "@/components/Buttons";
 import { PageLayout } from "@/components/ui";
+import { CONFETTI_COOLDOWN_MS } from "@/lib/constants";
 
 export default function RulesPage() {
    return (
@@ -131,6 +132,20 @@ function Play() {
 }
 
 function Scoring() {
+   const lastConfettiTime = useRef(0);
+
+   const handleShootTheMoonHover = useCallback(
+      (e: React.MouseEvent<HTMLElement>) => {
+         const now = Date.now();
+         if (now - lastConfettiTime.current < CONFETTI_COOLDOWN_MS) return;
+         lastConfettiTime.current = now;
+         party.confetti(e.target as HTMLElement, {
+            count: party.variation.range(20, 100),
+         });
+      },
+      []
+   );
+
    return (
       <main className="leading-snug mb-4">
          <h3>Card Values & Scoring</h3>
@@ -151,11 +166,7 @@ function Scoring() {
             <span
                className="bold whitespace-nowrap"
                id="shoot-the-moon"
-               onMouseOver={(e) =>
-                  party.confetti(e.target as HTMLElement, {
-                     count: party.variation.range(20, 100),
-                  })
-               }
+               onMouseOver={handleShootTheMoonHover}
             >
                &quot;Shooting the Moon.&quot;
             </span>

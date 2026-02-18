@@ -40,6 +40,11 @@ export const RANK_ORDER: Record<string, number> = {
    A: 14,
 };
 
+/* ── UI Interaction ───────────────────────────────────────────────────── */
+
+/** Minimum ms between confetti bursts on the rules page. */
+export const CONFETTI_COOLDOWN_MS = 1000;
+
 /* ── Animation Timing (ms) ────────────────────────────────────────────── */
 
 /** How long all 4 cards are shown before the collect sweep begins. */
