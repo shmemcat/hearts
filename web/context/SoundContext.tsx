@@ -18,6 +18,7 @@ type SoundName =
    | "cardFan"
    | "cardSlide"
    | "cardSweep"
+   | "cardPlace"
    | "heartDelta"
    | "roundEnd"
    | "gameEnd"
@@ -37,6 +38,7 @@ const SOUND_SOURCES: Record<SoundName, string[]> = {
       "/sounds/card-slide-8.mp3",
    ],
    cardSweep: ["/sounds/cards-sweep-1.mp3", "/sounds/cards-sweep-2.mp3"],
+   cardPlace: ["/sounds/card-place-1.mp3", "/sounds/card-place-2.mp3"],
    heartDelta: ["/sounds/pop.mp3", "/sounds/plopp.mp3"],
    roundEnd: ["/sounds/round-end.mp3"],
    gameEnd: ["/sounds/game-end.mp3"],

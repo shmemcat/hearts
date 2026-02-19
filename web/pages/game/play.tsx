@@ -537,8 +537,13 @@ export default function PlayGamePage() {
    const handlePassCardToggle = useCallback((code: string) => {
       setPassSelection((prev) => {
          const next = new Set(prev);
-         if (next.has(code)) next.delete(code);
-         else if (next.size < 3) next.add(code);
+         if (next.has(code)) {
+            next.delete(code);
+            playSoundRef.current("cardPlace");
+         } else if (next.size < 3) {
+            next.add(code);
+            playSoundRef.current("cardPlace");
+         }
          return next;
       });
    }, []);
