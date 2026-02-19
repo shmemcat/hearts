@@ -1,4 +1,6 @@
 import React from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faChartSimple } from "@fortawesome/pro-solid-svg-icons";
 
 import { Button } from "@/components/Buttons";
 import type { GamePhase, PassDirection } from "@/types/game";
@@ -34,14 +36,30 @@ export const InfoModal: React.FC<InfoModalProps> = ({
 
             <div className={styles.divider} />
 
-            <div className={styles.scoresGrid}>
-               {players.map((p, i) => (
-                  <React.Fragment key={i}>
-                     <span className={styles.scoreName}>{p.name}</span>
-                     <span className={styles.scoreValue}>{p.score}</span>
-                  </React.Fragment>
-               ))}
-            </div>
+            <table className={styles.scoreTable}>
+               <thead>
+                  <tr>
+                     <th>Player</th>
+                     <th>Score</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  {[...players]
+                     .map((p, i) => ({ ...p, idx: i }))
+                     .sort((a, b) => a.score - b.score)
+                     .map((p) => (
+                        <tr
+                           key={p.idx}
+                           className={
+                              p.idx === 0 ? styles.scoreTableYou : ""
+                           }
+                        >
+                           <td>{p.name}</td>
+                           <td>{p.score}</td>
+                        </tr>
+                     ))}
+               </tbody>
+            </table>
 
             <Button name="Close" onClick={onClose} />
          </div>
@@ -61,19 +79,7 @@ export const InfoButton: React.FC<InfoButtonProps> = ({ onClick }) => {
          onClick={onClick}
          aria-label="Round info"
       >
-         <svg
-            width="18"
-            height="18"
-            viewBox="0 0 18 18"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-         >
-            <rect x="2" y="10" width="3" height="6" rx="0.5" />
-            <rect x="7.5" y="6" width="3" height="10" rx="0.5" />
-            <rect x="13" y="2" width="3" height="14" rx="0.5" />
-         </svg>
+         <FontAwesomeIcon icon={faChartSimple} />
       </button>
    );
 };

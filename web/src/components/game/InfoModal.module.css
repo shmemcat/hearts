@@ -54,24 +54,34 @@
    background: var(--roundsummarydividers);
 }
 
-.scoresGrid {
-   display: grid;
-   grid-template-columns: auto auto;
-   gap: 6px 16px;
-   width: 70%;
-   font-size: 0.85rem;
+.scoreTable {
+   width: 100%;
+   border-collapse: collapse;
+   font-size: 0.95rem;
 }
 
-.scoreName {
-   font-weight: 600;
-   font-size: 1rem;
-   color: var(--header);
-}
-
-.scoreValue {
+.scoreTable th,
+.scoreTable td {
+   padding: 8px 16px;
    text-align: center;
-   font-size: 1rem;
-   color: var(--text);
+   border-bottom: 1px solid var(--roundsummarydividers);
+}
+
+.scoreTable th {
+   font-weight: 600;
+   color: var(--header);
+   text-transform: uppercase;
+   font-size: 0.8rem;
+   letter-spacing: 0.5px;
+}
+
+.scoreTable tbody tr:last-child td {
+   border-bottom: none;
+}
+
+.scoreTableYou {
+   background: rgba(255, 182, 193, 0.3);
+   font-weight: 700;
 }
 
 /* ── Icon button (top-right corner) ───────────────────── */

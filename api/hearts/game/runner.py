@@ -24,6 +24,10 @@ from hearts.ai.base import PassStrategy, PlayStrategy
 
 HUMAN_PLAYER = 0
 DEFAULT_PLAYER_NAMES = ("You", "AI 1", "AI 2", "AI 3")
+AI_NAME_POOL = (
+    "Mary", "John", "Duffy", "Mike", "Joe",
+    "Brad", "Emily", "Kelly", "Megan", "Sue", "Bill",
+)
 
 
 def _round_complete(state: GameState) -> bool:
@@ -72,10 +76,14 @@ class GameRunner:
         deck = shuffle_deck(deck_52(), rng=rng)
         hands = deal_into_4_hands(deck)
         state = deal_new_round((0, 0, 0, 0), 1, hands)
-        names = list(player_names) if player_names else list(DEFAULT_PLAYER_NAMES)
-        while len(names) < 4:
-            names.append(DEFAULT_PLAYER_NAMES[len(names)])
-        if human_name is not None and len(names) > 0:
+        if player_names:
+            names = list(player_names)
+            while len(names) < 4:
+                names.append(DEFAULT_PLAYER_NAMES[len(names)])
+        else:
+            ai_names = rng.sample(AI_NAME_POOL, 3)
+            names = ["You", *ai_names]
+        if human_name is not None:
             names[0] = human_name
         return cls(
             state,
@@ -159,9 +167,9 @@ class GameRunner:
     ) -> Optional[str]:
         """If the round is complete, score it and deal the next round.
 
-        Returns None if round is not complete, "stop" if the caller should
-        return (game over or entering passing phase), or "continue" if a new
-        no-pass round was dealt and the AI loop should keep going.
+        Returns None if round is not complete, or "stop" if the caller should
+        return (game over or new round dealt).  Always stops at the round
+        boundary so the client can show the round summary before continuing.
         """
         if not _round_complete(self._state):
             return None
@@ -177,13 +185,11 @@ class GameRunner:
             self._state.round + 1,
             hands,
         )
-        if self._state.phase == Phase.PASSING:
-            if on_done:
-                payload = self.get_state_for_frontend()
-                payload["round_just_ended"] = True
-                on_done(payload)
-            return "stop"
-        return "continue"
+        if on_done:
+            payload = self.get_state_for_frontend()
+            payload["round_just_ended"] = True
+            on_done(payload)
+        return "stop"
 
     def _run_ai_until_human_or_done(
         self,
@@ -191,13 +197,10 @@ class GameRunner:
         on_trick_complete: Optional[Callable[[], None]] = None,
         on_done: Optional[Callable[[Dict[str, Any]], None]] = None,
     ) -> None:
-        """Run AI turns until it's human's turn or game/round ends (passing phase)."""
+        """Run AI turns until it's human's turn or game/round ends."""
         while not self._state.game_over and self._state.phase == Phase.PLAYING:
-            result = self._handle_round_end_if_needed(on_done)
-            if result == "stop":
+            if self._handle_round_end_if_needed(on_done):
                 return
-            if result == "continue":
-                continue
             if self._state.whose_turn == HUMAN_PLAYER:
                 if on_done:
                     on_done(self.get_state_for_frontend())
@@ -221,7 +224,7 @@ class GameRunner:
                 on_play(play_event)
             if on_trick_complete and self._state.phase == Phase.PLAYING and len(self._state.current_trick) == 0:
                 on_trick_complete()
-            if self._handle_round_end_if_needed(on_done) == "stop":
+            if self._handle_round_end_if_needed(on_done):
                 return
 
     def advance_to_human_turn(

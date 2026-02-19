@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import party from "party-js";
 
 import { Button } from "@/components/Buttons";
 import type { GamePlayer } from "@/types/game";
@@ -14,9 +15,26 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
    players,
    winnerIndex,
 }) => {
+   const humanWon = winnerIndex === 0;
+   const confettiRef = useRef<HTMLParagraphElement>(null);
+
+   useEffect(() => {
+      if (!humanWon) return;
+      const timer = setTimeout(() => {
+         if (confettiRef.current) {
+            party.confetti(confettiRef.current, {
+               count: party.variation.range(80, 140),
+            });
+         }
+      }, 100);
+      return () => clearTimeout(timer);
+   }, [humanWon]);
+
    return (
       <div className={styles.gameOverBlock}>
-         <p className={styles.gameOverTitle}>Game Over</p>
+         <p ref={confettiRef} className={styles.gameOverTitle}>
+            {humanWon ? "You won!" : "Game Over"}
+         </p>
          <table className={styles.scoreTable}>
             <thead>
                <tr>

@@ -63,8 +63,6 @@ function reorderSlotsForTableLayout<T>(arr: T[]): T[] {
 /** Derive compact badge label for mobile: "AI 1" → "A1", "Guest 1" → "G1", "shmemcat" → "S". */
 function getShortName(name: string): string {
    const trimmed = name.trim();
-   const aiMatch = trimmed.match(/^AI\s*(\d+)$/i);
-   if (aiMatch) return `A${aiMatch[1]}`;
    const guestMatch = trimmed.match(/^Guest\s*(\d+)$/i);
    if (guestMatch) return `G${guestMatch[1]}`;
    if (trimmed === "You") return "Y";
