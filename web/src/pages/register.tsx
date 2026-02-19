@@ -94,82 +94,85 @@ export default function RegisterPage() {
          </Helmet>
          <PageLayout title="REGISTER">
             {success ? (
-               <div>
+               <div className="mt-4 text-center">
+                  <p className="mb-2">Account created!</p>
                   <StyledLink href="/user">Sign in</StyledLink>
                </div>
             ) : (
-               <FormContainer onSubmit={handleSubmit} noValidate>
-                  <FormInput
-                     type="text"
-                     placeholder="Username"
-                     value={username}
-                     onChange={(e) => {
-                        setUsername(e.target.value);
-                        setFieldError((prev) =>
-                           prev.username
-                              ? { ...prev, username: undefined }
-                              : prev
-                        );
-                     }}
-                     autoComplete="username"
-                     error={fieldError.username}
-                  />
-                  <FormInput
-                     type="email"
-                     placeholder="Email"
-                     value={email}
-                     onChange={(e) => {
-                        setEmail(e.target.value);
-                        setFieldError((prev) =>
-                           prev.email ? { ...prev, email: undefined } : prev
-                        );
-                     }}
-                     autoComplete="email"
-                     error={fieldError.email}
-                  />
-                  <FormInput
-                     type="password"
-                     placeholder="Password"
-                     value={password}
-                     onChange={(e) => {
-                        setPassword(e.target.value);
-                        setFieldError((prev) =>
-                           prev.password
-                              ? { ...prev, password: undefined }
-                              : prev
-                        );
-                     }}
-                     autoComplete="new-password"
-                     error={fieldError.password}
-                  />
-                  <FormInput
-                     type="password"
-                     placeholder="Confirm password"
-                     value={confirmPassword}
-                     onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        setFieldError((prev) =>
-                           prev.confirmPassword
-                              ? { ...prev, confirmPassword: undefined }
-                              : prev
-                        );
-                     }}
-                     autoComplete="new-password"
-                     error={fieldError.confirmPassword}
-                  />
-                  {error && <ErrorMessage>{error}</ErrorMessage>}
-                  <Button
-                     name={loading ? "Creating account…" : "Create account"}
-                     disabled={loading}
-                  />
-               </FormContainer>
-            )}
+               <>
+                  <FormContainer onSubmit={handleSubmit} noValidate>
+                     <FormInput
+                        type="text"
+                        placeholder="Username"
+                        value={username}
+                        onChange={(e) => {
+                           setUsername(e.target.value);
+                           setFieldError((prev) =>
+                              prev.username
+                                 ? { ...prev, username: undefined }
+                                 : prev
+                           );
+                        }}
+                        autoComplete="username"
+                        error={fieldError.username}
+                     />
+                     <FormInput
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => {
+                           setEmail(e.target.value);
+                           setFieldError((prev) =>
+                              prev.email ? { ...prev, email: undefined } : prev
+                           );
+                        }}
+                        autoComplete="email"
+                        error={fieldError.email}
+                     />
+                     <FormInput
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => {
+                           setPassword(e.target.value);
+                           setFieldError((prev) =>
+                              prev.password
+                                 ? { ...prev, password: undefined }
+                                 : prev
+                           );
+                        }}
+                        autoComplete="new-password"
+                        error={fieldError.password}
+                     />
+                     <FormInput
+                        type="password"
+                        placeholder="Confirm password"
+                        value={confirmPassword}
+                        onChange={(e) => {
+                           setConfirmPassword(e.target.value);
+                           setFieldError((prev) =>
+                              prev.confirmPassword
+                                 ? { ...prev, confirmPassword: undefined }
+                                 : prev
+                           );
+                        }}
+                        autoComplete="new-password"
+                        error={fieldError.confirmPassword}
+                     />
+                     {error && <ErrorMessage>{error}</ErrorMessage>}
+                     <Button
+                        name={loading ? "Creating account…" : "Create account"}
+                        disabled={loading}
+                     />
+                  </FormContainer>
 
-            <div className="mt-4">
-               <StyledLink href="/user">
-                  Already have an account? Sign in
-               </StyledLink>
-            </div>
+                  <div className="mt-4">
+                     <StyledLink href="/user">
+                        Already have an account? Sign in
+                     </StyledLink>
+                  </div>
+               </>
+            )}
 
             <ButtonGroup>
                <Link to="/" onClick={() => triggerLogoFadeOut()}>
