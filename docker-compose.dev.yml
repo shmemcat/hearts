@@ -1,4 +1,4 @@
-# Dev: web runs Next.js dev server in Docker with hot reload (source mounted).
+# Dev: web runs Vite dev server in Docker with hot reload (source mounted).
 # Uses port 3001 so something else can keep using 3000 without conflict.
 # Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 # First time or after deps change: add --build (e.g. up:build)
@@ -17,14 +17,13 @@ services:
       args:
         - FONTAWESOME_PACKAGE_TOKEN=${FONTAWESOME_PACKAGE_TOKEN:-}
     ports:
-      - '3001:3000'
+      - '3001:5173'
     volumes:
       - ./web:/app
       - web_node_modules:/app/node_modules
     environment:
       - NODE_ENV=development
-      - WATCHPACK_POLLING=true
-    command: sh -c "npm install && npm run dev -- -H 0.0.0.0"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     restart: 'no'
 
 volumes:

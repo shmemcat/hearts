@@ -2,11 +2,12 @@
    "name": "hearts",
    "version": "0.1.0",
    "private": true,
+   "type": "module",
    "scripts": {
-      "dev": "next dev",
-      "build": "next build",
-      "start": "next start",
-      "lint": "next lint"
+      "dev": "vite",
+      "build": "tsc && vite build",
+      "preview": "vite preview",
+      "lint": "eslint src"
    },
    "dependencies": {
       "@fortawesome/fontawesome-pro": "^6.2.1",
@@ -16,29 +17,25 @@
       "@fortawesome/react-fontawesome": "^3.2.0",
       "@radix-ui/react-tooltip": "^1.2.8",
       "@types/howler": "^2.2.12",
-      "eslint": "^8.57.0",
-      "eslint-config-next": "^15.1.0",
       "framer-motion": "^12.34.2",
       "howler": "^2.2.4",
-      "next": "^15.5.10",
-      "next-themes": "^0.2.1",
       "party-js": "^2.2.0",
       "react": "^18.2.0",
       "react-dom": "^18.2.0",
+      "react-helmet-async": "^2.0.5",
+      "react-router-dom": "^7.4.0",
       "socket.io-client": "^4.8.3"
    },
    "devDependencies": {
-      "@tailwindcss/postcss": "^4.1.18",
+      "@tailwindcss/vite": "^4.1.18",
       "@types/node": "25.2.3",
       "@types/react": "19.2.14",
       "@types/react-dom": "^19.2.3",
-      "autoprefixer": "^10.4.24",
-      "postcss": "^8.5.6",
+      "@vitejs/plugin-react": "^4.5.1",
+      "eslint": "^8.57.0",
       "prettier": "^2.8.3",
       "tailwindcss": "^4.1.18",
-      "typescript": "^5.9.3"
-   },
-   "overrides": {
-      "glob": "^10.5.0"
+      "typescript": "^5.9.3",
+      "vite": "^6.3.5"
    }
 }

@@ -1,9 +1,8 @@
-# Build stage: install deps and export static site
+# Build stage: install deps and build SPA
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Optional: pass at build time for Font Awesome Pro (e.g. docker compose build --build-arg FONTAWESOME_PACKAGE_TOKEN=xxx)
 ARG FONTAWESOME_PACKAGE_TOKEN
 ENV FONTAWESOME_PACKAGE_TOKEN=${FONTAWESOME_PACKAGE_TOKEN}
 
@@ -14,10 +13,10 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Runtime: serve static export with nginx
+# Runtime: serve SPA + reverse-proxy API via nginx
 FROM nginx:alpine
 
-COPY --from=builder /app/out /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

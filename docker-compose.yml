@@ -21,8 +21,8 @@ services:
       FLASK_APP: hearts:app
       DATABASE_URL: postgresql://${POSTGRES_USER:-hearts}:${POSTGRES_PASSWORD:-hearts}@db:5432/${POSTGRES_DB:-hearts}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
       MAIL_SERVER: ${MAIL_SERVER:-}
       MAIL_PORT: ${MAIL_PORT:-587}
       MAIL_USE_TLS: ${MAIL_USE_TLS:-true}
@@ -38,10 +38,11 @@ services:
       context: ./web
       dockerfile: Dockerfile
       args:
-        # Optional: set in .env or pass at build time for Font Awesome Pro
         - FONTAWESOME_PACKAGE_TOKEN=${FONTAWESOME_PACKAGE_TOKEN:-}
     ports:
       - '3000:80'
+    depends_on:
+      - api
     restart: unless-stopped
 
 volumes:

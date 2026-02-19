@@ -4,8 +4,9 @@
   "scripts": {
     "up": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
     "up:build": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build",
-    "up-prod": "docker compose up -d",
+    "up-prod": "docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d",
     "down": "docker compose down",
+    "down-prod": "docker compose -f docker-compose.yml -f docker-compose.prod.yml down",
     "build": "docker compose build"
   }
 }
