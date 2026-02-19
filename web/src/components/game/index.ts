@@ -1,5 +1,6 @@
 export { Card } from "./Card";
 export { GameOverBlock } from "./GameOverBlock";
+export { HeartIcon } from "./HeartIcon";
 export { GameSeat } from "./GameSeat";
 export { Hand } from "./Hand";
 export { InfoButton, InfoModal } from "./InfoModal";

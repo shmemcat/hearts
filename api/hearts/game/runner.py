@@ -16,6 +16,7 @@ from hearts.game.transitions import (
     apply_round_scoring,
     deal_new_round,
     _is_first_lead,
+    _is_first_trick_of_round,
 )
 
 from hearts.ai.base import PassStrategy, PlayStrategy
@@ -134,6 +135,7 @@ class GameRunner:
             self._state.trick_list(),
             self._state.hearts_broken,
             first_lead_of_round=_is_first_lead(self._state, hand0),
+            first_trick=_is_first_trick_of_round(self._state),
         )
         if card not in legal:
             raise ValueError("Illegal play")
@@ -207,6 +209,7 @@ class GameRunner:
                 self._state.trick_list(),
                 self._state.hearts_broken,
                 first_lead_of_round=_is_first_lead(self._state, hand),
+                first_trick=_is_first_trick_of_round(self._state),
             )
             card = self._play_strategy.choose_play(
                 self._state, player, legal
@@ -273,6 +276,7 @@ class GameRunner:
                 s.trick_list(),
                 s.hearts_broken,
                 first_lead_of_round=_is_first_lead(s, hand0),
+                first_trick=_is_first_trick_of_round(s),
             )
             legal_plays = [c.to_code() for c in legal_cards]
         # current_trick in play order: slot 0 = 1st play (bottom), 1 = 2nd (left), 2 = 3rd (top), 3 = 4th (right)

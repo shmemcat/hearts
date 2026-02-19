@@ -16,8 +16,8 @@ import {
    faSunBright as fasSunBright,
    faMusicNote as fasMusicNote,
    faMusicNoteSlash as fasMusicNoteSlash,
-   faHeart as fasHeart,
 } from "@fortawesome/pro-solid-svg-icons";
+import { HeartIcon } from "@/components/game";
 
 /** Props passed to FontAwesomeIcon for icon-select-bounce (CSS .icon[clicked="1"]) */
 interface IconAnimationProps {
@@ -25,7 +25,13 @@ interface IconAnimationProps {
    onAnimationEnd: () => void;
 }
 
-const FADE_IN_ROUTES = new Set(["/user", "/game/create", "/game/join", "/about", "/rules"]);
+const FADE_IN_ROUTES = new Set([
+   "/user",
+   "/game/create",
+   "/game/join",
+   "/about",
+   "/rules",
+]);
 
 let previousPath = "/";
 let _fadeOutLogo: (() => void) | null = null;
@@ -78,11 +84,13 @@ export const Navbar: React.FC = () => {
             <Link to="/" className="no-underline" onClick={handleHomeClick}>
                <motion.div
                   id="nav-home"
-                  className="flex gap-[15px] items-center"
+                  className="flex gap-[12px] items-center"
                   initial={shouldFadeIn ? { opacity: 0 } : false}
                   animate={logoControls}
                >
-                  <FontAwesomeIcon className="icon" icon={fasHeart} />{" "}
+                  <span className="icon">
+                     <HeartIcon size={18} />
+                  </span>{" "}
                   <span className="navhearts">HEARTS</span>
                </motion.div>
             </Link>

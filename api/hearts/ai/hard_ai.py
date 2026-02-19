@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Set, Tuple
 from hearts.game.card import Card, Suit, QUEEN_OF_SPADES_RANK, deck_52
 from hearts.game.state import GameState, PassDirection
 from hearts.game.rules import get_legal_plays
-from hearts.game.transitions import apply_play, _is_first_lead
+from hearts.game.transitions import apply_play, _is_first_lead, _is_first_trick_of_round
 
 from hearts.ai.base import PassStrategy, PlayStrategy
 from hearts.ai.medium_ai import MediumPlayStrategy
@@ -147,7 +147,9 @@ def _simulate_remaining(
         trick = state.trick_list()
         first_lead = _is_first_lead(state, hand)
         legal = get_legal_plays(
-            hand, trick, state.hearts_broken, first_lead_of_round=first_lead,
+            hand, trick, state.hearts_broken,
+            first_lead_of_round=first_lead,
+            first_trick=_is_first_trick_of_round(state),
         )
         if not legal:
             break

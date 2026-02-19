@@ -104,6 +104,7 @@ def apply_play(state: GameState, player_index: int, card: Card) -> GameState:
         trick_list,
         state.hearts_broken,
         first_lead_of_round=first_lead,
+        first_trick=_is_first_trick_of_round(state),
     )
     if card not in legal:
         raise ValueError(f"Illegal play: {card} not in legal plays")

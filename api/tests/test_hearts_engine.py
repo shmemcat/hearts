@@ -28,10 +28,10 @@ class TestGetLegalPlays:
         legal = get_legal_plays(hand, [], False, first_lead_of_round=True)
         assert set(legal) == set(hand)
 
-    def test_leading_hearts_not_broken_can_still_lead_hearts(self):
+    def test_leading_hearts_not_broken_cannot_lead_hearts(self):
         hand = [Card(Suit.HEARTS, 10), Card(Suit.CLUBS, 5)]
         legal = get_legal_plays(hand, [], False)
-        assert set(legal) == set(hand)
+        assert legal == [Card(Suit.CLUBS, 5)]
 
     def test_leading_hearts_broken_can_lead_any(self):
         hand = [Card(Suit.HEARTS, 10), Card(Suit.CLUBS, 5)]

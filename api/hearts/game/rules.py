@@ -20,12 +20,16 @@ def get_legal_plays(
     hearts_broken: bool,
     *,
     first_lead_of_round: bool = False,
+    first_trick: bool = False,
 ) -> List[Card]:
     """
     Return the list of cards the current player may play.
-    - first_lead_of_round: if True and hand contains 2♣, only 2♣ is legal (first lead after pass).
-    - If leading (trick empty): any card may be led (leading a heart breaks hearts).
+    - first_lead_of_round: if True and hand contains 2♣, only 2♣ is legal.
+    - If leading (trick empty): hearts cannot be led until hearts are broken
+      (unless hand is all hearts).
     - If following: must follow suit if possible.
+    - first_trick: on the first trick, hearts and Q♠ cannot be played when
+      void in the lead suit (unless hand has nothing else).
     """
     if not hand:
         return []
@@ -36,6 +40,10 @@ def get_legal_plays(
             return [two_c]
 
     if not trick:
+        if not hearts_broken:
+            non_hearts = [c for c in hand if c.suit != Suit.HEARTS]
+            if non_hearts:
+                return non_hearts
         return list(hand)
 
     lead_card = trick[0][1]
@@ -45,7 +53,15 @@ def get_legal_plays(
     if in_lead_suit:
         return in_lead_suit
 
-    # Void in lead suit: may play any card (first trick we're void in clubs so hearts/Q♠ allowed)
+    if first_trick:
+        safe = [
+            c for c in hand
+            if c.suit != Suit.HEARTS
+            and not (c.suit == Suit.SPADES and c.rank == QUEEN_OF_SPADES_RANK)
+        ]
+        if safe:
+            return safe
+
     return list(hand)
 
 

@@ -143,6 +143,8 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
          const result = computeTrickResult(trickPlaysRef.current);
          trickPlaysRef.current = [];
 
+         const humanWonNoMore = result?.winner === 0 && queue.length === 0;
+
          // Hold so user can see all 4 cards, then sweep toward winner
          timerRef.current = setTimeout(() => {
             if (result) {
@@ -155,17 +157,22 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
                }
             }
 
-            // After the sweep, clear the board but let the badge linger
+            // After the sweep, clear the board
             timerRef.current = setTimeout(() => {
                setCollectTarget(null);
                setDisplaySlots(EMPTY_SLOTS);
                setCurrentTurn(null);
 
-               const linger = result && result.hearts > 0 ? BADGE_LINGER_MS : 0;
-               timerRef.current = setTimeout(() => {
+               if (humanWonNoMore) {
                   setTrickResult(null);
-                  timerRef.current = setTimeout(processNext, CLEAR_MS);
-               }, linger);
+                  processNext();
+               } else {
+                  const linger = result && result.hearts > 0 ? BADGE_LINGER_MS : 0;
+                  timerRef.current = setTimeout(() => {
+                     setTrickResult(null);
+                     timerRef.current = setTimeout(processNext, CLEAR_MS);
+                  }, linger);
+               }
             }, COLLECT_MS);
          }, HOLD_MS);
       }

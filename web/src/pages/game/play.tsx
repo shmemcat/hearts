@@ -7,6 +7,7 @@ import {
    GameOverBlock,
    GameSeat,
    Hand,
+   HeartIcon,
    InfoButton,
    InfoModal,
    InfoPill,
@@ -80,6 +81,10 @@ export default function PlayGamePage() {
    // ── Stats tracking ──────────────────────────────────────────────────
    const humanMoonShotsRef = useRef(0);
    const statsRecordedRef = useRef(false);
+   const midRoundMoonShownRef = useRef(false);
+   const moonOverlayActiveRef = useRef(false);
+   const moonAdjustmentRef = useRef<number[]>([0, 0, 0, 0]);
+   const handleContinueRoundRef = useRef<() => void>(() => {});
 
    // ── Core UI state ──────────────────────────────────────────────────
    const [loading, setLoading] = useState(true);
@@ -131,6 +136,12 @@ export default function PlayGamePage() {
    const applyPendingState = useCallback(() => {
       const pending = pendingStateRef.current;
       if (!pending) return;
+
+      // If mid-round moon overlay is still active and round ended, defer
+      if (pending.round_just_ended && moonOverlayActiveRef.current) {
+         return;
+      }
+
       pendingStateRef.current = null;
       advanceSentRef.current = false;
 
@@ -140,6 +151,7 @@ export default function PlayGamePage() {
             (p: { score: number }, i: number) =>
                p.score - prevScoresRef.current[i]
          );
+
          prevScoresRef.current = pending.players.map(
             (p: { score: number }) => p.score
          );
@@ -153,21 +165,29 @@ export default function PlayGamePage() {
          );
 
          // Detect shoot-the-moon: one player at 0 and all others at +26
-         const zeroCount = deltas.filter((d: number) => d === 0).length;
-         const twentySixCount = deltas.filter((d: number) => d === 26).length;
-         if (zeroCount === 1 && twentySixCount === 3) {
-            const shooterIdx = deltas.indexOf(0);
-            if (shooterIdx === 0) {
-               humanMoonShotsRef.current += 1;
-            }
-            setShootTheMoonRef.current({
-               shooterIndex: shooterIdx,
-               deltas,
-               round: currentRound,
-               players: roundPlayers,
-            });
-         } else {
+         // (skip if already shown mid-round)
+         if (midRoundMoonShownRef.current) {
+            midRoundMoonShownRef.current = false;
             setShootTheMoonRef.current(null);
+         } else {
+            const zeroCount = deltas.filter((d: number) => d === 0).length;
+            const twentySixCount = deltas.filter(
+               (d: number) => d === 26
+            ).length;
+            if (zeroCount === 1 && twentySixCount === 3) {
+               const shooterIdx = deltas.indexOf(0);
+               if (shooterIdx === 0) {
+                  humanMoonShotsRef.current += 1;
+               }
+               setShootTheMoonRef.current({
+                  shooterIndex: shooterIdx,
+                  deltas,
+                  round: currentRound,
+                  players: roundPlayers,
+               });
+            } else {
+               setShootTheMoonRef.current(null);
+            }
          }
 
          setRoundSummaryRef.current({
@@ -350,12 +370,7 @@ export default function PlayGamePage() {
 
    // ── Record stats when game ends ───────────────────────────────────
    useEffect(() => {
-      if (
-         !state?.game_over ||
-         statsRecordedRef.current ||
-         !token ||
-         !gameId
-      )
+      if (!state?.game_over || statsRecordedRef.current || !token || !gameId)
          return;
       statsRecordedRef.current = true;
       const humanScore = state.players[0]?.score ?? 0;
@@ -450,6 +465,9 @@ export default function PlayGamePage() {
    useEffect(() => {
       setHeartsPerPlayer([0, 0, 0, 0]);
       setHeartsVisuallyBroken(false);
+      midRoundMoonShownRef.current = false;
+      moonOverlayActiveRef.current = false;
+      moonAdjustmentRef.current = [0, 0, 0, 0];
    }, [currentRound]);
 
    // Track when a heart/QS first appears on the visible trick table
@@ -474,6 +492,25 @@ export default function PlayGamePage() {
          });
       }
    }, [trickResult]);
+
+   // Detect shoot-the-moon mid-round (a player accumulated all 26 points)
+   useEffect(() => {
+      if (midRoundMoonShownRef.current) return;
+      if (!state || state.phase !== "playing") return;
+      const shooterIdx = heartsPerPlayer.findIndex((h) => h === 26);
+      if (shooterIdx === -1) return;
+      midRoundMoonShownRef.current = true;
+      moonOverlayActiveRef.current = true;
+      if (shooterIdx === 0) {
+         humanMoonShotsRef.current += 1;
+      }
+      setShootTheMoon({
+         shooterIndex: shooterIdx,
+         deltas: heartsPerPlayer.map((_, i) => (i === shooterIdx ? 0 : 26)),
+         round: currentRound ?? 1,
+         players: state.players.map((p) => ({ name: p.name, score: p.score })),
+      });
+   }, [heartsPerPlayer, state, currentRound]);
 
    // ── Sound effects ────────────────────────────────────────────────────
    const playSoundRef = useRef(playSound);
@@ -527,7 +564,10 @@ export default function PlayGamePage() {
 
    // 7. Pass transition (exiting = cards leaving, entering = cards arriving)
    useEffect(() => {
-      if (passTransition?.phase === "exiting" || passTransition?.phase === "entering") {
+      if (
+         passTransition?.phase === "exiting" ||
+         passTransition?.phase === "entering"
+      ) {
          playSoundRef.current("cardSweep");
       }
    }, [passTransition?.phase]);
@@ -625,6 +665,7 @@ export default function PlayGamePage() {
    }, [gameId, passSelection, reset]);
 
    const handleContinueRound = useCallback(() => {
+      moonAdjustmentRef.current = [0, 0, 0, 0];
       const pending = roundPendingStateRef.current;
       roundPendingStateRef.current = null;
       setRoundSummary(null);
@@ -639,11 +680,43 @@ export default function PlayGamePage() {
             reset();
          }
          if (pending.pass_direction === "none") {
+            reset();
+            if (pending.current_trick?.length > 0) {
+               const slots: CurrentTrickSlot[] = [null, null, null, null];
+               for (const s of pending.current_trick) {
+                  if (
+                     s &&
+                     typeof s.player_index === "number" &&
+                     s.player_index >= 0 &&
+                     s.player_index < 4
+                  ) {
+                     slots[s.player_index] = s;
+                  }
+               }
+               setSlots(slots);
+            }
             setNoPassHold(true);
             setTimeout(() => setNoPassHold(false), 2500);
          }
       }
-   }, [reset]);
+   }, [reset, setSlots]);
+   handleContinueRoundRef.current = handleContinueRound;
+
+   const handleMidRoundMoonContinue = useCallback(() => {
+      if (!shootTheMoon) return;
+      const shooterIdx = shootTheMoon.shooterIndex;
+      moonAdjustmentRef.current = [0, 1, 2, 3].map((i) =>
+         i === shooterIdx ? 0 : 26
+      );
+      moonOverlayActiveRef.current = false;
+      setShootTheMoon(null);
+
+      // If the round ended while the overlay was showing, process it now
+      // (shows round summary without re-showing the moon celebration)
+      if (pendingStateRef.current?.round_just_ended) {
+         applyPendingState();
+      }
+   }, [shootTheMoon, applyPendingState]);
 
    const handlePlayCard = useCallback(
       (code: string) => {
@@ -820,7 +893,7 @@ export default function PlayGamePage() {
    const seatScore = (i: number) =>
       roundSummary
          ? roundSummary.players[i]?.score ?? 0
-         : state?.players[i]?.score ?? 0;
+         : (state?.players[i]?.score ?? 0) + moonAdjustmentRef.current[i];
    const seatHeartDelta = (i: number) =>
       trickResult && trickResult.winner === i ? trickResult.hearts : 0;
 
@@ -863,7 +936,9 @@ export default function PlayGamePage() {
                            seats={[
                               {
                                  name: state.players[0]?.name ?? "You",
-                                 shortName: getShortName(state.players[0]?.name ?? "You"),
+                                 shortName: getShortName(
+                                    state.players[0]?.name ?? "You"
+                                 ),
                                  seatIndex: 0,
                                  score: seatScore(0),
                                  position: "bottom" as const,
@@ -875,7 +950,9 @@ export default function PlayGamePage() {
                               },
                               {
                                  name: state.players[1]?.name ?? "—",
-                                 shortName: getShortName(state.players[1]?.name ?? "—"),
+                                 shortName: getShortName(
+                                    state.players[1]?.name ?? "—"
+                                 ),
                                  seatIndex: 1,
                                  score: seatScore(1),
                                  position: "left" as const,
@@ -887,7 +964,9 @@ export default function PlayGamePage() {
                               },
                               {
                                  name: state.players[2]?.name ?? "—",
-                                 shortName: getShortName(state.players[2]?.name ?? "—"),
+                                 shortName: getShortName(
+                                    state.players[2]?.name ?? "—"
+                                 ),
                                  seatIndex: 2,
                                  score: seatScore(2),
                                  position: "top" as const,
@@ -899,7 +978,9 @@ export default function PlayGamePage() {
                               },
                               {
                                  name: state.players[3]?.name ?? "—",
-                                 shortName: getShortName(state.players[3]?.name ?? "—"),
+                                 shortName: getShortName(
+                                    state.players[3]?.name ?? "—"
+                                 ),
                                  seatIndex: 3,
                                  score: seatScore(3),
                                  position: "right" as const,
@@ -917,19 +998,17 @@ export default function PlayGamePage() {
                            )}
                            centerIcon={
                               !roundSummary && state.phase === "playing" ? (
-                                 <span
-                                    aria-hidden
-                                    style={{
-                                       fontSize: "50px",
-                                       marginTop: "-10px",
-                                       color: heartsBrokenForDisplay
+                                 <HeartIcon
+                                    size={40}
+                                    color={
+                                       heartsBrokenForDisplay
                                           ? "hsl(0, 65%, 50%)"
-                                          : "var(--darkpink)",
+                                          : "var(--darkpink)"
+                                    }
+                                    style={{
                                        transition: "color 0.5s ease",
                                     }}
-                                 >
-                                    ♥
-                                 </span>
+                                 />
                               ) : undefined
                            }
                         />
@@ -938,7 +1017,9 @@ export default function PlayGamePage() {
                            {/* Top (player 2) */}
                            <GameSeat
                               name={state.players[2]?.name ?? "—"}
-                              shortName={getShortName(state.players[2]?.name ?? "—")}
+                              shortName={getShortName(
+                                 state.players[2]?.name ?? "—"
+                              )}
                               seatIndex={2}
                               score={seatScore(2)}
                               position="top"
@@ -951,7 +1032,9 @@ export default function PlayGamePage() {
                            {/* Left (player 1) */}
                            <GameSeat
                               name={state.players[1]?.name ?? "—"}
-                              shortName={getShortName(state.players[1]?.name ?? "—")}
+                              shortName={getShortName(
+                                 state.players[1]?.name ?? "—"
+                              )}
                               seatIndex={1}
                               score={seatScore(1)}
                               position="left"
@@ -971,20 +1054,19 @@ export default function PlayGamePage() {
                                     state.players.map((p) => p.name)
                                  )}
                                  centerIcon={
-                                    !roundSummary && state.phase === "playing" ? (
-                                       <span
-                                          aria-hidden
-                                          style={{
-                                             fontSize: "50px",
-                                             marginTop: "-10px",
-                                             color: heartsBrokenForDisplay
+                                    !roundSummary &&
+                                    state.phase === "playing" ? (
+                                       <HeartIcon
+                                          size={40}
+                                          color={
+                                             heartsBrokenForDisplay
                                                 ? "hsl(0, 65%, 50%)"
-                                                : "var(--darkpink)",
+                                                : "var(--darkpink)"
+                                          }
+                                          style={{
                                              transition: "color 0.5s ease",
                                           }}
-                                       >
-                                          ♥
-                                       </span>
+                                       />
                                     ) : undefined
                                  }
                               />
@@ -992,7 +1074,9 @@ export default function PlayGamePage() {
                            {/* Right (player 3) */}
                            <GameSeat
                               name={state.players[3]?.name ?? "—"}
-                              shortName={getShortName(state.players[3]?.name ?? "—")}
+                              shortName={getShortName(
+                                 state.players[3]?.name ?? "—"
+                              )}
                               seatIndex={3}
                               score={seatScore(3)}
                               position="right"
@@ -1005,7 +1089,9 @@ export default function PlayGamePage() {
                            {/* Bottom (player 0 = human) */}
                            <GameSeat
                               name={state.players[0]?.name ?? "You"}
-                              shortName={getShortName(state.players[0]?.name ?? "You")}
+                              shortName={getShortName(
+                                 state.players[0]?.name ?? "You"
+                              )}
                               seatIndex={0}
                               score={seatScore(0)}
                               position="bottom"
@@ -1031,7 +1117,15 @@ export default function PlayGamePage() {
                                     passSelection.size !== 3 || submitting
                                  }
                                  onClick={handleSubmitPass}
-                                 style={{ height: "52px", width: "110px", lineHeight: "1.2", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+                                 style={{
+                                    height: "52px",
+                                    width: "110px",
+                                    lineHeight: "1.2",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                 }}
                               >
                                  <span>submit</span>
                                  <span>pass</span>
@@ -1040,10 +1134,14 @@ export default function PlayGamePage() {
                         )}
 
                      {/* ── Shoot the Moon overlay ────────────────────── */}
-                     {roundSummary && shootTheMoon && (
+                     {shootTheMoon && (
                         <ShootTheMoonOverlay
                            {...shootTheMoon}
-                           onContinue={handleContinueRound}
+                           onContinue={
+                              roundSummary
+                                 ? handleContinueRound
+                                 : handleMidRoundMoonContinue
+                           }
                         />
                      )}
 
@@ -1075,14 +1173,17 @@ export default function PlayGamePage() {
                         state.game_over
                            ? null
                            : noPassHold
-                           ? (isMobile ? null : "No passing this round")
+                           ? isMobile
+                              ? null
+                              : "No passing this round"
                            : state.phase === "playing"
-                           ? (isMobile ? null
+                           ? isMobile
+                              ? null
                               : busy
                               ? "Playing…"
                               : state.whose_turn === 0
                               ? "Your turn"
-                              : "Waiting for others…")
+                              : "Waiting for others…"
                            : state.phase === "passing" && !passTransition
                            ? `Select 3 cards to pass ${state.pass_direction}.`
                            : null

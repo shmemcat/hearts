@@ -12,7 +12,7 @@
    justify-content: center;
    gap: 2px;
    font-weight: 700;
-   font-size: 1.2rem;
+   font-size: 1.08rem;
    cursor: pointer;
    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -36,8 +36,8 @@
    min-width: 90px;
    height: 126px;
    border-radius: 9px;
-   font-size: 1.75rem;
-   line-height: 1.5rem;
+   font-size: 1.6rem;
+   line-height: 2rem;
 }
 
 /* ── Image card variant ───────────────────────────────────── */
