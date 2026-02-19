@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import party from "party-js";
 
 import { Button } from "@/components/Buttons";
+import { useSound } from "@/context/SoundContext";
 import styles from "./ShootTheMoonOverlay.module.css";
 
 export interface ShootTheMoonData {
@@ -24,6 +25,7 @@ export const ShootTheMoonOverlay: React.FC<ShootTheMoonOverlayProps> = ({
    onContinue,
 }) => {
    const confettiRef = useRef<HTMLDivElement>(null);
+   const { play } = useSound();
 
    useEffect(() => {
       const timer = setTimeout(() => {
@@ -32,9 +34,10 @@ export const ShootTheMoonOverlay: React.FC<ShootTheMoonOverlayProps> = ({
                count: party.variation.range(60, 120),
             });
          }
+         play("shootTheMoon");
       }, 1500);
       return () => clearTimeout(timer);
-   }, []);
+   }, [play]);
 
    return (
       <div className={styles.overlay}>

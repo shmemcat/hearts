@@ -3,6 +3,7 @@ import Link from "next/link";
 import buttons from "@/styles/buttons.module.css";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/context/AuthContext";
+import { useSound } from "@/context/SoundContext";
 import { useRouter } from "next/router";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -16,7 +17,6 @@ import {
    faMusicNoteSlash as fasMusicNoteSlash,
    faHeart as fasHeart,
 } from "@fortawesome/pro-solid-svg-icons";
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
 /** Props passed to FontAwesomeIcon for icon-select-bounce (CSS .icon[clicked="1"]) */
 interface IconAnimationProps {
@@ -115,28 +115,55 @@ const NightModeButton: React.FC = () => {
 };
 
 const SoundButton: React.FC = () => {
-   const [state, setState] = React.useState<IconDefinition>(fasMusicNote);
+   const { muted, setMuted, volume, setVolume, play } = useSound();
    const [animation, setAnimation] = React.useState(0);
+   const [mounted, setMounted] = React.useState(false);
+
+   React.useEffect(() => {
+      setMounted(true);
+   }, []);
+
+   if (!mounted) return <></>;
 
    const onClickHandler = () => {
-      setState(state === fasMusicNote ? fasMusicNoteSlash : fasMusicNote);
+      const willUnmute = muted;
+      setMuted(!muted);
       setAnimation(1);
+      if (willUnmute) {
+         setTimeout(() => play("soundOn"), 50);
+      }
    };
 
    return (
-      <div
-         role="button"
-         aria-label="Toggle sound on or off"
-         onClick={() => onClickHandler()}
-      >
-         <FontAwesomeIcon
-            className={buttons.icon}
-            icon={state}
-            {...({
-               clicked: animation,
-               onAnimationEnd: () => setAnimation(0),
-            } as IconAnimationProps)}
-         />
+      <div className={buttons.soundButtonWrap}>
+         <div
+            role="button"
+            aria-label="Toggle sound on or off"
+            onClick={onClickHandler}
+         >
+            <FontAwesomeIcon
+               className={buttons.icon}
+               icon={muted ? fasMusicNoteSlash : fasMusicNote}
+               {...({
+                  clicked: animation,
+                  onAnimationEnd: () => setAnimation(0),
+               } as IconAnimationProps)}
+            />
+         </div>
+         <div className={buttons.volumeSliderDrop}>
+            <div className={buttons.volumeSliderInner}>
+               <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={volume}
+                  onChange={(e) => setVolume(parseFloat(e.target.value))}
+                  className={buttons.volumeSlider}
+                  aria-label="Volume"
+               />
+            </div>
+         </div>
       </div>
    );
 };

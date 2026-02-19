@@ -70,7 +70,7 @@ export const GameSeat: React.FC<GameSeatProps> = ({
                   {heartDelta > 0 && (
                      <span
                         key={trickResultId}
-                        className={styles.heartDeltaBadge}
+                        className={styles.heartDeltaBadgeMobile}
                      >
                         +{heartDelta}
                      </span>

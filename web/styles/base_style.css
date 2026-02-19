@@ -88,6 +88,8 @@ html {
    --statsdivider: hsla(342, 36%, 64%, 0.5);
    --seatcolorbadgebg: hsl(341, 81%, 84%);
    --seatcolorbadgetext: hsl(12, 6%, 33%);
+   --volumesliderbg: hsl(0, 0%, 100%);
+   --volumesliderbase: color-mix(in sRGB, var(--lightpink) 30%, #fff);
 }
 
 [data-theme="dark"] {
@@ -138,6 +140,8 @@ html {
    --statsdivider: hsl(231, 16%, 29%);
    --seatcolorbadgebg: hsl(335, 19%, 45%);
    --seatcolorbadgetext: hsl(341, 81%, 84%);
+   --volumesliderbg: hsl(231, 16%, 29%);
+   --volumesliderbase: hsl(232, 15%, 19%);
 }
 
 body {

@@ -190,6 +190,155 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
    }
 }
 
+/* Sound button + volume slider */
+
+.soundButtonWrap {
+   position: relative;
+   display: flex;
+   align-items: center;
+}
+
+.volumeSliderDrop {
+   position: absolute;
+   top: 100%;
+   left: 50%;
+   transform: translateX(-50%) scale(0.92);
+   padding-top: 6px;
+   opacity: 0;
+   pointer-events: none;
+   transition: opacity 0.18s ease, transform 0.18s ease;
+   z-index: 50;
+}
+
+.soundButtonWrap:hover .volumeSliderDrop {
+   opacity: 1;
+   pointer-events: auto;
+   transform: translateX(-50%) scale(1);
+}
+
+.volumeSliderDrop > .volumeSliderInner {
+   font-size: 9px;
+   border: 0.5em solid var(--volumesliderbg);
+   border-radius: 2em;
+   box-shadow: 0 0 1em #0001, 0 0.25em 0.5em #0001;
+   overflow: hidden;
+   line-height: 0;
+}
+
+.volumeSlider {
+   --vs-base: var(--lightpink);
+   --vs-light: color-mix(in sRGB, var(--vs-base) 60%, #fff);
+   --vs-lighter: color-mix(in sRGB, var(--vs-base) 30%, #fff);
+   --vs-dark: color-mix(in sRGB, var(--vs-base) 95%, #000);
+   --vs-tp: color-mix(in sRGB, var(--vs-base) 0%, #0000);
+   appearance: none;
+   -webkit-appearance: none;
+   font-size: inherit;
+   width: 130px;
+   height: 2em;
+   border: none;
+   border-radius: 2em;
+   overflow: hidden;
+   margin: 0;
+   padding: 0;
+   cursor: pointer;
+   display: block;
+   background: transparent;
+   outline: none;
+}
+
+.volumeSlider::-webkit-slider-runnable-track {
+   background: radial-gradient(
+         circle at 0.75em 0.6em,
+         var(--vs-light) calc(0.2em - 1px),
+         #0000 0.2em
+      ),
+      radial-gradient(
+         circle at 1.25em 0.6em,
+         var(--vs-light) calc(0.2em - 1px),
+         #0000 0.2em
+      ),
+      radial-gradient(
+         circle at 5em 0.6em,
+         var(--vs-light) calc(0.2em - 1px),
+         #0000 0.2em
+      ),
+      linear-gradient(var(--vs-light) 0 0) 1.25em 0.4em / 3.75em
+         calc(0.4em - 0.5px) no-repeat,
+      linear-gradient(90deg, var(--vs-base), var(--vs-tp) 1em),
+      linear-gradient(#0000 70%, var(--vs-dark) 80%), var(--vs-base);
+   height: 100%;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+   -webkit-appearance: none;
+   appearance: none;
+   height: 2em;
+   width: 2em;
+   color: var(--volumesliderbase);
+   background: radial-gradient(
+         circle at 0.75em 0.6em,
+         var(--vs-light) calc(0.2em - 1px),
+         #0000 0.2em
+      ),
+      linear-gradient(90deg, #0000 0.75em, var(--vs-base) 0) 0 0 / 100% 50%
+         no-repeat;
+   border-radius: 50%;
+   box-shadow: inset -0.5em 0 0.5em -0.25em var(--vs-base),
+       1em 0 0 0.25em,  2em 0 0 0.25em,  3em 0 0 0.25em,
+       4em 0 0 0.25em,  5em 0 0 0.25em,  6em 0 0 0.25em,
+       7em 0 0 0.25em,  8em 0 0 0.25em,  9em 0 0 0.25em,
+      10em 0 0 0.25em, 11em 0 0 0.25em, 12em 0 0 0.25em,
+      13em 0 0 0.25em, 14em 0 0 0.25em, 15em 0 0 0.25em,
+      16em 0 0 0.25em;
+}
+
+.volumeSlider::-moz-range-track {
+   background: radial-gradient(
+         circle at 0.75em 30%,
+         var(--vs-light) calc(0.2em - 1px),
+         #0000 0.2em
+      ),
+      radial-gradient(
+         circle at 1.5em 30%,
+         var(--vs-light) calc(0.2em - 1px),
+         #0000 0.2em
+      ),
+      radial-gradient(
+         circle at 5.5em 30%,
+         var(--vs-light) calc(0.2em - 1px),
+         #0000 0.2em
+      ),
+      linear-gradient(var(--vs-light) 0 0) 1.5em calc(15% + 0.18em) / 4em
+         calc(0.4em - 0.5px) no-repeat,
+      linear-gradient(90deg, var(--vs-base), var(--vs-tp) 1em),
+      linear-gradient(var(--vs-tp) 70%, var(--vs-dark) 80%), var(--vs-base);
+   height: 100%;
+}
+
+.volumeSlider::-moz-range-thumb {
+   appearance: none;
+   height: 2em;
+   width: 2em;
+   border: 0;
+   color: var(--vs-lighter);
+   background: radial-gradient(
+         circle at 0.75em 0.6em,
+         var(--vs-light) calc(0.2em - 1px),
+         #0000 0.2em
+      ),
+      linear-gradient(90deg, var(--vs-tp) 0.75em, var(--vs-base) 0) 0 0 / 100%
+         50% no-repeat;
+   border-radius: 50%;
+   box-shadow: inset -0.5em 0 0.5em -0.25em var(--vs-base),
+       1em 0 0 0.25em,  2em 0 0 0.25em,  3em 0 0 0.25em,
+       4em 0 0 0.25em,  5em 0 0 0.25em,  6em 0 0 0.25em,
+       7em 0 0 0.25em,  8em 0 0 0.25em,  9em 0 0 0.25em,
+      10em 0 0 0.25em, 11em 0 0 0.25em, 12em 0 0 0.25em,
+      13em 0 0 0.25em, 14em 0 0 0.25em, 15em 0 0 0.25em,
+      16em 0 0 0.25em;
+}
+
 /* for mobile and mobile-sized windows */
 @media only screen and (max-width: 768px) {
    .menu-button {

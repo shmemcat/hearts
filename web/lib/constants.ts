@@ -12,6 +12,8 @@ export const STORAGE_KEY = "hearts_token";
 /* ── Preferences ─────────────────────────────────────────────────────── */
 
 export const CARD_STYLE_KEY = "hearts_card_style";
+export const SOUND_MUTED_KEY = "hearts_sound_muted";
+export const SOUND_VOLUME_KEY = "hearts_sound_volume";
 
 /* ── Card / Game ──────────────────────────────────────────────────────── */
 

@@ -28,6 +28,7 @@ import {
    submitPlay,
 } from "@/lib/gameApi";
 import { useAuth } from "@/context/AuthContext";
+import { useSound } from "@/context/SoundContext";
 import {
    connect as connectGameSocket,
    disconnect as disconnectGameSocket,
@@ -74,6 +75,7 @@ export default function PlayGamePage() {
    const { game_id: gameId } = router.query;
    const { token } = useAuth();
    const isMobile = useIsMobile();
+   const { play: playSound } = useSound();
 
    // ── Stats tracking ──────────────────────────────────────────────────
    const humanMoonShotsRef = useRef(0);
@@ -473,6 +475,63 @@ export default function PlayGamePage() {
          });
       }
    }, [trickResult]);
+
+   // ── Sound effects ────────────────────────────────────────────────────
+   const playSoundRef = useRef(playSound);
+   playSoundRef.current = playSound;
+
+   // 1a. Round banner pop ("Round X")
+   useEffect(() => {
+      if (roundBanner) playSoundRef.current("heartDelta");
+   }, [roundBanner]);
+
+   // 1b. Hand deal-in fan
+   useEffect(() => {
+      if (dealingHand) playSoundRef.current("cardFan");
+   }, [dealingHand]);
+
+   // 2. Card played (new card appears on trick table)
+   const prevSlotsRef = useRef(displaySlots);
+   useEffect(() => {
+      const prev = prevSlotsRef.current;
+      const appeared = displaySlots.some(
+         (s, i) => s != null && prev[i] == null
+      );
+      prevSlotsRef.current = displaySlots;
+      if (appeared) playSoundRef.current("cardSlide");
+   }, [displaySlots]);
+
+   // 3. Trick sweep (cards collected toward winner)
+   useEffect(() => {
+      if (collectTarget != null) playSoundRef.current("cardSweep");
+   }, [collectTarget]);
+
+   // 4. Heart badge delta pop
+   useEffect(() => {
+      if (trickResult && trickResult.hearts > 0)
+         playSoundRef.current("heartDelta");
+   }, [trickResult]);
+
+   // 5. Round end
+   useEffect(() => {
+      if (roundSummary) playSoundRef.current("roundEnd");
+   }, [roundSummary]);
+
+   // 6. Game over (one-shot)
+   const gameOverSoundRef = useRef(false);
+   useEffect(() => {
+      if (state?.game_over && !gameOverSoundRef.current) {
+         gameOverSoundRef.current = true;
+         playSoundRef.current("gameEnd");
+      }
+   }, [state?.game_over]);
+
+   // 7. Pass transition (exiting = cards leaving, entering = cards arriving)
+   useEffect(() => {
+      if (passTransition?.phase === "exiting" || passTransition?.phase === "entering") {
+         playSoundRef.current("cardSweep");
+      }
+   }, [passTransition?.phase]);
 
    // ── Handlers ───────────────────────────────────────────────────────
    const handlePassCardToggle = useCallback((code: string) => {

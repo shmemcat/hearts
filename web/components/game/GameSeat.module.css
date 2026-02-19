@@ -62,7 +62,7 @@
    padding: 3px 6px;
    font-size: 0.7rem;
    font-weight: 700;
-   color: #fff;
+   color: var(--white);
    min-width: 32px;
    background: var(--cardredsuit);
    border-radius: 8px;
@@ -143,17 +143,8 @@
    font-weight: 600;
 }
 
-.heartDeltaBadge {
-   position: absolute;
+.heartDeltaBadgeMobile {
    top: -4px;
-   right: 0px;
    padding: 4px 6px;
    font-size: 1.25rem;
-   font-weight: 700;
-   color: #fff;
-   min-width: 32px;
-   background: var(--cardredsuit);
-   border-radius: 8px;
-   pointer-events: none;
-   animation: heartDeltaPop 1s ease-out forwards;
 }
