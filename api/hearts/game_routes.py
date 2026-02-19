@@ -195,25 +195,18 @@ def submit_play(game_id: str):
 
 @games_bp.route("/<game_id>/concede", methods=["POST"])
 def concede_game(game_id: str):
-    """Concede and delete the game.  Records stats for the authenticated user."""
+    """Concede and delete the game. Records moon shots for the authenticated user."""
     runner = _get_runner(game_id)
     if runner is None:
         return jsonify({"error": "Game not found"}), 404
 
     user = get_current_user()
-    if user:
-        final_score = int(runner.state.scores[0])
+    if user and runner.human_moon_shots > 0:
         stats = UserStats.query.filter_by(user_id=user.id).first()
         if not stats:
             stats = UserStats(user_id=user.id)
             db.session.add(stats)
-        stats.games_played += 1
         stats.moon_shots += runner.human_moon_shots
-        stats.total_points += final_score
-        if stats.best_score is None or final_score < stats.best_score:
-            stats.best_score = final_score
-        if stats.worst_score is None or final_score > stats.worst_score:
-            stats.worst_score = final_score
         db.session.commit()
 
     _delete_game(game_id)
