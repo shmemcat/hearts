@@ -132,7 +132,7 @@ function UserInfo() {
             </div>
          </FormContainer>
 
-         <div className="mt-5">
+         <div className="mt-4">
             <StyledLink href="/register">Create an account</StyledLink>
          </div>
 

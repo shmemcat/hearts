@@ -94,13 +94,17 @@ export default function RegisterPage() {
          </Helmet>
          <PageLayout title="REGISTER">
             {success ? (
-               <div className="mt-4 text-center">
+               <div className="text-center">
                   <p className="mb-2">Account created!</p>
                   <StyledLink href="/user">Sign in</StyledLink>
                </div>
             ) : (
                <>
-                  <FormContainer onSubmit={handleSubmit} noValidate>
+                  <FormContainer
+                     onSubmit={handleSubmit}
+                     noValidate
+                     topMargin={false}
+                  >
                      <FormInput
                         type="text"
                         placeholder="Username"
@@ -174,7 +178,7 @@ export default function RegisterPage() {
                </>
             )}
 
-            <ButtonGroup>
+            <ButtonGroup className="mt-2">
                <Link to="/" onClick={() => triggerLogoFadeOut()}>
                   <Button name="Home" />
                </Link>
