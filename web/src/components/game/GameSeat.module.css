@@ -55,40 +55,6 @@
    font-weight: 600;
 }
 
-.heartDeltaBadge {
-   position: absolute;
-   top: 0px;
-   right: 0px;
-   padding: 3px 6px;
-   font-size: 0.7rem;
-   font-weight: 700;
-   color: var(--white);
-   min-width: 32px;
-   background: var(--cardredsuit);
-   border-radius: 8px;
-   pointer-events: none;
-   animation: heartDeltaPop 1s ease-out forwards;
-}
-
-@keyframes heartDeltaPop {
-   0% {
-      opacity: 0;
-      transform: translateY(-8px) scale(0.85);
-   }
-   10% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-   }
-   70% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-   }
-   100% {
-      opacity: 0;
-      transform: translateY(0) scale(1);
-   }
-}
-
 /* ── Mobile: compact colored badge + heart count ──────── */
 
 .gameTableSeatMobile {
@@ -143,8 +109,3 @@
    font-weight: 600;
 }
 
-.heartDeltaBadgeMobile {
-   top: -4px;
-   padding: 4px 6px;
-   font-size: 1.25rem;
-}

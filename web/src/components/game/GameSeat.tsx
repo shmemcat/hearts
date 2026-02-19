@@ -20,10 +20,33 @@ export interface GameSeatProps {
    showHearts: boolean;
    /** Number of hearts won this round so far. */
    heartCount: number;
-   /** Hearts won in the trick that just completed (for the pop badge). */
-   heartDelta: number;
-   /** Stable key for the delta badge animation reset. */
-   trickResultId?: string | number;
+}
+
+/** Animates an integer counting up (or down) to `target` over `duration` ms. */
+function useCountUp(target: number, duration = 500): number {
+   const [displayed, setDisplayed] = React.useState(target);
+   const prevRef = React.useRef(target);
+
+   React.useEffect(() => {
+      const from = prevRef.current;
+      prevRef.current = target;
+
+      if (from === target) return;
+
+      const steps = Math.abs(target - from);
+      const stepMs = Math.max(30, duration / steps);
+      let current = from;
+
+      const id = setInterval(() => {
+         current += target > from ? 1 : -1;
+         setDisplayed(current);
+         if (current === target) clearInterval(id);
+      }, stepMs);
+
+      return () => clearInterval(id);
+   }, [target, duration]);
+
+   return displayed;
 }
 
 const POSITION_CLASS: Record<GameSeatProps["position"], string> = {
@@ -42,10 +65,9 @@ export const GameSeat: React.FC<GameSeatProps> = ({
    isCurrentTurn,
    showHearts,
    heartCount,
-   heartDelta,
-   trickResultId,
 }) => {
    const isMobile = useIsMobile();
+   const displayedHeartCount = useCountUp(heartCount);
 
    if (isMobile) {
       const label = shortName ?? name;
@@ -63,16 +85,8 @@ export const GameSeat: React.FC<GameSeatProps> = ({
                <span className={styles.seatMobileHearts}>
                   <span className={styles.seatMobileHeartCount}>
                      {" "}
-                     &nbsp;♥ {heartCount}
+                     &nbsp;♥ {displayedHeartCount}
                   </span>
-                  {heartDelta > 0 && (
-                     <span
-                        key={trickResultId}
-                        className={styles.heartDeltaBadgeMobile}
-                     >
-                        +{heartDelta}
-                     </span>
-                  )}
                </span>
             )}
          </div>
@@ -91,13 +105,10 @@ export const GameSeat: React.FC<GameSeatProps> = ({
             {showHearts && (
                <>
                   <span className={styles.seatScoreSep}> · </span>
-                  <span className={styles.seatHeartCount}>♥ {heartCount}</span>
+                  <span className={styles.seatHeartCount}>
+                     ♥ {displayedHeartCount}
+                  </span>
                </>
-            )}
-            {heartDelta > 0 && (
-               <span key={trickResultId} className={styles.heartDeltaBadge}>
-                  +{heartDelta}
-               </span>
             )}
          </span>
       </div>

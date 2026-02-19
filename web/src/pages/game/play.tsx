@@ -894,9 +894,6 @@ export default function PlayGamePage() {
       roundSummary
          ? roundSummary.players[i]?.score ?? 0
          : (state?.players[i]?.score ?? 0) + moonAdjustmentRef.current[i];
-   const seatHeartDelta = (i: number) =>
-      trickResult && trickResult.winner === i ? trickResult.hearts : 0;
-
    // ── Main render ────────────────────────────────────────────────────
    return (
       <>
@@ -945,8 +942,6 @@ export default function PlayGamePage() {
                                  isCurrentTurn: seatIsCurrentTurn(0),
                                  showHearts: !!showHeartsOnSeats,
                                  heartCount: heartsPerPlayer[0],
-                                 heartDelta: seatHeartDelta(0),
-                                 trickResultId: trickResult?.id,
                               },
                               {
                                  name: state.players[1]?.name ?? "—",
@@ -959,8 +954,6 @@ export default function PlayGamePage() {
                                  isCurrentTurn: seatIsCurrentTurn(1),
                                  showHearts: !!showHeartsOnSeats,
                                  heartCount: heartsPerPlayer[1],
-                                 heartDelta: seatHeartDelta(1),
-                                 trickResultId: trickResult?.id,
                               },
                               {
                                  name: state.players[2]?.name ?? "—",
@@ -973,8 +966,6 @@ export default function PlayGamePage() {
                                  isCurrentTurn: seatIsCurrentTurn(2),
                                  showHearts: !!showHeartsOnSeats,
                                  heartCount: heartsPerPlayer[2],
-                                 heartDelta: seatHeartDelta(2),
-                                 trickResultId: trickResult?.id,
                               },
                               {
                                  name: state.players[3]?.name ?? "—",
@@ -987,8 +978,6 @@ export default function PlayGamePage() {
                                  isCurrentTurn: seatIsCurrentTurn(3),
                                  showHearts: !!showHeartsOnSeats,
                                  heartCount: heartsPerPlayer[3],
-                                 heartDelta: seatHeartDelta(3),
-                                 trickResultId: trickResult?.id,
                               },
                            ]}
                            trickSlots={slots}
@@ -1026,8 +1015,6 @@ export default function PlayGamePage() {
                               isCurrentTurn={seatIsCurrentTurn(2)}
                               showHearts={!!showHeartsOnSeats}
                               heartCount={heartsPerPlayer[2]}
-                              heartDelta={seatHeartDelta(2)}
-                              trickResultId={trickResult?.id}
                            />
                            {/* Left (player 1) */}
                            <GameSeat
@@ -1041,8 +1028,6 @@ export default function PlayGamePage() {
                               isCurrentTurn={seatIsCurrentTurn(1)}
                               showHearts={!!showHeartsOnSeats}
                               heartCount={heartsPerPlayer[1]}
-                              heartDelta={seatHeartDelta(1)}
-                              trickResultId={trickResult?.id}
                            />
                            {/* Center: trick + hearts icon */}
                            <div className={styles.tableCenter}>
@@ -1083,8 +1068,6 @@ export default function PlayGamePage() {
                               isCurrentTurn={seatIsCurrentTurn(3)}
                               showHearts={!!showHeartsOnSeats}
                               heartCount={heartsPerPlayer[3]}
-                              heartDelta={seatHeartDelta(3)}
-                              trickResultId={trickResult?.id}
                            />
                            {/* Bottom (player 0 = human) */}
                            <GameSeat
@@ -1098,8 +1081,6 @@ export default function PlayGamePage() {
                               isCurrentTurn={seatIsCurrentTurn(0)}
                               showHearts={!!showHeartsOnSeats}
                               heartCount={heartsPerPlayer[0]}
-                              heartDelta={seatHeartDelta(0)}
-                              trickResultId={trickResult?.id}
                            />
                         </div>
                      )}
