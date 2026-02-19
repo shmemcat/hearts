@@ -7,32 +7,49 @@ import {
    CreateGameSelections,
    type NumAiPlayers,
 } from "@/components/CreateGameSelections";
+import { ActiveGameModal } from "@/components/game";
 import { LoginWarning } from "@/components/LoginWarning";
 import { Tooltip } from "@/components/Tooltip";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
-import { startGame } from "@/lib/gameApi";
+import { startGame, checkActiveGame, concedeGame } from "@/lib/gameApi";
 
 export default function CreateGamePage() {
    const navigate = useNavigate();
-   const { user } = useAuth();
+   const { user, token } = useAuth();
    const [gameType, setGameType] = React.useState("Versus AI");
    const [difficulty, setDifficulty] = React.useState("Easy");
    const [aiPlayersEnabled, setAiPlayersEnabled] = React.useState(false);
    const [numAiPlayers, setNumAiPlayers] = React.useState<NumAiPlayers>(1);
    const [submitting, setSubmitting] = React.useState(false);
    const [error, setError] = React.useState<string | null>(null);
+   const [activeGameId, setActiveGameId] = React.useState<string | null>(null);
+   const [showActiveModal, setShowActiveModal] = React.useState(false);
+
+   React.useEffect(() => {
+      if (!token) return;
+      checkActiveGame(token).then((res) => {
+         if (res.ok && res.game_id) {
+            setActiveGameId(res.game_id);
+            setShowActiveModal(true);
+         }
+      });
+   }, [token]);
 
    async function handleCreateGame() {
       if (gameType !== "Versus AI") return;
       setError(null);
       setSubmitting(true);
       try {
-         const result = await startGame({
-            player_name: user?.name || undefined,
-            difficulty: difficulty === "My Mom" ? "hard" : difficulty.toLowerCase(),
-         });
+         const result = await startGame(
+            {
+               player_name: user?.name || undefined,
+               difficulty:
+                  difficulty === "My Mom" ? "hard" : difficulty.toLowerCase(),
+            },
+            token
+         );
          if (result.ok) {
             const gameId = result.data.game_id;
             navigate(`/game/play?game_id=${encodeURIComponent(gameId)}`);
@@ -44,6 +61,13 @@ export default function CreateGamePage() {
       } finally {
          setSubmitting(false);
       }
+   }
+
+   async function handleConcedeActive() {
+      if (!activeGameId) return;
+      await concedeGame(activeGameId, token);
+      setActiveGameId(null);
+      setShowActiveModal(false);
    }
 
    return (
@@ -98,6 +122,16 @@ export default function CreateGamePage() {
                </ButtonGroup>
             </div>
          </PageLayout>
+         {showActiveModal && activeGameId && (
+            <ActiveGameModal
+               onContinue={() =>
+                  navigate(
+                     `/game/play?game_id=${encodeURIComponent(activeGameId)}`
+                  )
+               }
+               onConcede={handleConcedeActive}
+            />
+         )}
       </>
    );
 }

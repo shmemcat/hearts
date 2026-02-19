@@ -1,14 +1,40 @@
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import React from "react";
 
 import { Button } from "@/components/Buttons";
 import { FormInput } from "@/components/FormInput";
+import { ActiveGameModal } from "@/components/game";
 import { LoginWarning } from "@/components/LoginWarning";
 import { Tooltip } from "@/components/Tooltip";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
+import { checkActiveGame, concedeGame } from "@/lib/gameApi";
 
 export default function JoinGamePage() {
+   const navigate = useNavigate();
+   const { token } = useAuth();
+   const [activeGameId, setActiveGameId] = React.useState<string | null>(null);
+   const [showActiveModal, setShowActiveModal] = React.useState(false);
+
+   React.useEffect(() => {
+      if (!token) return;
+      checkActiveGame(token).then((res) => {
+         if (res.ok && res.game_id) {
+            setActiveGameId(res.game_id);
+            setShowActiveModal(true);
+         }
+      });
+   }, [token]);
+
+   async function handleConcedeActive() {
+      if (!activeGameId) return;
+      await concedeGame(activeGameId, token);
+      setActiveGameId(null);
+      setShowActiveModal(false);
+   }
+
    return (
       <>
          <Helmet>
@@ -50,6 +76,16 @@ export default function JoinGamePage() {
                </Link>
             </ButtonGroup>
          </PageLayout>
+         {showActiveModal && activeGameId && (
+            <ActiveGameModal
+               onContinue={() =>
+                  navigate(
+                     `/game/play?game_id=${encodeURIComponent(activeGameId)}`
+                  )
+               }
+               onConcede={handleConcedeActive}
+            />
+         )}
       </>
    );
 }

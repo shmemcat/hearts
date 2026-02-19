@@ -4,12 +4,13 @@ Exposes get_state_for_frontend() for the API.
 Supports optional callbacks (on_play, on_trick_complete, on_done) for WebSocket streaming.
 """
 
+import json
 import random
 from typing import Any, Callable, Dict, List, Optional
 
 from hearts.game.card import Card, deck_52, shuffle_deck, deal_into_4_hands
 from hearts.game.rules import get_legal_plays, is_valid_pass
-from hearts.game.state import GameState, Phase
+from hearts.game.state import GameState, Phase, PassDirection
 from hearts.game.transitions import (
     apply_passes,
     apply_play,
@@ -20,6 +21,7 @@ from hearts.game.transitions import (
 )
 
 from hearts.ai.base import PassStrategy, PlayStrategy
+from hearts.ai.factory import create_strategies
 
 
 HUMAN_PLAYER = 0
@@ -49,12 +51,15 @@ class GameRunner:
         play_strategy: PlayStrategy,
         player_names: Optional[tuple] = None,
         rng: Optional[random.Random] = None,
+        difficulty: str = "easy",
     ) -> None:
         self._state = state
         self._pass_strategy = pass_strategy
         self._play_strategy = play_strategy
         self._player_names = player_names or DEFAULT_PLAYER_NAMES
         self._rng = rng or random.Random()
+        self._difficulty = difficulty
+        self._human_moon_shots: int = 0
         self._last_play_events: List[Dict[str, Any]] = []
         self._last_round_ended: bool = False
 
@@ -70,6 +75,7 @@ class GameRunner:
         player_names: Optional[tuple] = None,
         human_name: Optional[str] = None,
         rng: Optional[random.Random] = None,
+        difficulty: str = "easy",
     ) -> "GameRunner":
         """Create a new game: deal, initial state (round 1, passing or no-pass)."""
         rng = rng or random.Random()
@@ -91,6 +97,7 @@ class GameRunner:
             play_strategy,
             tuple(names),
             rng=rng,
+            difficulty=difficulty,
         )
 
     def submit_pass(self, human_cards: List[Card]) -> None:
@@ -173,6 +180,8 @@ class GameRunner:
         """
         if not _round_complete(self._state):
             return None
+        if self._state.round_scores[HUMAN_PLAYER] == 26:
+            self._human_moon_shots += 1
         self._state = apply_round_scoring(self._state)
         if self._state.game_over:
             if on_done:
@@ -254,6 +263,99 @@ class GameRunner:
         """After submit_play, True if the round just ended (scores applied, new round dealt)."""
         return self._last_round_ended
 
+    @property
+    def difficulty(self) -> str:
+        return self._difficulty
+
+    @property
+    def human_moon_shots(self) -> int:
+        return self._human_moon_shots
+
+    # ── Serialization ────────────────────────────────────────────────────
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize full runner state to a JSON-friendly dict."""
+        s = self._state
+        rng_state = self._rng.getstate()
+        # rng_state is (version, internalstate_tuple, gauss_next).
+        # internalstate_tuple contains ints safe for JSON via list conversion.
+        return {
+            "state": {
+                "round": s.round,
+                "phase": s.phase.value,
+                "pass_direction": s.pass_direction.value,
+                "hands": [
+                    [c.to_code() for c in s.hands[i]] for i in range(4)
+                ],
+                "current_trick": [
+                    [idx, card.to_code()] for idx, card in s.current_trick
+                ],
+                "whose_turn": s.whose_turn,
+                "scores": list(s.scores),
+                "round_scores": list(s.round_scores),
+                "hearts_broken": s.hearts_broken,
+                "game_over": s.game_over,
+                "winner_index": s.winner_index,
+            },
+            "player_names": list(self._player_names),
+            "difficulty": self._difficulty,
+            "human_moon_shots": self._human_moon_shots,
+            "rng_state": [
+                rng_state[0],
+                list(rng_state[1]),
+                rng_state[2],
+            ],
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "GameRunner":
+        """Reconstruct a GameRunner from a dict produced by to_dict()."""
+        sd = data["state"]
+        hands = tuple(
+            tuple(Card.from_code(c) for c in hand) for hand in sd["hands"]
+        )
+        current_trick = tuple(
+            (idx, Card.from_code(code)) for idx, code in sd["current_trick"]
+        )
+        state = GameState(
+            round=sd["round"],
+            phase=Phase(sd["phase"]),
+            pass_direction=PassDirection(sd["pass_direction"]),
+            hands=hands,
+            current_trick=current_trick,
+            whose_turn=sd["whose_turn"],
+            scores=tuple(sd["scores"]),
+            round_scores=tuple(sd["round_scores"]),
+            hearts_broken=sd["hearts_broken"],
+            game_over=sd["game_over"],
+            winner_index=sd.get("winner_index"),
+        )
+        difficulty = data.get("difficulty", "easy")
+        pass_strategy, play_strategy = create_strategies(difficulty)
+
+        rng = random.Random()
+        rng_raw = data.get("rng_state")
+        if rng_raw:
+            rng.setstate((rng_raw[0], tuple(rng_raw[1]), rng_raw[2]))
+
+        runner = cls(
+            state=state,
+            pass_strategy=pass_strategy,
+            play_strategy=play_strategy,
+            player_names=tuple(data.get("player_names", DEFAULT_PLAYER_NAMES)),
+            rng=rng,
+            difficulty=difficulty,
+        )
+        runner._human_moon_shots = data.get("human_moon_shots", 0)
+        return runner
+
+    @classmethod
+    def from_json(cls, raw: str) -> "GameRunner":
+        return cls.from_dict(json.loads(raw))
+
     def get_state_for_frontend(self) -> Dict[str, Any]:
         """
         Return a JSON-friendly dict for the API. Includes legal_plays when
@@ -299,4 +401,5 @@ class GameRunner:
             "hearts_broken": s.hearts_broken,
             "game_over": s.game_over,
             "winner_index": s.winner_index,
+            "human_moon_shots": self._human_moon_shots,
         }

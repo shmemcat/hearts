@@ -17,8 +17,13 @@ def clear_game_store():
 @pytest.fixture
 def socket_client():
     from hearts import app, socketio
+    from hearts.extensions import db
     app.config["TESTING"] = True
-    return socketio.test_client(app, flask_test_client=app.test_client())
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
+    with app.app_context():
+        db.create_all()
+        yield socketio.test_client(app, flask_test_client=app.test_client())
+        db.drop_all()
 
 
 def test_ws_advance_emits_play_trick_complete_state(socket_client):

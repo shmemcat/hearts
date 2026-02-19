@@ -12,6 +12,8 @@ export interface InfoModalProps {
    phase: GamePhase;
    players: { name: string; score: number }[];
    onClose: () => void;
+   onConcede?: () => void;
+   gameOver?: boolean;
 }
 
 export const InfoModal: React.FC<InfoModalProps> = ({
@@ -20,6 +22,8 @@ export const InfoModal: React.FC<InfoModalProps> = ({
    phase,
    players,
    onClose,
+   onConcede,
+   gameOver,
 }) => {
    return (
       <div className={styles.backdrop} onClick={onClose}>
@@ -62,6 +66,15 @@ export const InfoModal: React.FC<InfoModalProps> = ({
             </table>
 
             <Button name="Close" onClick={onClose} />
+            {onConcede && !gameOver && (
+               <Button
+                  name="Concede Game"
+                  onClick={() => {
+                     onClose();
+                     onConcede();
+                  }}
+               />
+            )}
          </div>
       </div>
    );

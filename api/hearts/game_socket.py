@@ -2,6 +2,7 @@
 """
 WebSocket handlers for game events: connect (with game_id), advance, play.
 Emits play, trick_complete, state (and error) to the client.
+Persists state to DB after each completed action.
 """
 
 from typing import Dict
@@ -9,14 +10,14 @@ from typing import Dict
 from flask import request
 from flask_socketio import emit
 
-from hearts.game_routes import _get_runner
+from hearts.game_routes import _get_runner, _save_to_db, _delete_game
 from hearts.game.card import Card
 
 
 _sid_to_game_id: Dict[str, str] = {}
 
 
-def _make_callbacks(runner):
+def _make_callbacks(runner, game_id):
     """Build the on_play / on_trick_complete / on_done callbacks for WebSocket streaming."""
     def on_play(ev):
         emit("play", ev, namespace="/game")
@@ -28,6 +29,10 @@ def _make_callbacks(runner):
         payload = dict(s)
         payload["round_just_ended"] = runner.get_last_round_ended()
         emit("state", payload, namespace="/game")
+        if runner.state.game_over:
+            _delete_game(game_id)
+        else:
+            _save_to_db(game_id, runner)
 
     return on_play, on_trick_complete, on_done
 
@@ -66,7 +71,7 @@ def register_game_socket(socketio):
             emit("error", {"message": "Already human's turn"}, namespace="/game")
             return
         try:
-            on_play, on_trick_complete, on_done = _make_callbacks(runner)
+            on_play, on_trick_complete, on_done = _make_callbacks(runner, game_id)
             runner.advance_to_human_turn(on_play=on_play, on_trick_complete=on_trick_complete, on_done=on_done)
         except Exception as e:
             emit("error", {"message": str(e)}, namespace="/game")
@@ -91,7 +96,7 @@ def register_game_socket(socketio):
             emit("error", {"message": str(e)}, namespace="/game")
             return
         try:
-            on_play, on_trick_complete, on_done = _make_callbacks(runner)
+            on_play, on_trick_complete, on_done = _make_callbacks(runner, game_id)
             runner.submit_play(card, on_play=on_play, on_trick_complete=on_trick_complete, on_done=on_done)
         except ValueError as e:
             emit("error", {"message": str(e)}, namespace="/game")

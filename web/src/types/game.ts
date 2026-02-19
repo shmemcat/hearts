@@ -29,6 +29,7 @@ export type GameState = {
   hearts_broken: boolean;
   game_over: boolean;
   winner_index: number | null;
+  human_moon_shots: number;
 };
 
 /** Response from POST /games/start */

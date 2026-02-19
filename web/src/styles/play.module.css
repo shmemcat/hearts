@@ -132,6 +132,66 @@
    margin: 0 auto;
 }
 
+/* ── Conceded modal overlay ──────────────────────────── */
+.concededBackdrop {
+   position: fixed;
+   inset: 0;
+   z-index: 100;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   background: rgba(0, 0, 0, 0.4);
+   backdrop-filter: blur(4px);
+   -webkit-backdrop-filter: blur(4px);
+   animation: concededFadeIn 0.2s ease-out;
+}
+
+.concededModal {
+   background: var(--contentbox);
+   border-radius: 16px;
+   padding: 24px 28px;
+   min-width: 280px;
+   max-width: 380px;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 14px;
+   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+   animation: concededSlideUp 0.2s ease-out;
+}
+
+.concededTitle {
+   font-size: 1.4rem;
+   font-weight: 700;
+   color: var(--header);
+   margin: 0;
+}
+
+@keyframes concededFadeIn {
+   from { opacity: 0; }
+   to { opacity: 1; }
+}
+
+@keyframes concededSlideUp {
+   from { opacity: 0; transform: translateY(12px); }
+   to { opacity: 1; transform: translateY(0); }
+}
+
+.topBar {
+   position: absolute;
+   top: 0;
+   right: -45px;
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   z-index: 2;
+}
+
+/* When InfoPill is inside topBar, reset its absolute positioning */
+.topBar > div:first-child {
+   position: static;
+}
+
 /* Wrapper for the game table + round summary overlay */
 .gameTableWrapper {
    position: relative;

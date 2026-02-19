@@ -1,4 +1,6 @@
+export { ActiveGameModal } from "./ActiveGameModal";
 export { Card } from "./Card";
+export { ConcedeButton, ConcedeModal } from "./ConcedeModal";
 export { GameOverBlock } from "./GameOverBlock";
 export { HeartIcon } from "./HeartIcon";
 export { GameSeat } from "./GameSeat";

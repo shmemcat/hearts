@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/Buttons";
 import {
+   ConcedeButton,
+   ConcedeModal,
    GameOverBlock,
    GameSeat,
    Hand,
@@ -23,6 +25,7 @@ import { PageLayout, ButtonGroup } from "@/components/ui";
 import { usePlayQueue } from "@/hooks/usePlayQueue";
 import {
    advanceGame,
+   concedeGame,
    getGameState,
    recordGameStats,
    submitPass,
@@ -91,6 +94,8 @@ export default function PlayGamePage() {
    const [error, setError] = useState<string | null>(null);
    const [submitting, setSubmitting] = useState(false); // pass phase only
    const [infoModalOpen, setInfoModalOpen] = useState(false);
+   const [concedeModalOpen, setConcedeModalOpen] = useState(false);
+   const [conceded, setConceded] = useState(false);
    const [passSelection, setPassSelection] = useState<Set<string>>(new Set());
    const [roundSummary, setRoundSummary] = useState<{
       deltas: number[];
@@ -377,9 +382,9 @@ export default function PlayGamePage() {
          game_id: gameId,
          final_score: humanScore,
          won,
-         moon_shots: humanMoonShotsRef.current,
+         moon_shots: state.human_moon_shots,
       });
-   }, [state?.game_over, state?.winner_index, state?.players, token, gameId]);
+   }, [state?.game_over, state?.winner_index, state?.players, state?.human_moon_shots, token, gameId]);
 
    // ── AI turn: advance when it's not the human's turn ────────────────
    useEffect(() => {
@@ -770,6 +775,14 @@ export default function PlayGamePage() {
       [gameId, showImmediately, enqueue, enqueueRestPlays]
    );
 
+   // ── Concede handler ────────────────────────────────────────────────
+   const handleConcede = useCallback(async () => {
+      if (!gameId) return;
+      await concedeGame(gameId, token);
+      setConcedeModalOpen(false);
+      setConceded(true);
+   }, [gameId, token]);
+
    // ── Early returns ──────────────────────────────────────────────────
    if (!gameId) {
       return (
@@ -906,14 +919,23 @@ export default function PlayGamePage() {
             {state && (
                <div className={styles.playContent}>
                   {!roundSummary && !isMobile && (
-                     <InfoPill
-                        round={state.round}
-                        passDirection={state.pass_direction}
-                        phase={state.phase}
-                     />
+                     <div className={styles.topBar}>
+                        <InfoPill
+                           round={state.round}
+                           passDirection={state.pass_direction}
+                           phase={state.phase}
+                        />
+                        {!state.game_over && !conceded && (
+                           <ConcedeButton
+                              onClick={() => setConcedeModalOpen(true)}
+                           />
+                        )}
+                     </div>
                   )}
                   {!roundSummary && isMobile && (
-                     <InfoButton onClick={() => setInfoModalOpen(true)} />
+                     <InfoButton
+                        onClick={() => setInfoModalOpen(true)}
+                     />
                   )}
                   {infoModalOpen && isMobile && (
                      <InfoModal
@@ -922,7 +944,62 @@ export default function PlayGamePage() {
                         phase={state.phase}
                         players={state.players}
                         onClose={() => setInfoModalOpen(false)}
+                        onConcede={() => setConcedeModalOpen(true)}
+                        gameOver={state.game_over || conceded}
                      />
+                  )}
+                  {concedeModalOpen && (
+                     <ConcedeModal
+                        onClose={() => setConcedeModalOpen(false)}
+                        onConcede={handleConcede}
+                     />
+                  )}
+                  {conceded && (
+                     <div className={styles.concededBackdrop}>
+                        <div className={styles.concededModal}>
+                           <p className={styles.concededTitle}>
+                              Game Conceded
+                           </p>
+                           <table className={styles.scoreTable}>
+                              <thead>
+                                 <tr>
+                                    <th>Player</th>
+                                    <th>Score</th>
+                                 </tr>
+                              </thead>
+                              <tbody>
+                                 {[...state.players]
+                                    .map((p, i) => ({ ...p, idx: i }))
+                                    .sort((a, b) => a.score - b.score)
+                                    .map((p) => (
+                                       <tr
+                                          key={p.idx}
+                                          className={
+                                             p.idx === 0
+                                                ? styles.scoreTableWinner
+                                                : ""
+                                          }
+                                       >
+                                          <td>{p.name}</td>
+                                          <td>{p.score}</td>
+                                       </tr>
+                                    ))}
+                              </tbody>
+                           </table>
+                           <Link to="/game/create">
+                              <Button
+                                 name="Create New Game"
+                                 style={{ width: "250px", marginTop: "8px" }}
+                              />
+                           </Link>
+                           <Link to="/" onClick={() => triggerLogoFadeOut()}>
+                              <Button
+                                 name="Home"
+                                 style={{ width: "250px" }}
+                              />
+                           </Link>
+                        </div>
+                     </div>
                   )}
 
                   <div className={styles.gameTableWrapper}>

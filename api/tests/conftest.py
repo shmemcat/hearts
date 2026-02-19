@@ -42,5 +42,10 @@ def state_playing_after_pass(state_passing):
 def client():
     """Flask test client for API route tests."""
     from hearts import app
+    from hearts.extensions import db
     app.config["TESTING"] = True
-    return app.test_client()
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
+    with app.app_context():
+        db.create_all()
+        yield app.test_client()
+        db.drop_all()
