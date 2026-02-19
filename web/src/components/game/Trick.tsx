@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 
 import { Card } from "@/components/game/Card";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -89,11 +89,22 @@ export const Trick: React.FC<TrickProps> = ({
   const isMobile = useIsMobile();
   const labels = playerNames ?? ["You", "Top", "Left", "Right"];
   const cardRefs = useRef<(HTMLDivElement | null)[]>([null, null, null, null]);
+  const collectAnimsRef = useRef<Animation[]>([]);
+
+  const setCardRef = useCallback((index: number, el: HTMLDivElement | null) => {
+    const prev = cardRefs.current[index];
+    if (prev && prev !== el) {
+      prev.getAnimations().forEach((a) => a.cancel());
+    }
+    cardRefs.current[index] = el;
+  }, []);
 
   useEffect(() => {
+    collectAnimsRef.current.forEach((a) => a.cancel());
+    collectAnimsRef.current = [];
+
     if (collectTarget == null) return;
     const endpoints = getCollectEndpoints(collectTarget, isMobile ? 0.8 : 1);
-    const anims: Animation[] = [];
 
     for (let i = 0; i < 4; i++) {
       const el = cardRefs.current[i];
@@ -116,7 +127,7 @@ export const Trick: React.FC<TrickProps> = ({
               { opacity: 0, transform: `translate(${ep.x}px, ${ep.y}px)` },
             ];
 
-      anims.push(
+      collectAnimsRef.current.push(
         el.animate(keyframes, {
           duration: COLLECT_DURATION,
           easing: "ease-in",
@@ -125,7 +136,10 @@ export const Trick: React.FC<TrickProps> = ({
       );
     }
 
-    return () => anims.forEach((a) => a.cancel());
+    return () => {
+      collectAnimsRef.current.forEach((a) => a.cancel());
+      collectAnimsRef.current = [];
+    };
   }, [collectTarget, isMobile]);
 
   if (layout === "table") {
@@ -138,7 +152,8 @@ export const Trick: React.FC<TrickProps> = ({
               <div className={styles.trickSlotEmpty} aria-hidden="true" />
               {slot && (
                 <div
-                  ref={(el) => { cardRefs.current[index] = el; }}
+                  key={slot.card}
+                  ref={(el) => { setCardRef(index, el); }}
                   className={styles.trickSlotCard}
                 >
                   <Card code={slot.card} size={isMobile ? "large" : "medium"} />

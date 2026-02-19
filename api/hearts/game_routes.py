@@ -204,9 +204,9 @@ def concede_game(game_id: str):
     if user and runner.human_moon_shots > 0:
         stats = UserStats.query.filter_by(user_id=user.id).first()
         if not stats:
-            stats = UserStats(user_id=user.id)
+            stats = UserStats(user_id=user.id, moon_shots=0)
             db.session.add(stats)
-        stats.moon_shots += runner.human_moon_shots
+        stats.moon_shots = (stats.moon_shots or 0) + runner.human_moon_shots
         db.session.commit()
 
     _delete_game(game_id)

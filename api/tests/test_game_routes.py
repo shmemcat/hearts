@@ -273,3 +273,112 @@ class TestSubmitPlay:
             assert len(data["human_hand"]) == 12
             return
         pytest.fail("No seed in 0..49 gave human the lead after pass")
+
+
+# -----------------------------------------------------------------------------
+# POST /games/<game_id>/concede
+# -----------------------------------------------------------------------------
+
+class TestConcedeGame:
+    def test_concede_returns_200_and_deletes_game(self, client):
+        r = client.post("/games/start", json={})
+        game_id = r.get_json()["game_id"]
+        r = client.post(f"/games/{game_id}/concede")
+        assert r.status_code == 200
+        assert r.get_json()["status"] == "conceded"
+        # Game should be gone
+        r = client.get(f"/games/{game_id}")
+        assert r.status_code == 404
+
+    def test_concede_nonexistent_returns_404(self, client):
+        r = client.post("/games/nonexistent-id/concede")
+        assert r.status_code == 404
+
+    def test_concede_records_moon_shots_for_authenticated_user(self, auth_client):
+        import os
+        from hearts.game_routes import _store, _save_to_db
+        from hearts.extensions import db
+        from hearts.models import UserStats
+        from tests.conftest import make_jwt, auth_headers, JWT_SECRET
+
+        # Register a user
+        auth_client.post("/register", json={
+            "username": "moonplayer",
+            "email": "moon@example.com",
+            "password": "password123",
+        })
+        login_r = auth_client.post("/login", json={
+            "username": "moonplayer",
+            "password": "password123",
+        })
+        user = login_r.get_json()["user"]
+        token = login_r.get_json()["token"]
+        headers = auth_headers(token)
+
+        # Start a game as this user
+        r = auth_client.post("/games/start", json={}, headers=headers)
+        game_id = r.get_json()["game_id"]
+
+        # Manually set moon shots on the runner
+        runner = _store[game_id]
+        runner._human_moon_shots = 3
+        _save_to_db(game_id, runner, user_id=user["id"])
+
+        # Concede
+        r = auth_client.post(f"/games/{game_id}/concede", headers=headers)
+        assert r.status_code == 200
+
+        stats = UserStats.query.filter_by(user_id=user["id"]).first()
+        assert stats is not None
+        assert stats.moon_shots == 3
+
+
+# -----------------------------------------------------------------------------
+# GET /games/active
+# -----------------------------------------------------------------------------
+
+class TestActiveGame:
+    def test_active_game_returns_game_id(self, auth_client):
+        from tests.conftest import make_jwt, auth_headers
+
+        auth_client.post("/register", json={
+            "username": "activeplayer",
+            "email": "active@example.com",
+            "password": "password123",
+        })
+        login_r = auth_client.post("/login", json={
+            "username": "activeplayer",
+            "password": "password123",
+        })
+        token = login_r.get_json()["token"]
+        headers = auth_headers(token)
+
+        r = auth_client.post("/games/start", json={}, headers=headers)
+        game_id = r.get_json()["game_id"]
+
+        r = auth_client.get("/games/active", headers=headers)
+        assert r.status_code == 200
+        assert r.get_json()["game_id"] == game_id
+
+    def test_active_game_none_when_no_game(self, auth_client):
+        from tests.conftest import make_jwt, auth_headers
+
+        auth_client.post("/register", json={
+            "username": "nogame",
+            "email": "nogame@example.com",
+            "password": "password123",
+        })
+        login_r = auth_client.post("/login", json={
+            "username": "nogame",
+            "password": "password123",
+        })
+        token = login_r.get_json()["token"]
+        headers = auth_headers(token)
+
+        r = auth_client.get("/games/active", headers=headers)
+        assert r.status_code == 200
+        assert r.get_json()["game_id"] is None
+
+    def test_active_game_401_without_jwt(self, client):
+        r = client.get("/games/active")
+        assert r.status_code == 401

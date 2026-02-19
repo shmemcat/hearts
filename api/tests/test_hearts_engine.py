@@ -381,3 +381,327 @@ class TestRunnerCallbacks:
             assert plays[0]["player_index"] == 0 and plays[0]["card"] == card_code
             return
         pytest.fail("No seed in 0..79 gave human lead after pass with legal plays")
+
+
+# -----------------------------------------------------------------------------
+# Round boundary: no-pass rounds stop at boundary, round_just_ended flag
+# -----------------------------------------------------------------------------
+
+class TestRoundBoundary:
+    """Tests for the fix ensuring the AI loop always stops at round boundaries."""
+
+    def _play_full_round(self, runner):
+        """Play a full 13-trick round by repeatedly calling submit_play / advance."""
+        for _ in range(52):
+            st = runner.get_state_for_frontend()
+            if st["phase"] != "playing":
+                return st
+            if st["game_over"]:
+                return st
+            if st["whose_turn"] == 0:
+                legal = st["legal_plays"]
+                if not legal:
+                    return st
+                runner.submit_play(Card.from_code(legal[0]))
+            else:
+                runner.advance_to_human_turn()
+            if runner.get_last_round_ended():
+                return runner.get_state_for_frontend()
+        return runner.get_state_for_frontend()
+
+    def test_round_just_ended_set_for_passing_next_round(self):
+        """When the round ends and next round has passing, round_just_ended is True."""
+        for seed in range(100):
+            rng = __import__("random").Random(seed)
+            runner = GameRunner.new_game(RandomPassStrategy(rng=rng), RandomPlayStrategy(rng=rng), rng=rng)
+            runner.submit_pass([Card.from_code(c) for c in runner.get_state_for_frontend()["human_hand"][:3]])
+            self._play_full_round(runner)
+            if runner.get_last_round_ended():
+                assert runner.state.round == 2
+                return
+        pytest.fail("No seed completed round 1")
+
+    def test_round_just_ended_set_for_no_pass_next_round(self):
+        """When the round ends and next round is no-pass (round 4), round_just_ended is True
+        and the state does NOT contain cards from the new round."""
+        for seed in range(200):
+            rng = __import__("random").Random(seed)
+            runner = GameRunner.new_game(RandomPassStrategy(rng=rng), RandomPlayStrategy(rng=rng), rng=rng)
+            for round_num in range(1, 4):
+                st = runner.get_state_for_frontend()
+                if st["phase"] == "passing":
+                    runner.submit_pass([Card.from_code(c) for c in st["human_hand"][:3]])
+                self._play_full_round(runner)
+                if runner.state.game_over:
+                    break
+            if runner.state.game_over:
+                continue
+            if runner.state.round == 4:
+                assert runner.get_last_round_ended() is True
+                assert runner.state.phase == Phase.PLAYING
+                assert runner.state.pass_direction == PassDirection.NONE
+                return
+        pytest.fail("No seed reached round 4 without game over")
+
+    def test_advance_stops_at_no_pass_round_boundary(self):
+        """advance_to_human_turn must NOT play cards from the new no-pass round."""
+        for seed in range(200):
+            rng = __import__("random").Random(seed)
+            runner = GameRunner.new_game(RandomPassStrategy(rng=rng), RandomPlayStrategy(rng=rng), rng=rng)
+            for round_num in range(1, 4):
+                st = runner.get_state_for_frontend()
+                if st["phase"] == "passing":
+                    runner.submit_pass([Card.from_code(c) for c in st["human_hand"][:3]])
+                self._play_full_round(runner)
+                if runner.state.game_over:
+                    break
+            if runner.state.game_over or runner.state.round != 4:
+                continue
+            # Now in round 4 (no-pass). All hands should have 13 cards.
+            for i in range(4):
+                assert len(runner.state.hands[i]) == 13
+            return
+        pytest.fail("No seed reached round 4")
+
+    def test_callbacks_at_round_end(self):
+        """When the last trick of a round ends, callbacks fire: play -> trick_complete -> on_done(round_just_ended)."""
+        for seed in range(100):
+            rng = __import__("random").Random(seed)
+            runner = GameRunner.new_game(RandomPassStrategy(rng=rng), RandomPlayStrategy(rng=rng), rng=rng)
+            runner.submit_pass([Card.from_code(c) for c in runner.get_state_for_frontend()["human_hand"][:3]])
+            events = []
+            def on_play(ev):
+                events.append(("play", ev))
+            def on_trick_complete():
+                events.append(("trick_complete",))
+            def on_done(state_dict):
+                events.append(("done", state_dict))
+            # Play until round ends using callbacks
+            for _ in range(52):
+                st = runner.get_state_for_frontend()
+                if st["phase"] != "playing" or st["game_over"]:
+                    break
+                if st["whose_turn"] == 0:
+                    legal = st["legal_plays"]
+                    if not legal:
+                        break
+                    events.clear()
+                    runner.submit_play(
+                        Card.from_code(legal[0]),
+                        on_play=on_play,
+                        on_trick_complete=on_trick_complete,
+                        on_done=on_done,
+                    )
+                else:
+                    events.clear()
+                    runner.advance_to_human_turn(
+                        on_play=on_play,
+                        on_trick_complete=on_trick_complete,
+                        on_done=on_done,
+                    )
+                if runner.get_last_round_ended():
+                    done_events = [e for e in events if e[0] == "done"]
+                    assert len(done_events) == 1
+                    assert done_events[0][1].get("round_just_ended") is True
+                    # Verify trick_complete came before done
+                    tc_indices = [i for i, e in enumerate(events) if e[0] == "trick_complete"]
+                    done_idx = next(i for i, e in enumerate(events) if e[0] == "done")
+                    assert tc_indices[-1] < done_idx
+                    return
+        pytest.fail("No seed produced a round end with callbacks")
+
+    def test_intermediate_plays_do_not_cross_round_boundary(self):
+        """REST-style: intermediate_plays should only contain plays from the current round."""
+        for seed in range(100):
+            rng = __import__("random").Random(seed)
+            runner = GameRunner.new_game(RandomPassStrategy(rng=rng), RandomPlayStrategy(rng=rng), rng=rng)
+            runner.submit_pass([Card.from_code(c) for c in runner.get_state_for_frontend()["human_hand"][:3]])
+            for _ in range(52):
+                st = runner.get_state_for_frontend()
+                if st["phase"] != "playing" or st["game_over"]:
+                    break
+                if st["whose_turn"] == 0:
+                    legal = st["legal_plays"]
+                    if not legal:
+                        break
+                    runner.submit_play(Card.from_code(legal[0]))
+                else:
+                    runner.advance_to_human_turn()
+                plays = runner.get_last_play_events()
+                if runner.get_last_round_ended():
+                    # All plays should total a multiple of 4 (complete tricks only)
+                    assert len(plays) % 4 == 0 or len(plays) == 0
+                    return
+        pytest.fail("No seed produced round end via REST path")
+
+
+# -----------------------------------------------------------------------------
+# Runner: serialization round-trip (to_json / from_json)
+# -----------------------------------------------------------------------------
+
+class TestRunnerSerialization:
+    def test_round_trip_preserves_frontend_state(self):
+        rng = __import__("random").Random(99)
+        runner = GameRunner.new_game(RandomPassStrategy(rng=rng), RandomPlayStrategy(rng=rng), rng=rng)
+        original = runner.get_state_for_frontend()
+        restored = GameRunner.from_json(runner.to_json())
+        assert restored.get_state_for_frontend() == original
+
+    def test_round_trip_after_pass(self):
+        rng = __import__("random").Random(7)
+        runner = GameRunner.new_game(RandomPassStrategy(rng=rng), RandomPlayStrategy(rng=rng), rng=rng)
+        runner.submit_pass([Card.from_code(c) for c in runner.get_state_for_frontend()["human_hand"][:3]])
+        original = runner.get_state_for_frontend()
+        restored = GameRunner.from_json(runner.to_json())
+        assert restored.get_state_for_frontend() == original
+
+    def test_round_trip_mid_trick(self):
+        """Serialize/deserialize with cards in current_trick."""
+        for seed in range(50):
+            rng = __import__("random").Random(seed)
+            runner = GameRunner.new_game(RandomPassStrategy(rng=rng), RandomPlayStrategy(rng=rng), rng=rng)
+            runner.submit_pass([Card.from_code(c) for c in runner.get_state_for_frontend()["human_hand"][:3]])
+            st = runner.get_state_for_frontend()
+            if st["phase"] != "playing" or st["whose_turn"] != 0:
+                continue
+            legal = st["legal_plays"]
+            if not legal:
+                continue
+            runner.submit_play(Card.from_code(legal[0]))
+            st = runner.get_state_for_frontend()
+            if len(st["current_trick"]) > 0:
+                restored = GameRunner.from_json(runner.to_json())
+                assert restored.get_state_for_frontend() == st
+                return
+        pytest.fail("No seed produced mid-trick state")
+
+    def test_round_trip_across_rounds(self):
+        """Serialize after round 1 ends and new round begins."""
+        for seed in range(100):
+            rng = __import__("random").Random(seed)
+            runner = GameRunner.new_game(RandomPassStrategy(rng=rng), RandomPlayStrategy(rng=rng), rng=rng)
+            runner.submit_pass([Card.from_code(c) for c in runner.get_state_for_frontend()["human_hand"][:3]])
+            for _ in range(52):
+                st = runner.get_state_for_frontend()
+                if st["phase"] != "playing" or st["game_over"]:
+                    break
+                if st["whose_turn"] == 0:
+                    legal = st["legal_plays"]
+                    if not legal:
+                        break
+                    runner.submit_play(Card.from_code(legal[0]))
+                else:
+                    runner.advance_to_human_turn()
+                if runner.get_last_round_ended():
+                    break
+            if runner.state.round >= 2:
+                original = runner.get_state_for_frontend()
+                restored = GameRunner.from_json(runner.to_json())
+                assert restored.get_state_for_frontend() == original
+                return
+        pytest.fail("No seed reached round 2")
+
+    def test_deserialized_runner_can_continue_play(self):
+        """After deserialization, the runner can successfully play more cards."""
+        for seed in range(50):
+            rng = __import__("random").Random(seed)
+            runner = GameRunner.new_game(RandomPassStrategy(rng=rng), RandomPlayStrategy(rng=rng), rng=rng)
+            runner.submit_pass([Card.from_code(c) for c in runner.get_state_for_frontend()["human_hand"][:3]])
+            st = runner.get_state_for_frontend()
+            if st["phase"] != "playing" or st["whose_turn"] != 0 or not st["legal_plays"]:
+                continue
+            restored = GameRunner.from_json(runner.to_json())
+            legal = restored.get_state_for_frontend()["legal_plays"]
+            restored.submit_play(Card.from_code(legal[0]))
+            st2 = restored.get_state_for_frontend()
+            assert len(st2["human_hand"]) == len(st["human_hand"]) - 1
+            return
+        pytest.fail("No seed gave playable state")
+
+
+# -----------------------------------------------------------------------------
+# Card module: from_code, to_code, deck_52, deal_into_4_hands
+# -----------------------------------------------------------------------------
+
+class TestCardModule:
+    def test_from_code_to_code_round_trip_all_52(self):
+        for card in deck_52():
+            assert Card.from_code(card.to_code()) == card
+
+    def test_from_code_specific_cases(self):
+        assert Card.from_code("2c") == Card(Suit.CLUBS, 2)
+        assert Card.from_code("10d") == Card(Suit.DIAMONDS, 10)
+        assert Card.from_code("Js") == Card(Suit.SPADES, 11)
+        assert Card.from_code("Ah") == Card(Suit.HEARTS, 14)
+
+    def test_from_code_invalid_empty(self):
+        with pytest.raises(ValueError, match="Empty"):
+            Card.from_code("")
+
+    def test_from_code_invalid_suit(self):
+        with pytest.raises(ValueError, match="suit"):
+            Card.from_code("2x")
+
+    def test_from_code_invalid_rank(self):
+        with pytest.raises(ValueError, match="rank"):
+            Card.from_code("1c")
+
+    def test_deck_52_has_52_unique_cards(self):
+        d = deck_52()
+        assert len(d) == 52
+        assert len(set(d)) == 52
+
+    def test_deal_into_4_hands_returns_4_hands_of_13(self):
+        d = deck_52()
+        hands = deal_into_4_hands(d)
+        assert len(hands) == 4
+        for h in hands:
+            assert len(h) == 13
+        all_cards = [c for h in hands for c in h]
+        assert len(set(all_cards)) == 52
+
+    def test_deal_into_4_hands_wrong_deck_size_raises(self):
+        with pytest.raises(ValueError, match="52"):
+            deal_into_4_hands(deck_52()[:10])
+
+    def test_two_of_clubs(self):
+        c = two_of_clubs()
+        assert c.suit == Suit.CLUBS
+        assert c.rank == 2
+        assert c.to_code() == "2c"
+
+    def test_shuffle_deck_does_not_mutate_input(self):
+        original = deck_52()
+        original_copy = list(original)
+        shuffle_deck(original)
+        assert original == original_copy
+
+
+# -----------------------------------------------------------------------------
+# State helpers: pass_direction_for_round, initial_state_after_deal
+# -----------------------------------------------------------------------------
+
+class TestStateHelpers:
+    def test_pass_direction_cycles(self):
+        assert GameState.pass_direction_for_round(1) == PassDirection.LEFT
+        assert GameState.pass_direction_for_round(2) == PassDirection.RIGHT
+        assert GameState.pass_direction_for_round(3) == PassDirection.ACROSS
+        assert GameState.pass_direction_for_round(4) == PassDirection.NONE
+        assert GameState.pass_direction_for_round(5) == PassDirection.LEFT
+        assert GameState.pass_direction_for_round(8) == PassDirection.NONE
+        assert GameState.pass_direction_for_round(12) == PassDirection.NONE
+
+    def test_initial_state_no_pass_round(self, four_hands):
+        """Round 4 (no-pass) should start in playing phase with 2-of-clubs holder leading."""
+        state = initial_state_after_deal(four_hands, round_num=4, previous_scores=(10, 20, 30, 40))
+        assert state.phase == Phase.PLAYING
+        assert state.pass_direction == PassDirection.NONE
+        assert state.scores == (10, 20, 30, 40)
+        holder = state.whose_turn
+        assert two_of_clubs() in state.hands[holder]
+
+    def test_initial_state_passing_round(self, four_hands):
+        """Round 1 should start in passing phase."""
+        state = initial_state_after_deal(four_hands, round_num=1)
+        assert state.phase == Phase.PASSING
+        assert state.pass_direction == PassDirection.LEFT

@@ -7,7 +7,7 @@ import {
    BADGE_LINGER_MS,
    CLEAR_MS,
    RANK_ORDER,
-   EMPTY_SLOTS,
+   emptySlots,
 } from "@/lib/constants";
 
 function cardSuit(code: string): string {
@@ -87,7 +87,7 @@ export interface UsePlayQueueOptions {
  */
 export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
    const [displaySlots, setDisplaySlots] =
-      useState<CurrentTrickSlot[]>(EMPTY_SLOTS);
+      useState<CurrentTrickSlot[]>(emptySlots);
    const [busy, setBusy] = useState(false);
    /** Player index of whoever is "active" during animation (for turn indicator). */
    const [currentTurn, setCurrentTurn] = useState<number | null>(null);
@@ -143,8 +143,6 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
          const result = computeTrickResult(trickPlaysRef.current);
          trickPlaysRef.current = [];
 
-         const humanWonNoMore = result?.winner === 0 && queue.length === 0;
-
          // Hold so user can see all 4 cards, then sweep toward winner
          timerRef.current = setTimeout(() => {
             if (result) {
@@ -160,9 +158,13 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
             // After the sweep, clear the board
             timerRef.current = setTimeout(() => {
                setCollectTarget(null);
-               setDisplaySlots(EMPTY_SLOTS);
+               setDisplaySlots(emptySlots);
                setCurrentTurn(null);
+               trickPlaysRef.current = [];
 
+               // Re-check queue at execution time (not capture time) to
+               // avoid a stale closure skipping the linger/clear delays.
+               const humanWonNoMore = result?.winner === 0 && queue.length === 0;
                if (humanWonNoMore) {
                   setTrickResult(null);
                   processNext();
@@ -226,7 +228,7 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
       setCurrentTurn(null);
       setTrickResult(null);
       setCollectTarget(null);
-      setDisplaySlots(EMPTY_SLOTS);
+      setDisplaySlots(emptySlots);
    }, []);
 
    /** Synchronous check — true when the queue is draining (no React-state lag). */

@@ -70,4 +70,8 @@ export const PLAY_PAGE_LAYOUT_CLASS =
 
 /* ── Play Queue ───────────────────────────────────────────────────────── */
 
-export const EMPTY_SLOTS: CurrentTrickSlot[] = [null, null, null, null];
+export const EMPTY_SLOTS: readonly CurrentTrickSlot[] = Object.freeze([null, null, null, null]);
+
+export function emptySlots(): CurrentTrickSlot[] {
+  return [null, null, null, null];
+}
