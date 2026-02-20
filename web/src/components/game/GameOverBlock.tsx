@@ -16,6 +16,7 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
    winnerIndex,
 }) => {
    const humanWon = winnerIndex === 0;
+   const isTie = winnerIndex === -1;
    const confettiRef = useRef<HTMLParagraphElement>(null);
 
    useEffect(() => {
@@ -34,7 +35,7 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
       <div className={styles.gameOverBackdrop}>
          <div className={styles.gameOverBlock}>
             <p ref={confettiRef} className={styles.gameOverTitle}>
-               {humanWon ? "You won!" : "Game Over"}
+               {humanWon ? "You won!" : isTie ? "It's a tie!" : "Game Over"}
             </p>
             <table className={styles.scoreTable}>
                <thead>
@@ -47,26 +48,29 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
                   {[...players]
                      .map((p, i) => ({ ...p, idx: i }))
                      .sort((a, b) => a.score - b.score)
-                     .map((p) => (
-                        <tr
-                           key={p.idx}
-                           className={
-                              p.idx === winnerIndex
-                                 ? styles.scoreTableWinner
-                                 : ""
-                           }
-                        >
-                           <td>{p.name}</td>
-                           <td>{p.score}</td>
-                        </tr>
-                     ))}
+                     .map((p) => {
+                        const minScore = Math.min(
+                           ...players.map((pl) => pl.score)
+                        );
+                        const isWinner = isTie
+                           ? p.score === minScore
+                           : p.idx === winnerIndex;
+                        return (
+                           <tr
+                              key={p.idx}
+                              className={
+                                 isWinner ? styles.scoreTableWinner : ""
+                              }
+                           >
+                              <td>{p.name}</td>
+                              <td>{p.score}</td>
+                           </tr>
+                        );
+                     })}
                </tbody>
             </table>
             <Link to="/game/create">
-               <Button
-                  name="Create New Game"
-                  style={{ width: "250px" }}
-               />
+               <Button name="Create New Game" style={{ width: "250px" }} />
             </Link>
          </div>
       </div>

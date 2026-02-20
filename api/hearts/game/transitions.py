@@ -195,7 +195,9 @@ def apply_round_scoring(state: GameState) -> GameState:
     game_over = any(s >= 100 for s in new_scores)
     winner = None
     if game_over:
-        winner = min(range(4), key=lambda i: new_scores[i])
+        min_score = min(new_scores)
+        winners = [i for i, s in enumerate(new_scores) if s == min_score]
+        winner = winners[0] if len(winners) == 1 else -1
     return GameState(
         round=state.round,
         phase=state.phase,

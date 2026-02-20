@@ -209,7 +209,7 @@ class TestApplyRoundScoring:
             hands=((), (), (), ()),
             current_trick=(),
             whose_turn=0,
-            scores=(99, 50, 50, 50),
+            scores=(99, 50, 60, 70),
             round_scores=(1, 0, 0, 0),
             hearts_broken=True,
             game_over=False,
@@ -218,6 +218,42 @@ class TestApplyRoundScoring:
         state2 = apply_round_scoring(state)
         assert state2.game_over is True
         assert state2.winner_index == 1
+
+    def test_tie_sets_winner_index_minus_one(self):
+        state = GameState(
+            round=1,
+            phase=Phase.PLAYING,
+            pass_direction=PassDirection.LEFT,
+            hands=((), (), (), ()),
+            current_trick=(),
+            whose_turn=0,
+            scores=(99, 99, 50, 50),
+            round_scores=(1, 1, 0, 0),
+            hearts_broken=True,
+            game_over=False,
+            winner_index=None,
+        )
+        state2 = apply_round_scoring(state)
+        assert state2.game_over is True
+        assert state2.winner_index == -1
+
+    def test_no_tie_single_winner(self):
+        state = GameState(
+            round=1,
+            phase=Phase.PLAYING,
+            pass_direction=PassDirection.LEFT,
+            hands=((), (), (), ()),
+            current_trick=(),
+            whose_turn=0,
+            scores=(99, 98, 50, 60),
+            round_scores=(1, 1, 0, 0),
+            hearts_broken=True,
+            game_over=False,
+            winner_index=None,
+        )
+        state2 = apply_round_scoring(state)
+        assert state2.game_over is True
+        assert state2.winner_index == 2
 
 
 # -----------------------------------------------------------------------------
