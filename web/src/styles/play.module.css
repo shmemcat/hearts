@@ -8,19 +8,49 @@
    margin-bottom: 0;
 }
 
+.gameOverBackdrop {
+   position: fixed;
+   inset: 0;
+   z-index: 100;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   background: rgba(0, 0, 0, 0.4);
+   backdrop-filter: blur(4px);
+   -webkit-backdrop-filter: blur(4px);
+   animation: gameOverFadeIn 0.3s ease-out;
+}
+
 .gameOverBlock {
-   margin-top: 20px;
+   background: var(--contentbox);
+   border-radius: 16px;
+   padding: 24px 28px;
+   min-width: 280px;
+   max-width: 380px;
    display: flex;
    flex-direction: column;
    align-items: center;
    text-align: center;
+   gap: 14px;
+   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+   animation: gameOverSlideUp 0.3s ease-out;
 }
 
 .gameOverTitle {
    font-size: 1.4rem;
    font-weight: 700;
    color: var(--header);
-   margin-bottom: 12px;
+   margin: 0;
+}
+
+@keyframes gameOverFadeIn {
+   from { opacity: 0; }
+   to { opacity: 1; }
+}
+
+@keyframes gameOverSlideUp {
+   from { opacity: 0; transform: translateY(12px); }
+   to { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Round summary overlay (on top of game table) ────────── */

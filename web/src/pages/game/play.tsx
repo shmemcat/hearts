@@ -1389,7 +1389,7 @@ export default function PlayGamePage() {
                         </div>
                      )}
 
-                  {/* ── Game over screen with score table ───────── */}
+                  {/* ── Game over modal ──────────────────────────── */}
                   {state.game_over && !roundSummary && (
                      <GameOverBlock
                         players={state.players}

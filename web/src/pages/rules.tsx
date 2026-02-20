@@ -8,7 +8,78 @@ import { RulesButton } from "@/components/Buttons";
 import { Button } from "@/components/Buttons";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout } from "@/components/ui";
+import { Card } from "@/components/game/Card";
 import { CONFETTI_COOLDOWN_MS } from "@/lib/constants";
+
+function CardGroup({
+   codes,
+   className,
+}: {
+   codes: string[];
+   className?: string;
+}) {
+   return (
+      <div
+         className={`flex items-center justify-center gap-2 my-4 pointer-events-none select-none ${
+            className ?? ""
+         }`}
+      >
+         {codes.map((code) => (
+            <Card key={code} code={code} size="medium" />
+         ))}
+      </div>
+   );
+}
+
+const SHOOT_THE_MOON_CODES = [
+   "2h",
+   "3h",
+   "4h",
+   "5h",
+   "6h",
+   "7h",
+   "8h",
+   "9h",
+   "10h",
+   "Jh",
+   "Qh",
+   "Kh",
+   "Ah",
+   "Qs",
+];
+
+function ShootTheMoonFan() {
+   const count = SHOOT_THE_MOON_CODES.length;
+   const centerIndex = (count - 1) / 2;
+   const degPerCard = 1.5;
+   const arcFactor = 0.5;
+   const overlap = -25;
+
+   return (
+      <div
+         className="flex items-end justify-center my-4 pointer-events-none select-none"
+         style={{ paddingBottom: 18, minHeight: 130 }}
+      >
+         {SHOOT_THE_MOON_CODES.map((code, i) => {
+            const distance = i - centerIndex;
+            const rotation = distance * degPerCard;
+            const translateY = Math.pow(Math.abs(distance), 2) * arcFactor;
+            return (
+               <div
+                  key={code}
+                  style={{
+                     transform: `translateY(${translateY}px) rotate(${rotation}deg)`,
+                     marginLeft: i === 0 ? 0 : overlap,
+                     transformOrigin: "center bottom",
+                  }}
+               >
+                  <Card code={code} size="medium" />
+               </div>
+            );
+         })}
+      </div>
+   );
+}
 
 export default function RulesPage() {
    return (
@@ -79,6 +150,7 @@ function Overview() {
          <span className="block mb-4">
             Hearts is a trick-taking card game where the players avoid points.
          </span>
+         <CardGroup codes={["As", "Kh", "Qd", "Jc"]} />
          <span className="block mb-4">
             The object of the game is to be the player with the lowest score at
             the end of the game. When one player hits 100 points, the game ends
@@ -101,6 +173,7 @@ function DealPassing() {
             pick up the cards passed to you, look at them and add them to your
             hand.
          </span>
+         <CardGroup codes={["Qs", "10d", "6c"]} />
          <span className="block mb-4">
             On the second hand each player passes three cards to the player to
             their right, in the same way. On the third hand each player passes
@@ -120,6 +193,7 @@ function Play() {
             Play is clockwise. The player holding the 2 of clubs after the pass
             makes the opening lead.
          </span>
+         <CardGroup codes={["2c"]} />
          <span className="block mb-4">
             Each player must follow suit if possible. If a player is void of the
             suit led, a card of any other suit may be discarded. However, if a
@@ -128,6 +202,11 @@ function Play() {
             wins a trick and the winner of that trick leads next. There is no
             trump suit.
          </span>
+         <span className="block mb-4">
+            Hearts may not be led until they have been &quot;broken&quot; — that
+            is, until a heart has been discarded on a trick led by another suit.
+         </span>
+         <CardGroup codes={["5h", "8h", "Jh", "Ah"]} />
       </main>
    );
 }
@@ -155,9 +234,20 @@ function Scoring() {
             have taken as well as the queen of spades, if applicable. Hearts
             count as one point each and the queen counts 13 points.{" "}
          </span>
-         <span className="block mb-4 ml-8">
-            Each heart - 1 point <br /> The Queen of Spades - 13 points{" "}
-         </span>
+         <div className="flex items-start justify-center gap-16 my-5 pointer-events-none select-none">
+            <div className="flex flex-col items-center gap-2">
+               <Card code="Ah" size="medium" />
+               <span className="text-sm tracking-wide opacity-80">
+                  Each heart — 1 pt
+               </span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+               <Card code="Qs" size="medium" />
+               <span className="text-sm tracking-wide opacity-80">
+                  Queen of Spades — 13 pts
+               </span>
+            </div>
+         </div>
          <span className="block mb-4">
             The aggregate total of all scores for each hand must be a multiple
             of 26. The game is played to 100 points. When a player takes all 13
@@ -172,6 +262,7 @@ function Scoring() {
                &quot;Shooting the Moon.&quot;
             </span>
          </span>
+         <ShootTheMoonFan />
       </main>
    );
 }

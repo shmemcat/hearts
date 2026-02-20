@@ -31,45 +31,44 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
    }, [humanWon]);
 
    return (
-      <div className={styles.gameOverBlock}>
-         <p ref={confettiRef} className={styles.gameOverTitle}>
-            {humanWon ? "You won!" : "Game Over"}
-         </p>
-         <table className={styles.scoreTable}>
-            <thead>
-               <tr>
-                  <th>Player</th>
-                  <th>Score</th>
-               </tr>
-            </thead>
-            <tbody>
-               {[...players]
-                  .map((p, i) => ({ ...p, idx: i }))
-                  .sort((a, b) => a.score - b.score)
-                  .map((p) => (
-                     <tr
-                        key={p.idx}
-                        className={
-                           p.idx === winnerIndex
-                              ? styles.scoreTableWinner
-                              : ""
-                        }
-                     >
-                        <td>{p.name}</td>
-                        <td>{p.score}</td>
-                     </tr>
-                  ))}
-            </tbody>
-         </table>
-         <Link to="/game/create">
-            <Button
-               name="Create New Game"
-               style={{
-                  width: "250px",
-                  marginTop: "16px",
-               }}
-            />
-         </Link>
+      <div className={styles.gameOverBackdrop}>
+         <div className={styles.gameOverBlock}>
+            <p ref={confettiRef} className={styles.gameOverTitle}>
+               {humanWon ? "You won!" : "Game Over"}
+            </p>
+            <table className={styles.scoreTable}>
+               <thead>
+                  <tr>
+                     <th>Player</th>
+                     <th>Score</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  {[...players]
+                     .map((p, i) => ({ ...p, idx: i }))
+                     .sort((a, b) => a.score - b.score)
+                     .map((p) => (
+                        <tr
+                           key={p.idx}
+                           className={
+                              p.idx === winnerIndex
+                                 ? styles.scoreTableWinner
+                                 : ""
+                           }
+                        >
+                           <td>{p.name}</td>
+                           <td>{p.score}</td>
+                        </tr>
+                     ))}
+               </tbody>
+            </table>
+            <Link to="/game/create">
+               <Button
+                  name="Create New Game"
+                  style={{ width: "250px" }}
+               />
+            </Link>
+         </div>
       </div>
    );
 };
