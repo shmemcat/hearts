@@ -22,7 +22,7 @@ from hearts.ai.medium_ai import MediumPlayStrategy
 _QS = Card(Suit.SPADES, QUEEN_OF_SPADES_RANK)
 _ALL_CARDS = set(deck_52())
 
-NUM_DETERMINIZATIONS = 50
+NUM_DETERMINIZATIONS = 75
 
 
 # ---------------------------------------------------------------------------
