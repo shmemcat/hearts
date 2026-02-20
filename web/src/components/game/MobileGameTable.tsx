@@ -16,9 +16,14 @@ export interface MobileGameTableProps {
 
 const SEAT_POSITION_CLASS: Record<string, string> = {
    top: styles.seatTop,
-   left: styles.seatLeft,
-   right: styles.seatRight,
    bottom: styles.seatBottom,
+};
+
+const SLOT_INDEX_BY_POSITION: Record<string, number> = {
+   bottom: 0,
+   left: 1,
+   top: 2,
+   right: 3,
 };
 
 export const MobileGameTable: React.FC<MobileGameTableProps> = ({
@@ -28,13 +33,23 @@ export const MobileGameTable: React.FC<MobileGameTableProps> = ({
    playerNames,
    centerIcon,
 }) => {
+   const slotLabels: (React.ReactNode | null)[] = [null, null, null, null];
+
    return (
       <div className={styles.container}>
-         {seats.map((seat, i) => (
-            <div key={i} className={SEAT_POSITION_CLASS[seat.position]}>
-               <GameSeat {...seat} />
-            </div>
-         ))}
+         {seats.map((seat, i) => {
+            if (seat.position === "left" || seat.position === "right") {
+               slotLabels[SLOT_INDEX_BY_POSITION[seat.position]] = (
+                  <GameSeat key={i} {...seat} />
+               );
+               return null;
+            }
+            return (
+               <div key={i} className={SEAT_POSITION_CLASS[seat.position]}>
+                  <GameSeat {...seat} />
+               </div>
+            );
+         })}
 
          <div className={styles.trickCenter}>
             <Trick
@@ -43,6 +58,7 @@ export const MobileGameTable: React.FC<MobileGameTableProps> = ({
                collectTarget={collectTarget}
                playerNames={playerNames}
                centerIcon={centerIcon}
+               slotLabels={slotLabels}
             />
          </div>
       </div>

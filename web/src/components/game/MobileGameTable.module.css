@@ -33,16 +33,3 @@
    transform: translateX(-50%);
 }
 
-.seatLeft {
-   position: absolute;
-   top: 47.5%;
-   left: -18px;
-   transform: translateY(calc(-50% - 80px));
-}
-
-.seatRight {
-   position: absolute;
-   top: 47.5%;
-   right: -18px;
-   transform: translateY(calc(-50% - 80px));
-}

@@ -16,6 +16,8 @@ export interface TrickProps {
   centerIcon?: React.ReactNode;
   /** When set, cards sweep toward this player slot (0=bottom, 1=left, 2=top, 3=right). */
   collectTarget?: number | null;
+  /** When layout=table, optional labels rendered above each slot (indexed same as slots). */
+  slotLabels?: (React.ReactNode | null)[];
 }
 
 /** Slots in play order: 0=bottom (1st play), 1=left (2nd), 2=top (3rd), 3=right (4th). Layout fixed; all slots clear on Hand Resolves. */
@@ -85,6 +87,7 @@ export const Trick: React.FC<TrickProps> = ({
   layout = "row",
   centerIcon,
   collectTarget,
+  slotLabels,
 }) => {
   const isMobile = useIsMobile();
   const labels = playerNames ?? ["You", "Top", "Left", "Right"];
@@ -149,6 +152,9 @@ export const Trick: React.FC<TrickProps> = ({
           const slot = slots[index];
           return (
             <div key={index} className={`${styles.trickTableSlot} ${className}`}>
+              {slotLabels?.[index] && (
+                <div className={styles.trickTableSlotLabel}>{slotLabels[index]}</div>
+              )}
               <div className={styles.trickSlotEmpty} aria-hidden="true" />
               {slot && (
                 <div

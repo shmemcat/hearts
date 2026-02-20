@@ -57,6 +57,17 @@
    align-items: center;
    justify-content: center;
 }
+.trickTableSlotLabel {
+   position: absolute;
+   bottom: 100%;
+   left: 50%;
+   transform: translateX(-50%);
+   padding-bottom: 4px;
+   white-space: nowrap;
+}
+.trickTableSlotLabel > * {
+   margin: 0;
+}
 .trickTableSlotBottom {
    left: 50%;
    bottom: 0;

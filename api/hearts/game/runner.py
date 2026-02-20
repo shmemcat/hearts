@@ -27,8 +27,8 @@ from hearts.ai.factory import create_strategies
 HUMAN_PLAYER = 0
 DEFAULT_PLAYER_NAMES = ("You", "AI 1", "AI 2", "AI 3")
 AI_NAME_POOL = (
-    "Mary", "John", "Duffy", "Mike", "Joe",
-    "Brad", "Emily", "Kelly", "Megan", "Sue", "Bill",
+    "Mary", "John", "Duffy", "Mike", "Joe", "Nelson",
+    "Brad", "Emily", "Kelly", "Megan", "Sue", "Bill", "Tim",
 )
 
 
