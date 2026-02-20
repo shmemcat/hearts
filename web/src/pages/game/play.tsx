@@ -125,6 +125,7 @@ export default function PlayGamePage() {
    // ── Refs for WS callbacks (stable across renders) ──────────────────
    const pendingStateRef = useRef<GameSocketState | null>(null);
    const lastHumanCardRef = useRef<string | null>(null);
+   const playInFlightRef = useRef(false);
    const advanceSentRef = useRef(false);
    const stateRef = useRef(state);
    stateRef.current = state;
@@ -147,6 +148,7 @@ export default function PlayGamePage() {
 
       pendingStateRef.current = null;
       advanceSentRef.current = false;
+      playInFlightRef.current = false;
 
       // Intercept round-end: show round summary instead of transitioning
       if (pending.round_just_ended) {
@@ -302,6 +304,7 @@ export default function PlayGamePage() {
 
       const unsubError = onGameSocketError((msg: string) => {
          setError(msg);
+         playInFlightRef.current = false;
       });
 
       return () => {
@@ -786,7 +789,8 @@ export default function PlayGamePage() {
 
    const handlePlayCard = useCallback(
       (code: string) => {
-         if (!gameId) return;
+         if (!gameId || playInFlightRef.current) return;
+         playInFlightRef.current = true;
 
          const cardsOnTable =
             stateRef.current?.current_trick?.filter(Boolean).length ?? 0;
@@ -814,6 +818,7 @@ export default function PlayGamePage() {
                .then((result) => {
                   if (!result.ok) {
                      setError(result.error);
+                     playInFlightRef.current = false;
                      return;
                   }
                   const plays = result.data.intermediate_plays ?? [];
@@ -832,6 +837,7 @@ export default function PlayGamePage() {
                })
                .catch((e) => {
                   setError(e instanceof Error ? e.message : "Play failed");
+                  playInFlightRef.current = false;
                });
          }
       },

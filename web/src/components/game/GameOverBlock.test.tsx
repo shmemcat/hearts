@@ -40,9 +40,9 @@ describe("GameOverBlock", () => {
       expect(screen.getByText("Game Over")).toBeInTheDocument();
    });
 
-   it("shows 'Tie!' when winnerIndex is -1", () => {
+   it("shows 'It's a tie!' when winnerIndex is -1", () => {
       renderGameOver(-1, tiedPlayers);
-      expect(screen.getByText("Tie!")).toBeInTheDocument();
+      expect(screen.getByText("It's a tie!")).toBeInTheDocument();
    });
 
    it("does not show 'You won!' or 'Game Over' on a tie", () => {
