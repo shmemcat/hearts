@@ -62,11 +62,13 @@ export const Hand: React.FC<HandProps> = ({
       [cards]
    );
 
-   /* ── Smoosh: only when there's a real mix of legal vs disabled cards ── */
-   const hasDisabled =
-      legalCodes !== undefined && sorted.some((c) => !legalCodes.has(c));
+   /* ── Smoosh: only when there's a genuine mix of legal AND disabled cards ── */
+   const hasMix =
+      legalCodes !== undefined &&
+      legalCodes.size > 0 &&
+      sorted.some((c) => !legalCodes.has(c));
    const shouldSmoosh =
-      isMobile && hasDisabled && onCardClick !== undefined;
+      isMobile && hasMix && onCardClick !== undefined;
 
    const [smooshLocked, setSmooshLocked] = React.useState(false);
    const prevShouldSmoosh = React.useRef(false);
@@ -191,7 +193,7 @@ export const Hand: React.FC<HandProps> = ({
       return (
          <div className={styles.hand} role="group" aria-label="Your hand">
             {sorted.map((code, i) => {
-               const disabled = !legalCodes.has(code);
+               const disabled = legalCodes.size > 0 && !legalCodes.has(code);
                return wrap(
                   code,
                   i,
