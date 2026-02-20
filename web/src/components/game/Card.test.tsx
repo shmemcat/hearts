@@ -15,17 +15,23 @@ function renderCard(props: React.ComponentProps<typeof Card>) {
 describe("Card", () => {
    it("renders with correct aria-label", () => {
       renderCard({ code: "2c" });
-      expect(screen.getByRole("button", { name: "Card 2 of c" })).toBeInTheDocument();
+      expect(
+         screen.getByRole("button", { name: "Card 2 of c" })
+      ).toBeInTheDocument();
    });
 
    it("parses card code correctly (10 of diamonds)", () => {
       renderCard({ code: "10d" });
-      expect(screen.getByRole("button", { name: "Card 10 of d" })).toBeInTheDocument();
+      expect(
+         screen.getByRole("button", { name: "Card 10 of d" })
+      ).toBeInTheDocument();
    });
 
    it("parses face card code (Jack of spades)", () => {
       renderCard({ code: "Js" });
-      expect(screen.getByRole("button", { name: "Card J of s" })).toBeInTheDocument();
+      expect(
+         screen.getByRole("button", { name: "Card J of s" })
+      ).toBeInTheDocument();
    });
 
    it("displays rank and suit symbol in standard style", () => {
@@ -64,11 +70,15 @@ describe("Card", () => {
 
    it("handles malformed card codes gracefully", () => {
       renderCard({ code: "x" });
-      expect(screen.getByRole("button", { name: "Card ? of ?" })).toBeInTheDocument();
+      expect(
+         screen.getByRole("button", { name: "Card ? of ?" })
+      ).toBeInTheDocument();
    });
 
    it("handles empty code", () => {
       renderCard({ code: "" });
-      expect(screen.getByRole("button", { name: "Card ? of ?" })).toBeInTheDocument();
+      expect(
+         screen.getByRole("button", { name: "Card ? of ?" })
+      ).toBeInTheDocument();
    });
 });

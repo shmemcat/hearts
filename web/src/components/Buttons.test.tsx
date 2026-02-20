@@ -15,7 +15,11 @@ describe("Button", () => {
    });
 
    it("renders children instead of name when provided", () => {
-      render(<Button name="btn"><span>Custom</span></Button>);
+      render(
+         <Button name="btn">
+            <span>Custom</span>
+         </Button>
+      );
       expect(screen.getByText("Custom")).toBeInTheDocument();
    });
 
@@ -50,12 +54,18 @@ describe("Button", () => {
 
 describe("RulesButton", () => {
    it("renders with the provided name", () => {
-      render(<RulesButton name="Overview" selected={false} onClick={() => {}} />);
-      expect(screen.getByRole("button", { name: "Overview" })).toBeInTheDocument();
+      render(
+         <RulesButton name="Overview" selected={false} onClick={() => {}} />
+      );
+      expect(
+         screen.getByRole("button", { name: "Overview" })
+      ).toBeInTheDocument();
    });
 
    it("displays name text", () => {
-      render(<RulesButton name="Scoring" selected={false} onClick={() => {}} />);
+      render(
+         <RulesButton name="Scoring" selected={false} onClick={() => {}} />
+      );
       expect(screen.getByText("Scoring")).toBeInTheDocument();
    });
 

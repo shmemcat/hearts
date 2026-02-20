@@ -1,7 +1,13 @@
 import { renderHook, act } from "@testing-library/react";
 import { vi, beforeEach, afterEach } from "vitest";
 import { usePlayQueue, type QueueItem } from "./usePlayQueue";
-import { CARD_DELAY_MS, HOLD_MS, COLLECT_MS, BADGE_LINGER_MS, CLEAR_MS } from "@/lib/constants";
+import {
+   CARD_DELAY_MS,
+   HOLD_MS,
+   COLLECT_MS,
+   BADGE_LINGER_MS,
+   CLEAR_MS,
+} from "@/lib/constants";
 
 beforeEach(() => {
    vi.useFakeTimers();
@@ -91,7 +97,9 @@ describe("usePlayQueue", () => {
             event: { player_index: 1, card: "Kc" },
          });
       });
-      act(() => { vi.advanceTimersByTime(CARD_DELAY_MS); });
+      act(() => {
+         vi.advanceTimersByTime(CARD_DELAY_MS);
+      });
 
       act(() => {
          result.current.enqueue({
@@ -99,7 +107,9 @@ describe("usePlayQueue", () => {
             event: { player_index: 2, card: "Qc" },
          });
       });
-      act(() => { vi.advanceTimersByTime(CARD_DELAY_MS); });
+      act(() => {
+         vi.advanceTimersByTime(CARD_DELAY_MS);
+      });
 
       act(() => {
          result.current.enqueue({
@@ -107,7 +117,9 @@ describe("usePlayQueue", () => {
             event: { player_index: 3, card: "Jc" },
          });
       });
-      act(() => { vi.advanceTimersByTime(CARD_DELAY_MS); });
+      act(() => {
+         vi.advanceTimersByTime(CARD_DELAY_MS);
+      });
 
       // All 4 cards on the table
       expect(result.current.displaySlots.filter(Boolean)).toHaveLength(4);
@@ -118,12 +130,16 @@ describe("usePlayQueue", () => {
       });
 
       // After HOLD_MS, collect animation starts
-      act(() => { vi.advanceTimersByTime(HOLD_MS); });
+      act(() => {
+         vi.advanceTimersByTime(HOLD_MS);
+      });
       // Ace of clubs leads clubs, Ace is highest → winner = player 0
       expect(result.current.collectTarget).toBe(0);
 
       // After COLLECT_MS, board clears
-      act(() => { vi.advanceTimersByTime(COLLECT_MS); });
+      act(() => {
+         vi.advanceTimersByTime(COLLECT_MS);
+      });
       expect(result.current.collectTarget).toBeNull();
       expect(result.current.displaySlots).toEqual([null, null, null, null]);
    });
@@ -141,7 +157,9 @@ describe("usePlayQueue", () => {
             event: { player_index: 1, card: "Qs" },
          });
       });
-      act(() => { vi.advanceTimersByTime(CARD_DELAY_MS); });
+      act(() => {
+         vi.advanceTimersByTime(CARD_DELAY_MS);
+      });
 
       act(() => {
          result.current.enqueue({
@@ -149,7 +167,9 @@ describe("usePlayQueue", () => {
             event: { player_index: 2, card: "5h" },
          });
       });
-      act(() => { vi.advanceTimersByTime(CARD_DELAY_MS); });
+      act(() => {
+         vi.advanceTimersByTime(CARD_DELAY_MS);
+      });
 
       act(() => {
          result.current.enqueue({
@@ -157,13 +177,17 @@ describe("usePlayQueue", () => {
             event: { player_index: 3, card: "3h" },
          });
       });
-      act(() => { vi.advanceTimersByTime(CARD_DELAY_MS); });
+      act(() => {
+         vi.advanceTimersByTime(CARD_DELAY_MS);
+      });
 
       act(() => {
          result.current.enqueue({ type: "trick_complete" });
       });
 
-      act(() => { vi.advanceTimersByTime(HOLD_MS); });
+      act(() => {
+         vi.advanceTimersByTime(HOLD_MS);
+      });
 
       // Qs = 13, 5h = 1, 3h = 1 → 15 hearts
       expect(result.current.trickResult).toMatchObject({
@@ -204,7 +228,9 @@ describe("usePlayQueue", () => {
       });
       expect(result.current.isActive()).toBe(true);
 
-      act(() => { vi.advanceTimersByTime(CARD_DELAY_MS); });
+      act(() => {
+         vi.advanceTimersByTime(CARD_DELAY_MS);
+      });
       expect(result.current.isActive()).toBe(false);
    });
 

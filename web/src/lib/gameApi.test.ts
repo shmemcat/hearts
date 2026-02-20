@@ -240,7 +240,9 @@ describe("fetchStats", () => {
    });
 
    it("returns error on failure", async () => {
-      mockFetch.mockReturnValueOnce(failJsonResponse({ error: "Unauthorized" }, 401));
+      mockFetch.mockReturnValueOnce(
+         failJsonResponse({ error: "Unauthorized" }, 401)
+      );
       const result = await fetchStats("tok");
       expect(result).toEqual({ ok: false, error: "Unauthorized" });
    });

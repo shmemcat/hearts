@@ -29,6 +29,7 @@ NUM_DETERMINIZATIONS = 50
 # Round tracker: observes voids from trick play
 # ---------------------------------------------------------------------------
 
+
 class RoundTracker:
     """Lightweight tracker for void information, reset each round.
 
@@ -60,6 +61,7 @@ class RoundTracker:
 # ---------------------------------------------------------------------------
 # Determinization: deal unknown cards to opponents
 # ---------------------------------------------------------------------------
+
 
 def _determinize(
     state: GameState,
@@ -129,6 +131,7 @@ def _determinize(
 # Simulation: play out remaining tricks using medium strategy
 # ---------------------------------------------------------------------------
 
+
 def _simulate_remaining(
     state: GameState,
     rollout: PlayStrategy,
@@ -147,7 +150,9 @@ def _simulate_remaining(
         trick = state.trick_list()
         first_lead = _is_first_lead(state, hand)
         legal = get_legal_plays(
-            hand, trick, state.hearts_broken,
+            hand,
+            trick,
+            state.hearts_broken,
             first_lead_of_round=first_lead,
             first_trick=_is_first_trick_of_round(state),
         )
@@ -177,6 +182,7 @@ def _evaluate_round_scores(
 # Hard pass strategy
 # ---------------------------------------------------------------------------
 
+
 def _hand_danger(hand: List[Card]) -> float:
     """Evaluate how dangerous a hand is.  Lower = safer."""
     score = 0.0
@@ -184,8 +190,7 @@ def _hand_danger(hand: List[Card]) -> float:
     # QS danger (mitigated by having many low spades to cover)
     if _QS in hand:
         low_spades = sum(
-            1 for c in hand
-            if c.suit == Suit.SPADES and c.rank < QUEEN_OF_SPADES_RANK
+            1 for c in hand if c.suit == Suit.SPADES and c.rank < QUEEN_OF_SPADES_RANK
         )
         score += max(15.0 - low_spades * 2.0, 5.0)
 
@@ -245,6 +250,7 @@ class HardPassStrategy(PassStrategy):
 # ---------------------------------------------------------------------------
 # Hard play strategy
 # ---------------------------------------------------------------------------
+
 
 class HardPlayStrategy(PlayStrategy):
     """Determinized Monte Carlo: sample possible worlds, simulate, pick best."""

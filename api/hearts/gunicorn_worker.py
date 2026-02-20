@@ -2,6 +2,7 @@
 Custom Gunicorn worker that treats "no URI read" (client disconnect before
 sending a request) as debug-only, avoiding ERROR logs for benign disconnects.
 """
+
 import logging
 
 from gunicorn.workers.sync import SyncWorker

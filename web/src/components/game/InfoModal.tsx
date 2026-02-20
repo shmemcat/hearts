@@ -54,9 +54,7 @@ export const InfoModal: React.FC<InfoModalProps> = ({
                      .map((p) => (
                         <tr
                            key={p.idx}
-                           className={
-                              p.idx === 0 ? styles.scoreTableYou : ""
-                           }
+                           className={p.idx === 0 ? styles.scoreTableYou : ""}
                         >
                            <td>{p.name}</td>
                            <td>{p.score}</td>

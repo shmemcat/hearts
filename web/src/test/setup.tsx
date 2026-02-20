@@ -7,10 +7,18 @@ import { afterEach, beforeEach, vi } from "vitest";
 const storage: Record<string, string> = {};
 const localStorageMock: Storage = {
    getItem: (key: string) => storage[key] ?? null,
-   setItem: (key: string, value: string) => { storage[key] = String(value); },
-   removeItem: (key: string) => { delete storage[key]; },
-   clear: () => { for (const k of Object.keys(storage)) delete storage[k]; },
-   get length() { return Object.keys(storage).length; },
+   setItem: (key: string, value: string) => {
+      storage[key] = String(value);
+   },
+   removeItem: (key: string) => {
+      delete storage[key];
+   },
+   clear: () => {
+      for (const k of Object.keys(storage)) delete storage[k];
+   },
+   get length() {
+      return Object.keys(storage).length;
+   },
    key: (i: number) => Object.keys(storage)[i] ?? null,
 };
 Object.defineProperty(globalThis, "localStorage", {
@@ -75,7 +83,9 @@ vi.mock("framer-motion", async () => {
    );
    return {
       ...actual,
-      AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+      AnimatePresence: ({ children }: { children: React.ReactNode }) => (
+         <>{children}</>
+      ),
       motion: new Proxy(
          {},
          {
@@ -101,7 +111,11 @@ vi.mock("framer-motion", async () => {
                         safeProps[k] = v;
                      }
                   }
-                  return React.createElement(prop, { ...safeProps, ref }, children);
+                  return React.createElement(
+                     prop,
+                     { ...safeProps, ref },
+                     children
+                  );
                });
                MotionComponent.displayName = `motion.${prop}`;
                return MotionComponent;

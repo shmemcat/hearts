@@ -35,6 +35,7 @@ _QH = Card(Suit.HEARTS, 12)
 # Helper: build a playing state from explicit hands
 # ---------------------------------------------------------------------------
 
+
 def _playing_state(
     hands,
     whose_turn=0,
@@ -61,15 +62,23 @@ def _playing_state(
 # Medium: pass strategy
 # ===================================================================
 
+
 class TestMediumPassStrategy:
     def test_passes_queen_of_spades(self):
         hand = [
-            _QS, Card(Suit.CLUBS, 2), Card(Suit.CLUBS, 3),
-            Card(Suit.CLUBS, 4), Card(Suit.DIAMONDS, 2),
-            Card(Suit.DIAMONDS, 3), Card(Suit.DIAMONDS, 4),
-            Card(Suit.HEARTS, 2), Card(Suit.HEARTS, 3),
-            Card(Suit.HEARTS, 4), Card(Suit.SPADES, 2),
-            Card(Suit.SPADES, 3), Card(Suit.SPADES, 4),
+            _QS,
+            Card(Suit.CLUBS, 2),
+            Card(Suit.CLUBS, 3),
+            Card(Suit.CLUBS, 4),
+            Card(Suit.DIAMONDS, 2),
+            Card(Suit.DIAMONDS, 3),
+            Card(Suit.DIAMONDS, 4),
+            Card(Suit.HEARTS, 2),
+            Card(Suit.HEARTS, 3),
+            Card(Suit.HEARTS, 4),
+            Card(Suit.SPADES, 2),
+            Card(Suit.SPADES, 3),
+            Card(Suit.SPADES, 4),
         ]
         strat = MediumPassStrategy()
         passed = strat.choose_cards_to_pass(hand, PassDirection.LEFT)
@@ -78,11 +87,18 @@ class TestMediumPassStrategy:
 
     def test_passes_high_spades(self):
         hand = [
-            _KS, _AS, Card(Suit.CLUBS, 2), Card(Suit.CLUBS, 3),
-            Card(Suit.CLUBS, 4), Card(Suit.DIAMONDS, 2),
-            Card(Suit.DIAMONDS, 3), Card(Suit.DIAMONDS, 4),
-            Card(Suit.HEARTS, 2), Card(Suit.HEARTS, 3),
-            Card(Suit.HEARTS, 4), Card(Suit.SPADES, 2),
+            _KS,
+            _AS,
+            Card(Suit.CLUBS, 2),
+            Card(Suit.CLUBS, 3),
+            Card(Suit.CLUBS, 4),
+            Card(Suit.DIAMONDS, 2),
+            Card(Suit.DIAMONDS, 3),
+            Card(Suit.DIAMONDS, 4),
+            Card(Suit.HEARTS, 2),
+            Card(Suit.HEARTS, 3),
+            Card(Suit.HEARTS, 4),
+            Card(Suit.SPADES, 2),
             Card(Suit.SPADES, 3),
         ]
         strat = MediumPassStrategy()
@@ -92,11 +108,19 @@ class TestMediumPassStrategy:
 
     def test_passes_high_hearts(self):
         hand = [
-            _AH, _KH, _QH, Card(Suit.CLUBS, 2), Card(Suit.CLUBS, 3),
-            Card(Suit.CLUBS, 4), Card(Suit.DIAMONDS, 2),
-            Card(Suit.DIAMONDS, 3), Card(Suit.DIAMONDS, 4),
-            Card(Suit.SPADES, 2), Card(Suit.SPADES, 3),
-            Card(Suit.SPADES, 4), Card(Suit.SPADES, 5),
+            _AH,
+            _KH,
+            _QH,
+            Card(Suit.CLUBS, 2),
+            Card(Suit.CLUBS, 3),
+            Card(Suit.CLUBS, 4),
+            Card(Suit.DIAMONDS, 2),
+            Card(Suit.DIAMONDS, 3),
+            Card(Suit.DIAMONDS, 4),
+            Card(Suit.SPADES, 2),
+            Card(Suit.SPADES, 3),
+            Card(Suit.SPADES, 4),
+            Card(Suit.SPADES, 5),
         ]
         strat = MediumPassStrategy()
         passed = strat.choose_cards_to_pass(hand, PassDirection.LEFT)
@@ -116,11 +140,14 @@ class TestMediumPassStrategy:
 # Medium: play strategy
 # ===================================================================
 
+
 class TestMediumPlayStrategy:
     def test_leads_low_from_safe_suit(self):
         hand = [
-            Card(Suit.CLUBS, 3), Card(Suit.CLUBS, 10),
-            Card(Suit.DIAMONDS, 5), Card(Suit.HEARTS, 2),
+            Card(Suit.CLUBS, 3),
+            Card(Suit.CLUBS, 10),
+            Card(Suit.DIAMONDS, 5),
+            Card(Suit.HEARTS, 2),
         ]
         state = _playing_state(
             [hand, [Card(Suit.CLUBS, 2)], [Card(Suit.CLUBS, 4)], [Card(Suit.CLUBS, 5)]],
@@ -137,7 +164,12 @@ class TestMediumPlayStrategy:
         trick = [(1, Card(Suit.CLUBS, 10))]
         hand = [Card(Suit.CLUBS, 3), Card(Suit.CLUBS, 7), Card(Suit.CLUBS, 14)]
         state = _playing_state(
-            [[Card(Suit.CLUBS, 2)], [Card(Suit.CLUBS, 10)], hand, [Card(Suit.CLUBS, 5)]],
+            [
+                [Card(Suit.CLUBS, 2)],
+                [Card(Suit.CLUBS, 10)],
+                hand,
+                [Card(Suit.CLUBS, 5)],
+            ],
             whose_turn=2,
             current_trick=trick,
         )
@@ -199,6 +231,7 @@ class TestMediumPlayStrategy:
 # Hard: pass strategy
 # ===================================================================
 
+
 class TestHardPassStrategy:
     def test_returns_3_valid_cards(self):
         hand = [Card(Suit.CLUBS, r) for r in range(2, 15)]
@@ -210,12 +243,19 @@ class TestHardPassStrategy:
 
     def test_prefers_passing_qs(self):
         hand = [
-            _QS, Card(Suit.CLUBS, 2), Card(Suit.CLUBS, 3),
-            Card(Suit.CLUBS, 4), Card(Suit.CLUBS, 5),
-            Card(Suit.DIAMONDS, 2), Card(Suit.DIAMONDS, 3),
-            Card(Suit.DIAMONDS, 4), Card(Suit.HEARTS, 2),
-            Card(Suit.HEARTS, 3), Card(Suit.SPADES, 2),
-            Card(Suit.SPADES, 3), Card(Suit.SPADES, 4),
+            _QS,
+            Card(Suit.CLUBS, 2),
+            Card(Suit.CLUBS, 3),
+            Card(Suit.CLUBS, 4),
+            Card(Suit.CLUBS, 5),
+            Card(Suit.DIAMONDS, 2),
+            Card(Suit.DIAMONDS, 3),
+            Card(Suit.DIAMONDS, 4),
+            Card(Suit.HEARTS, 2),
+            Card(Suit.HEARTS, 3),
+            Card(Suit.SPADES, 2),
+            Card(Suit.SPADES, 3),
+            Card(Suit.SPADES, 4),
         ]
         strat = HardPassStrategy()
         passed = strat.choose_cards_to_pass(hand, PassDirection.LEFT)
@@ -223,10 +263,15 @@ class TestHardPassStrategy:
 
     def test_hand_danger_lower_without_qs(self):
         hand_with = [
-            _QS, Card(Suit.CLUBS, 2), Card(Suit.CLUBS, 3),
-            Card(Suit.CLUBS, 4), Card(Suit.CLUBS, 5),
-            Card(Suit.DIAMONDS, 2), Card(Suit.DIAMONDS, 3),
-            Card(Suit.DIAMONDS, 4), Card(Suit.HEARTS, 2),
+            _QS,
+            Card(Suit.CLUBS, 2),
+            Card(Suit.CLUBS, 3),
+            Card(Suit.CLUBS, 4),
+            Card(Suit.CLUBS, 5),
+            Card(Suit.DIAMONDS, 2),
+            Card(Suit.DIAMONDS, 3),
+            Card(Suit.DIAMONDS, 4),
+            Card(Suit.HEARTS, 2),
             Card(Suit.HEARTS, 3),
         ]
         hand_without = [c for c in hand_with if c != _QS] + [Card(Suit.SPADES, 2)]
@@ -236,6 +281,7 @@ class TestHardPassStrategy:
 # ===================================================================
 # Hard: play strategy (integration)
 # ===================================================================
+
 
 class TestHardPlayStrategy:
     def test_single_legal_play_returned(self):
@@ -296,6 +342,7 @@ class TestHardPlayStrategy:
 # Round tracker
 # ===================================================================
 
+
 class TestRoundTracker:
     def test_detects_void(self):
         tracker = RoundTracker()
@@ -318,19 +365,31 @@ class TestRoundTracker:
             (1, Card(Suit.HEARTS, 10)),
         )
         state = GameState(
-            round=1, phase=Phase.PLAYING, pass_direction=PassDirection.LEFT,
-            hands=((), (), (), ()), current_trick=trick, whose_turn=2,
-            scores=(0, 0, 0, 0), round_scores=(0, 0, 0, 0),
-            hearts_broken=True, game_over=False,
+            round=1,
+            phase=Phase.PLAYING,
+            pass_direction=PassDirection.LEFT,
+            hands=((), (), (), ()),
+            current_trick=trick,
+            whose_turn=2,
+            scores=(0, 0, 0, 0),
+            round_scores=(0, 0, 0, 0),
+            hearts_broken=True,
+            game_over=False,
         )
         tracker.observe(state)
         assert Suit.CLUBS in tracker.known_voids.get(1, set())
 
         state2 = GameState(
-            round=2, phase=Phase.PLAYING, pass_direction=PassDirection.RIGHT,
-            hands=((), (), (), ()), current_trick=(), whose_turn=0,
-            scores=(0, 0, 0, 0), round_scores=(0, 0, 0, 0),
-            hearts_broken=False, game_over=False,
+            round=2,
+            phase=Phase.PLAYING,
+            pass_direction=PassDirection.RIGHT,
+            hands=((), (), (), ()),
+            current_trick=(),
+            whose_turn=0,
+            scores=(0, 0, 0, 0),
+            round_scores=(0, 0, 0, 0),
+            hearts_broken=False,
+            game_over=False,
         )
         tracker.observe(state2)
         assert 1 not in tracker.known_voids or Suit.CLUBS not in tracker.known_voids[1]
@@ -339,6 +398,7 @@ class TestRoundTracker:
 # ===================================================================
 # Factory
 # ===================================================================
+
 
 class TestFactory:
     def test_easy(self):
@@ -382,11 +442,14 @@ class TestFactory:
 # Integration: full round with each difficulty
 # ===================================================================
 
+
 class TestFullRoundIntegration:
     """Smoke-test: run a complete round with each difficulty and verify the
     round_scores sum to 26 (or 0 if no points were taken due to scoring)."""
 
-    @pytest.mark.parametrize("difficulty", ["easy", "medium", "hard", "harder", "hardest"])
+    @pytest.mark.parametrize(
+        "difficulty", ["easy", "medium", "hard", "harder", "hardest"]
+    )
     def test_complete_round(self, difficulty):
         from hearts.game.card import shuffle_deck, deal_into_4_hands
         from hearts.game.runner import GameRunner

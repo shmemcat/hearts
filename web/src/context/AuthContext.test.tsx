@@ -142,9 +142,7 @@ describe("AuthContext", () => {
       localStorage.setItem(STORAGE_KEY, token);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
-      await waitFor(() =>
-         expect(result.current.status).toBe("authenticated")
-      );
+      await waitFor(() => expect(result.current.status).toBe("authenticated"));
 
       act(() => {
          result.current.logout();

@@ -19,6 +19,7 @@ _QS = Card(Suit.SPADES, QUEEN_OF_SPADES_RANK)
 # Passing helpers
 # ---------------------------------------------------------------------------
 
+
 def _pass_danger(card: Card, hand: List[Card]) -> float:
     """Score how dangerous a card is to keep.  Higher = should be passed."""
     # Queen of Spades: always pass
@@ -49,6 +50,7 @@ def _pass_danger(card: Card, hand: List[Card]) -> float:
 # Passing strategy
 # ---------------------------------------------------------------------------
 
+
 class MediumPassStrategy(PassStrategy):
     """Pass the 3 most dangerous cards using conventional Hearts wisdom."""
 
@@ -69,6 +71,7 @@ class MediumPassStrategy(PassStrategy):
 # ---------------------------------------------------------------------------
 # Play strategy
 # ---------------------------------------------------------------------------
+
 
 class MediumPlayStrategy(PlayStrategy):
     """Play using conventional Hearts heuristics."""
@@ -157,8 +160,7 @@ class MediumPlayStrategy(PlayStrategy):
             return max(hearts, key=lambda c: c.rank)
         # Priority 3: high spades above QS (King, Ace)
         high_spades = [
-            c for c in legal
-            if c.suit == Suit.SPADES and c.rank > QUEEN_OF_SPADES_RANK
+            c for c in legal if c.suit == Suit.SPADES and c.rank > QUEEN_OF_SPADES_RANK
         ]
         if high_spades:
             return max(high_spades, key=lambda c: c.rank)
@@ -169,6 +171,7 @@ class MediumPlayStrategy(PlayStrategy):
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
+
 
 def _qs_maybe_out(hand: List[Card], state: GameState) -> bool:
     """True if QS might still be lurking in an opponent's hand."""

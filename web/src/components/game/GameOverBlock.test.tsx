@@ -55,7 +55,9 @@ describe("GameOverBlock", () => {
       renderGameOver(-1, tiedPlayers);
       const rows = screen.getAllByRole("row").slice(1);
       const highlightedNames = rows
-         .filter((r) => (r as HTMLElement).className.includes("scoreTableWinner"))
+         .filter((r) =>
+            (r as HTMLElement).className.includes("scoreTableWinner")
+         )
          .map((r) => (r as HTMLTableRowElement).cells[0].textContent);
       expect(highlightedNames).toContain("You");
       expect(highlightedNames).toContain("Alice");
@@ -66,7 +68,9 @@ describe("GameOverBlock", () => {
    it("sorts players by score ascending", () => {
       renderGameOver(2);
       const rows = screen.getAllByRole("row").slice(1);
-      const names = rows.map((r) => (r as HTMLTableRowElement).cells[0].textContent);
+      const names = rows.map(
+         (r) => (r as HTMLTableRowElement).cells[0].textContent
+      );
       expect(names).toEqual(["Bob", "You", "Alice", "Carol"]);
    });
 

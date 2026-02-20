@@ -34,12 +34,18 @@ export const RoundSummaryOverlay: React.FC<RoundSummaryOverlayProps> = ({
                </thead>
                <tbody>
                   {[...summary.players]
-                     .map((p, i) => ({ ...p, idx: i, delta: summary.deltas[i] }))
+                     .map((p, i) => ({
+                        ...p,
+                        idx: i,
+                        delta: summary.deltas[i],
+                     }))
                      .sort((a, b) => a.score - b.score)
                      .map((p) => (
                         <tr
                            key={p.idx}
-                           className={p.idx === 0 ? styles.scoreTableWinner : ""}
+                           className={
+                              p.idx === 0 ? styles.scoreTableWinner : ""
+                           }
                         >
                            <td>{p.name}</td>
                            <td className={styles.scoreDelta}>

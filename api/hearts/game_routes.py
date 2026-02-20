@@ -39,7 +39,9 @@ def _get_runner(game_id: str) -> Optional[GameRunner]:
     return runner
 
 
-def _save_to_db(game_id: str, runner: GameRunner, user_id: Optional[int] = None) -> None:
+def _save_to_db(
+    game_id: str, runner: GameRunner, user_id: Optional[int] = None
+) -> None:
     """Persist the current runner state to the database."""
     row = ActiveGame.query.filter_by(game_id=game_id).first()
     if row is None:

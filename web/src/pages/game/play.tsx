@@ -472,7 +472,10 @@ export default function PlayGamePage() {
          getGameState(gameId).then((result) => {
             if (result.ok) {
                setState(result.data);
-               if (result.data.phase === "playing" && result.data.current_trick) {
+               if (
+                  result.data.phase === "playing" &&
+                  result.data.current_trick
+               ) {
                   const slots: CurrentTrickSlot[] = [null, null, null, null];
                   for (const s of result.data.current_trick) {
                      if (

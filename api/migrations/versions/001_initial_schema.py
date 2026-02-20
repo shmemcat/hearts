@@ -5,6 +5,7 @@ Revises:
 Create Date: 2025-02-15
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -21,14 +22,21 @@ def upgrade():
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("email", sa.String(length=255), nullable=False),
         sa.Column("password_hash", sa.String(length=255), nullable=False),
-        sa.Column("email_verified", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column(
+            "email_verified", sa.Boolean(), nullable=False, server_default="false"
+        ),
         sa.Column("verification_token", sa.String(length=64), nullable=True),
         sa.Column("verification_expires", sa.DateTime(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_users_email"), "users", ["email"], unique=True)
-    op.create_index(op.f("ix_users_verification_token"), "users", ["verification_token"], unique=True)
+    op.create_index(
+        op.f("ix_users_verification_token"),
+        "users",
+        ["verification_token"],
+        unique=True,
+    )
 
     op.create_table(
         "password_reset_tokens",
@@ -40,11 +48,18 @@ def upgrade():
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_password_reset_tokens_token_hash"), "password_reset_tokens", ["token_hash"], unique=False)
+    op.create_index(
+        op.f("ix_password_reset_tokens_token_hash"),
+        "password_reset_tokens",
+        ["token_hash"],
+        unique=False,
+    )
 
 
 def downgrade():
-    op.drop_index(op.f("ix_password_reset_tokens_token_hash"), table_name="password_reset_tokens")
+    op.drop_index(
+        op.f("ix_password_reset_tokens_token_hash"), table_name="password_reset_tokens"
+    )
     op.drop_table("password_reset_tokens")
     op.drop_index(op.f("ix_users_verification_token"), table_name="users")
     op.drop_index(op.f("ix_users_email"), table_name="users")

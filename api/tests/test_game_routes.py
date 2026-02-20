@@ -11,10 +11,16 @@ def _register_verified(client, username, email, password="password123"):
     """Register a user and immediately verify their email."""
     from hearts.extensions import db
     from hearts.models import User
+
     with patch("hearts.auth_routes.send_verification_email"):
-        client.post("/register", json={
-            "username": username, "email": email, "password": password,
-        })
+        client.post(
+            "/register",
+            json={
+                "username": username,
+                "email": email,
+                "password": password,
+            },
+        )
     user = User.query.filter_by(username=username).first()
     user.email_verified = True
     user.verification_token = None
@@ -26,6 +32,7 @@ def _register_verified(client, username, email, password="password123"):
 def clear_game_store():
     """Clear in-memory game store before and after each test in this module."""
     from hearts.game_routes import reset_store
+
     reset_store()
     yield
     reset_store()
@@ -34,6 +41,7 @@ def clear_game_store():
 # -----------------------------------------------------------------------------
 # POST /games/start
 # -----------------------------------------------------------------------------
+
 
 class TestStartGame:
     def test_start_returns_201_and_game_id(self, client):
@@ -78,6 +86,7 @@ class TestStartGame:
 # GET /games/<game_id>
 # -----------------------------------------------------------------------------
 
+
 class TestGetGame:
     def test_get_nonexistent_returns_404(self, client):
         r = client.get("/games/nonexistent-id-12345")
@@ -103,6 +112,7 @@ class TestGetGame:
 # -----------------------------------------------------------------------------
 # POST /games/<game_id>/pass
 # -----------------------------------------------------------------------------
+
 
 class TestSubmitPass:
     def test_pass_nonexistent_game_returns_404(self, client):
@@ -154,6 +164,7 @@ class TestSubmitPass:
 # POST /games/<game_id>/advance
 # -----------------------------------------------------------------------------
 
+
 class TestAdvanceGame:
     def test_advance_nonexistent_returns_404(self, client):
         r = client.post("/games/bad-id/advance")
@@ -173,6 +184,7 @@ class TestAdvanceGame:
 
     def test_advance_when_human_turn_returns_400(self, client):
         from hearts.game_routes import reset_store
+
         for seed in range(50):
             reset_store()
             start_r = client.post("/games/start", json={"seed": seed})
@@ -191,8 +203,11 @@ class TestAdvanceGame:
             return
         pytest.fail("No seed in 0..49 gave human the lead after pass")
 
-    def test_advance_when_ai_turn_returns_200_and_advances_to_human_or_pass(self, client):
+    def test_advance_when_ai_turn_returns_200_and_advances_to_human_or_pass(
+        self, client
+    ):
         from hearts.game_routes import reset_store
+
         for seed in range(50):
             reset_store()
             start_r = client.post("/games/start", json={"seed": seed})
@@ -221,6 +236,7 @@ class TestAdvanceGame:
 # -----------------------------------------------------------------------------
 # POST /games/<game_id>/play
 # -----------------------------------------------------------------------------
+
 
 class TestSubmitPlay:
     def test_play_nonexistent_game_returns_404(self, client):
@@ -265,6 +281,7 @@ class TestSubmitPlay:
     def test_pass_then_play_legal_card_returns_200_and_updates_state(self, client):
         # With TESTING=true, "seed" gives deterministic game. Try seeds until human leads after pass.
         from hearts.game_routes import reset_store
+
         for seed in range(50):
             reset_store()
             start_r = client.post("/games/start", json={"seed": seed})
@@ -295,6 +312,7 @@ class TestSubmitPlay:
 # POST /games/<game_id>/concede
 # -----------------------------------------------------------------------------
 
+
 class TestConcedeGame:
     def test_concede_returns_200_and_deletes_game(self, client):
         r = client.post("/games/start", json={})
@@ -318,10 +336,13 @@ class TestConcedeGame:
         from tests.conftest import make_jwt, auth_headers, JWT_SECRET
 
         _register_verified(auth_client, "moonplayer", "moon@example.com")
-        login_r = auth_client.post("/login", json={
-            "username": "moonplayer",
-            "password": "password123",
-        })
+        login_r = auth_client.post(
+            "/login",
+            json={
+                "username": "moonplayer",
+                "password": "password123",
+            },
+        )
         user = login_r.get_json()["user"]
         token = login_r.get_json()["token"]
         headers = auth_headers(token)
@@ -348,15 +369,19 @@ class TestConcedeGame:
 # GET /games/active
 # -----------------------------------------------------------------------------
 
+
 class TestActiveGame:
     def test_active_game_returns_game_id(self, auth_client):
         from tests.conftest import make_jwt, auth_headers
 
         _register_verified(auth_client, "activeplayer", "active@example.com")
-        login_r = auth_client.post("/login", json={
-            "username": "activeplayer",
-            "password": "password123",
-        })
+        login_r = auth_client.post(
+            "/login",
+            json={
+                "username": "activeplayer",
+                "password": "password123",
+            },
+        )
         token = login_r.get_json()["token"]
         headers = auth_headers(token)
 
@@ -371,10 +396,13 @@ class TestActiveGame:
         from tests.conftest import make_jwt, auth_headers
 
         _register_verified(auth_client, "nogame", "nogame@example.com")
-        login_r = auth_client.post("/login", json={
-            "username": "nogame",
-            "password": "password123",
-        })
+        login_r = auth_client.post(
+            "/login",
+            json={
+                "username": "nogame",
+                "password": "password123",
+            },
+        )
         token = login_r.get_json()["token"]
         headers = auth_headers(token)
 

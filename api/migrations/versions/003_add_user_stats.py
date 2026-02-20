@@ -5,6 +5,7 @@ Revises: 002
 Create Date: 2026-02-18
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -18,7 +19,13 @@ def upgrade():
     op.create_table(
         "user_stats",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False, unique=True),
+        sa.Column(
+            "user_id",
+            sa.Integer(),
+            sa.ForeignKey("users.id"),
+            nullable=False,
+            unique=True,
+        ),
         sa.Column("games_played", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("games_won", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("moon_shots", sa.Integer(), nullable=False, server_default="0"),
@@ -26,7 +33,9 @@ def upgrade():
         sa.Column("worst_score", sa.Integer(), nullable=True),
         sa.Column("total_points", sa.Integer(), nullable=False, server_default="0"),
     )
-    op.create_index(op.f("ix_user_stats_user_id"), "user_stats", ["user_id"], unique=True)
+    op.create_index(
+        op.f("ix_user_stats_user_id"), "user_stats", ["user_id"], unique=True
+    )
 
 
 def downgrade():

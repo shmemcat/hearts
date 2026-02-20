@@ -57,7 +57,9 @@ describe("FormInput", () => {
    });
 
    it("passes through native input props", () => {
-      render(<FormInput type="email" placeholder="Email" autoComplete="email" />);
+      render(
+         <FormInput type="email" placeholder="Email" autoComplete="email" />
+      );
       const input = screen.getByPlaceholderText("Email");
       expect(input).toHaveAttribute("type", "email");
       expect(input).toHaveAttribute("autocomplete", "email");

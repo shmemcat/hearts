@@ -24,11 +24,11 @@ function createWrapper(options: WrapperOptions = {}) {
             <ThemeProvider>
                <CardStyleProvider>
                   <HardLevelProvider>
-                  <SoundProvider>
-                     <MemoryRouter initialEntries={[route]}>
-                        {children}
-                     </MemoryRouter>
-                  </SoundProvider>
+                     <SoundProvider>
+                        <MemoryRouter initialEntries={[route]}>
+                           {children}
+                        </MemoryRouter>
+                     </SoundProvider>
                   </HardLevelProvider>
                </CardStyleProvider>
             </ThemeProvider>

@@ -55,9 +55,7 @@ def run_migrations_online():
     connectable = get_engine()
     with connectable.connect() as connection:
         context.configure(
-            connection=connection,
-            target_metadata=get_metadata(),
-            **conf_args
+            connection=connection, target_metadata=get_metadata(), **conf_args
         )
         with context.begin_transaction():
             context.run_migrations()

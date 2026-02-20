@@ -10,8 +10,6 @@ describe("404 Page", () => {
 
    it("renders Home button", () => {
       renderWithProviders(<Custom404 />, { route: "/nonexistent" });
-      expect(
-         screen.getByRole("button", { name: "Home" })
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Home" })).toBeInTheDocument();
    });
 });

@@ -48,7 +48,9 @@ export default function CreateGamePage() {
             {
                player_name: user?.name || undefined,
                difficulty:
-                  difficulty === "My Mom" ? hardLevel : difficulty.toLowerCase(),
+                  difficulty === "My Mom"
+                     ? hardLevel
+                     : difficulty.toLowerCase(),
             },
             token
          );

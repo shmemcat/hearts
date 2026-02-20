@@ -15,14 +15,22 @@ function renderHand(props: React.ComponentProps<typeof Hand>) {
 describe("Hand", () => {
    it("renders all cards", () => {
       renderHand({ cards: ["2c", "5d", "Ah"] });
-      expect(screen.getByRole("button", { name: "Card 2 of c" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Card 5 of d" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Card A of h" })).toBeInTheDocument();
+      expect(
+         screen.getByRole("button", { name: "Card 2 of c" })
+      ).toBeInTheDocument();
+      expect(
+         screen.getByRole("button", { name: "Card 5 of d" })
+      ).toBeInTheDocument();
+      expect(
+         screen.getByRole("button", { name: "Card A of h" })
+      ).toBeInTheDocument();
    });
 
    it("has group role with aria-label", () => {
       renderHand({ cards: ["2c"] });
-      expect(screen.getByRole("group", { name: "Your hand" })).toBeInTheDocument();
+      expect(
+         screen.getByRole("group", { name: "Your hand" })
+      ).toBeInTheDocument();
    });
 
    it("sorts cards by suit (c < d < s < h) then rank (high to low)", () => {
@@ -67,9 +75,15 @@ describe("Hand", () => {
          legalCodes: new Set(["2c"]),
          onCardClick: vi.fn(),
       });
-      expect(screen.getByRole("button", { name: "Card 2 of c" })).not.toBeDisabled();
-      expect(screen.getByRole("button", { name: "Card 5 of d" })).toBeDisabled();
-      expect(screen.getByRole("button", { name: "Card A of h" })).toBeDisabled();
+      expect(
+         screen.getByRole("button", { name: "Card 2 of c" })
+      ).not.toBeDisabled();
+      expect(
+         screen.getByRole("button", { name: "Card 5 of d" })
+      ).toBeDisabled();
+      expect(
+         screen.getByRole("button", { name: "Card A of h" })
+      ).toBeDisabled();
    });
 
    it("calls onCardClick with the correct card code during play", async () => {

@@ -35,9 +35,7 @@ describe("ShootTheMoonOverlay", () => {
 
    it("shows shooter name message", () => {
       renderOverlay({ shooterIndex: 0 });
-      expect(
-         screen.getByText(/You took all the hearts/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/You took all the hearts/)).toBeInTheDocument();
    });
 
    it("shows non-shooter name when different player shoots", () => {
@@ -50,9 +48,7 @@ describe("ShootTheMoonOverlay", () => {
             { name: "Carol", score: 26 },
          ],
       });
-      expect(
-         screen.getByText(/Alice took all the hearts/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Alice took all the hearts/)).toBeInTheDocument();
    });
 
    it("shows 0 for shooter delta and +N for others", () => {

@@ -48,9 +48,7 @@ describe("DeleteAccountModal", () => {
          renderModal();
          await user.click(screen.getByRole("button", { name: "Yes" }));
          expect(screen.getByText("Confirm Deletion")).toBeInTheDocument();
-         expect(
-            screen.getByPlaceholderText("Password")
-         ).toBeInTheDocument();
+         expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
       });
 
       it("calls onClose when backdrop is clicked", async () => {
@@ -72,9 +70,7 @@ describe("DeleteAccountModal", () => {
 
       it("shows password input and buttons", async () => {
          await goToStep2();
-         expect(
-            screen.getByPlaceholderText("Password")
-         ).toBeInTheDocument();
+         expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
          expect(
             screen.getByRole("button", { name: "Nevermind" })
          ).toBeInTheDocument();
@@ -85,9 +81,7 @@ describe("DeleteAccountModal", () => {
 
       it("calls onClose when Nevermind is clicked", async () => {
          const user = await goToStep2();
-         await user.click(
-            screen.getByRole("button", { name: "Nevermind" })
-         );
+         await user.click(screen.getByRole("button", { name: "Nevermind" }));
          expect(onClose).toHaveBeenCalledOnce();
       });
 
@@ -104,10 +98,7 @@ describe("DeleteAccountModal", () => {
       it("calls onDelete with password", async () => {
          onDelete.mockResolvedValueOnce({});
          const user = await goToStep2();
-         await user.type(
-            screen.getByPlaceholderText("Password"),
-            "mypassword"
-         );
+         await user.type(screen.getByPlaceholderText("Password"), "mypassword");
          await user.click(screen.getByRole("button", { name: "Delete" }));
          await waitFor(() => {
             expect(onDelete).toHaveBeenCalledWith("mypassword");
@@ -117,15 +108,10 @@ describe("DeleteAccountModal", () => {
       it("shows error from onDelete", async () => {
          onDelete.mockResolvedValueOnce({ error: "Incorrect password" });
          const user = await goToStep2();
-         await user.type(
-            screen.getByPlaceholderText("Password"),
-            "wrongpass"
-         );
+         await user.type(screen.getByPlaceholderText("Password"), "wrongpass");
          await user.click(screen.getByRole("button", { name: "Delete" }));
          await waitFor(() => {
-            expect(
-               screen.getByText("Incorrect password")
-            ).toBeInTheDocument();
+            expect(screen.getByText("Incorrect password")).toBeInTheDocument();
          });
       });
    });

@@ -5,7 +5,14 @@ import pytest
 import jwt as pyjwt
 from datetime import datetime, timedelta
 
-from hearts.game.card import Card, Suit, deck_52, shuffle_deck, deal_into_4_hands, two_of_clubs
+from hearts.game.card import (
+    Card,
+    Suit,
+    deck_52,
+    shuffle_deck,
+    deal_into_4_hands,
+    two_of_clubs,
+)
 from hearts.game.state import GameState, Phase, PassDirection, initial_state_after_deal
 
 JWT_SECRET = "test-secret-key-for-hearts"
@@ -15,6 +22,7 @@ JWT_SECRET = "test-secret-key-for-hearts"
 def rng():
     """Fixed seed for reproducible tests."""
     import random
+
     return random.Random(42)
 
 
@@ -38,6 +46,7 @@ def state_passing(four_hands):
 def state_playing_after_pass(state_passing):
     """State after applying 4 dummy passes (each player passes first 3 cards)."""
     from hearts.game.transitions import apply_passes
+
     hands = [list(state_passing.hands[i]) for i in range(4)]
     passes = [[hands[i][j] for j in range(3)] for i in range(4)]
     return apply_passes(state_passing, passes)
@@ -48,6 +57,7 @@ def client():
     """Flask test client for API route tests."""
     from hearts import app
     from hearts.extensions import db
+
     app.config["TESTING"] = True
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
     with app.app_context():
@@ -61,6 +71,7 @@ def auth_client():
     """Flask test client with JWT_SECRET set and rate limiting disabled for auth tests."""
     from hearts import app
     from hearts.extensions import db, limiter
+
     app.config["TESTING"] = True
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
     old_enabled = limiter.enabled
@@ -78,7 +89,9 @@ def auth_client():
         os.environ["JWT_SECRET"] = old_secret
 
 
-def make_jwt(user_id: int, username: str = "testuser", email: str = "test@example.com") -> str:
+def make_jwt(
+    user_id: int, username: str = "testuser", email: str = "test@example.com"
+) -> str:
     """Create a valid JWT token for testing."""
     payload = {
         "sub": str(user_id),

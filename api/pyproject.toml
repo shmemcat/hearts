@@ -20,7 +20,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0.0"]
+dev = ["pytest>=7.0.0", "black>=25.0.0"]
+
+[tool.black]
+line-length = 88
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

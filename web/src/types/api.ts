@@ -3,29 +3,29 @@
  */
 
 export type RegisterBody = {
-  username: string;
-  email: string;
-  password: string;
+   username: string;
+   email: string;
+   password: string;
 };
 
 export type ForgotPasswordBody = {
-  email: string;
+   email: string;
 };
 
 export type ResetPasswordBody = {
-  token: string;
-  password: string;
+   token: string;
+   password: string;
 };
 
 export type VerifyEmailBody = {
-  token: string;
+   token: string;
 };
 
 export type ApiErrorResponse = {
-  error: string;
-  code?: string;
+   error: string;
+   code?: string;
 };
 
 export type ApiMessageResponse = {
-  message?: string;
+   message?: string;
 };

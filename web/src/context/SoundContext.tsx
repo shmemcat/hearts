@@ -133,7 +133,9 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
    }, []);
 
    return (
-      <SoundContext.Provider value={{ muted, setMuted, volume, setVolume, play }}>
+      <SoundContext.Provider
+         value={{ muted, setMuted, volume, setVolume, play }}
+      >
          {children}
       </SoundContext.Provider>
    );

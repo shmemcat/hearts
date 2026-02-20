@@ -22,7 +22,9 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["FRONTEND_URL"] = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 app.config["SMTP2GO_API_KEY"] = os.environ.get("SMTP2GO_API_KEY", "")
-app.config["SMTP2GO_FROM_EMAIL"] = os.environ.get("SMTP2GO_FROM_EMAIL", "noreply@shmem.dev")
+app.config["SMTP2GO_FROM_EMAIL"] = os.environ.get(
+    "SMTP2GO_FROM_EMAIL", "noreply@shmem.dev"
+)
 
 db.init_app(app)
 migrate = Migrate(app, db)

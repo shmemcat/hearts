@@ -27,10 +27,7 @@ export const ConcedeModal: React.FC<ConcedeModalProps> = ({
                   </p>
                   <div className={styles.buttons}>
                      <Button name="Continue" onClick={onClose} />
-                     <Button
-                        name="Concede"
-                        onClick={() => setStep(2)}
-                     />
+                     <Button name="Concede" onClick={() => setStep(2)} />
                   </div>
                </>
             ) : (

@@ -22,40 +22,64 @@ import PlayGame from "@/pages/game/play";
 import NotFound from "@/pages/404";
 
 export default function App() {
-  const location = useLocation();
+   const location = useLocation();
 
-  return (
-    <ThemeProvider>
-      <AuthProvider>
-        <CardStyleProvider>
-          <HardLevelProvider>
-          <SoundProvider>
-            <div>
-              <AnimatePresence mode="wait">
-                <motion.div key={location.pathname}>
-                  <Routes location={location}>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/user" element={<User />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/options" element={<Options />} />
-                    <Route path="/rules" element={<Rules />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/verify-email" element={<VerifyEmail />} />
-                    <Route path="/resend-verification" element={<ResendVerification />} />
-                    <Route path="/game/create" element={<CreateGame />} />
-                    <Route path="/game/join" element={<JoinGame />} />
-                    <Route path="/game/play" element={<PlayGame />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </SoundProvider>
-          </HardLevelProvider>
-        </CardStyleProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  );
+   return (
+      <ThemeProvider>
+         <AuthProvider>
+            <CardStyleProvider>
+               <HardLevelProvider>
+                  <SoundProvider>
+                     <div>
+                        <AnimatePresence mode="wait">
+                           <motion.div key={location.pathname}>
+                              <Routes location={location}>
+                                 <Route path="/" element={<Home />} />
+                                 <Route path="/user" element={<User />} />
+                                 <Route path="/about" element={<About />} />
+                                 <Route path="/options" element={<Options />} />
+                                 <Route path="/rules" element={<Rules />} />
+                                 <Route
+                                    path="/register"
+                                    element={<Register />}
+                                 />
+                                 <Route
+                                    path="/forgot-password"
+                                    element={<ForgotPassword />}
+                                 />
+                                 <Route
+                                    path="/reset-password"
+                                    element={<ResetPassword />}
+                                 />
+                                 <Route
+                                    path="/verify-email"
+                                    element={<VerifyEmail />}
+                                 />
+                                 <Route
+                                    path="/resend-verification"
+                                    element={<ResendVerification />}
+                                 />
+                                 <Route
+                                    path="/game/create"
+                                    element={<CreateGame />}
+                                 />
+                                 <Route
+                                    path="/game/join"
+                                    element={<JoinGame />}
+                                 />
+                                 <Route
+                                    path="/game/play"
+                                    element={<PlayGame />}
+                                 />
+                                 <Route path="*" element={<NotFound />} />
+                              </Routes>
+                           </motion.div>
+                        </AnimatePresence>
+                     </div>
+                  </SoundProvider>
+               </HardLevelProvider>
+            </CardStyleProvider>
+         </AuthProvider>
+      </ThemeProvider>
+   );
 }

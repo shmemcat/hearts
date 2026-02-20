@@ -91,9 +91,7 @@ describe("CreateGamePage", () => {
          json: () => Promise.resolve({ error: "Server error" }),
       });
 
-      await user.click(
-         screen.getByRole("button", { name: "Create Game!" })
-      );
+      await user.click(screen.getByRole("button", { name: "Create Game!" }));
       await waitFor(() => {
          expect(screen.getByRole("alert")).toHaveTextContent("Server error");
       });

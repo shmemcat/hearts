@@ -24,20 +24,28 @@ def _set_jwt_secret():
         os.environ["JWT_SECRET"] = old
 
 
-def _register(client, username="alice", email="alice@example.com", password="password123"):
+def _register(
+    client, username="alice", email="alice@example.com", password="password123"
+):
     """Register a user. Returns the response. Email send is mocked."""
     with patch("hearts.auth_routes.send_verification_email"):
-        return client.post("/register", json={
-            "username": username,
-            "email": email,
-            "password": password,
-        })
+        return client.post(
+            "/register",
+            json={
+                "username": username,
+                "email": email,
+                "password": password,
+            },
+        )
 
 
-def _register_and_verify(client, username="alice", email="alice@example.com", password="password123"):
+def _register_and_verify(
+    client, username="alice", email="alice@example.com", password="password123"
+):
     """Register a user and verify their email."""
     from hearts.extensions import db
     from hearts.models import User
+
     _register(client, username=username, email=email, password=password)
     user = User.query.filter_by(username=username).first()
     user.email_verified = True
@@ -49,6 +57,7 @@ def _register_and_verify(client, username="alice", email="alice@example.com", pa
 # -----------------------------------------------------------------------------
 # POST /register
 # -----------------------------------------------------------------------------
+
 
 class TestRegister:
     def test_register_success(self, auth_client):
@@ -66,11 +75,14 @@ class TestRegister:
 
     @patch("hearts.auth_routes.send_verification_email")
     def test_register_sends_verification_email(self, mock_send, auth_client):
-        auth_client.post("/register", json={
-            "username": "alice",
-            "email": "alice@example.com",
-            "password": "password123",
-        })
+        auth_client.post(
+            "/register",
+            json={
+                "username": "alice",
+                "email": "alice@example.com",
+                "password": "password123",
+            },
+        )
         mock_send.assert_called_once()
         assert mock_send.call_args[0][0] == "alice@example.com"
 
@@ -101,10 +113,13 @@ class TestRegister:
         assert "password" in r.get_json()["error"].lower()
 
     def test_register_missing_username(self, auth_client):
-        r = auth_client.post("/register", json={
-            "email": "a@example.com",
-            "password": "password123",
-        })
+        r = auth_client.post(
+            "/register",
+            json={
+                "email": "a@example.com",
+                "password": "password123",
+            },
+        )
         assert r.status_code == 400
 
     def test_register_invalid_username_chars(self, auth_client):
@@ -120,13 +135,17 @@ class TestRegister:
 # POST /login
 # -----------------------------------------------------------------------------
 
+
 class TestLogin:
     def test_login_success(self, auth_client):
         _register_and_verify(auth_client)
-        r = auth_client.post("/login", json={
-            "username": "alice",
-            "password": "password123",
-        })
+        r = auth_client.post(
+            "/login",
+            json={
+                "username": "alice",
+                "password": "password123",
+            },
+        )
         assert r.status_code == 200
         data = r.get_json()
         assert "token" in data
@@ -135,10 +154,13 @@ class TestLogin:
 
     def test_login_rejects_unverified_user(self, auth_client):
         _register(auth_client)
-        r = auth_client.post("/login", json={
-            "username": "alice",
-            "password": "password123",
-        })
+        r = auth_client.post(
+            "/login",
+            json={
+                "username": "alice",
+                "password": "password123",
+            },
+        )
         assert r.status_code == 403
         data = r.get_json()
         assert data["code"] == "EMAIL_NOT_VERIFIED"
@@ -146,17 +168,23 @@ class TestLogin:
 
     def test_login_wrong_password(self, auth_client):
         _register_and_verify(auth_client)
-        r = auth_client.post("/login", json={
-            "username": "alice",
-            "password": "wrong-password",
-        })
+        r = auth_client.post(
+            "/login",
+            json={
+                "username": "alice",
+                "password": "wrong-password",
+            },
+        )
         assert r.status_code == 401
 
     def test_login_nonexistent_user(self, auth_client):
-        r = auth_client.post("/login", json={
-            "username": "ghost",
-            "password": "password123",
-        })
+        r = auth_client.post(
+            "/login",
+            json={
+                "username": "ghost",
+                "password": "password123",
+            },
+        )
         assert r.status_code == 401
 
     def test_login_missing_fields(self, auth_client):
@@ -165,10 +193,13 @@ class TestLogin:
 
     def test_login_returns_valid_jwt_for_me(self, auth_client):
         _register_and_verify(auth_client)
-        login_r = auth_client.post("/login", json={
-            "username": "alice",
-            "password": "password123",
-        })
+        login_r = auth_client.post(
+            "/login",
+            json={
+                "username": "alice",
+                "password": "password123",
+            },
+        )
         token = login_r.get_json()["token"]
         me_r = auth_client.get("/me", headers=auth_headers(token))
         assert me_r.status_code == 200
@@ -179,13 +210,17 @@ class TestLogin:
 # GET /me
 # -----------------------------------------------------------------------------
 
+
 class TestMe:
     def test_me_with_valid_jwt(self, auth_client):
         _register_and_verify(auth_client)
-        login_r = auth_client.post("/login", json={
-            "username": "alice",
-            "password": "password123",
-        })
+        login_r = auth_client.post(
+            "/login",
+            json={
+                "username": "alice",
+                "password": "password123",
+            },
+        )
         token = login_r.get_json()["token"]
         r = auth_client.get("/me", headers=auth_headers(token))
         assert r.status_code == 200
@@ -198,7 +233,9 @@ class TestMe:
         assert r.status_code == 401
 
     def test_me_with_invalid_jwt(self, auth_client):
-        r = auth_client.get("/me", headers={"Authorization": "Bearer invalid.token.here"})
+        r = auth_client.get(
+            "/me", headers={"Authorization": "Bearer invalid.token.here"}
+        )
         assert r.status_code == 401
 
     def test_me_with_nonexistent_user_id(self, auth_client):
@@ -211,10 +248,12 @@ class TestMe:
 # POST /verify-email
 # -----------------------------------------------------------------------------
 
+
 class TestVerifyEmail:
     def test_verify_success(self, auth_client):
         from hearts.extensions import db
         from hearts.models import User
+
         _register(auth_client)
         user = User.query.filter_by(username="alice").first()
         token = user.verification_token
@@ -225,14 +264,18 @@ class TestVerifyEmail:
     def test_verify_allows_login(self, auth_client):
         from hearts.extensions import db
         from hearts.models import User
+
         _register(auth_client)
         user = User.query.filter_by(username="alice").first()
         token = user.verification_token
         auth_client.post("/verify-email", json={"token": token})
-        r = auth_client.post("/login", json={
-            "username": "alice",
-            "password": "password123",
-        })
+        r = auth_client.post(
+            "/login",
+            json={
+                "username": "alice",
+                "password": "password123",
+            },
+        )
         assert r.status_code == 200
 
     def test_verify_invalid_token(self, auth_client):
@@ -242,6 +285,7 @@ class TestVerifyEmail:
     def test_verify_expired_token(self, auth_client):
         from hearts.extensions import db
         from hearts.models import User
+
         _register(auth_client)
         user = User.query.filter_by(username="alice").first()
         user.verification_expires = datetime.utcnow() - timedelta(hours=1)
@@ -257,6 +301,7 @@ class TestVerifyEmail:
 
     def test_verify_consumed_token_rejected(self, auth_client):
         from hearts.models import User
+
         _register(auth_client)
         user = User.query.filter_by(username="alice").first()
         token = user.verification_token
@@ -268,6 +313,7 @@ class TestVerifyEmail:
 # -----------------------------------------------------------------------------
 # POST /forgot-password
 # -----------------------------------------------------------------------------
+
 
 class TestForgotPassword:
     @patch("hearts.auth_routes.send_password_reset_email")
@@ -293,31 +339,42 @@ class TestForgotPassword:
 # POST /reset-password
 # -----------------------------------------------------------------------------
 
+
 class TestResetPassword:
     @patch("hearts.auth_routes.send_password_reset_email")
     def test_reset_password_success(self, mock_send, auth_client):
         from hearts.extensions import db
         from hearts.models import PasswordResetToken
         from hearts.email_utils import hash_token
+
         _register_and_verify(auth_client)
         auth_client.post("/forgot-password", json={"email": "alice@example.com"})
         raw_token = mock_send.call_args[0][1]
-        r = auth_client.post("/reset-password", json={
-            "token": raw_token,
-            "password": "new_password_123",
-        })
+        r = auth_client.post(
+            "/reset-password",
+            json={
+                "token": raw_token,
+                "password": "new_password_123",
+            },
+        )
         assert r.status_code == 200
-        login_r = auth_client.post("/login", json={
-            "username": "alice",
-            "password": "new_password_123",
-        })
+        login_r = auth_client.post(
+            "/login",
+            json={
+                "username": "alice",
+                "password": "new_password_123",
+            },
+        )
         assert login_r.status_code == 200
 
     def test_reset_password_invalid_token(self, auth_client):
-        r = auth_client.post("/reset-password", json={
-            "token": "bogus-token",
-            "password": "new_password_123",
-        })
+        r = auth_client.post(
+            "/reset-password",
+            json={
+                "token": "bogus-token",
+                "password": "new_password_123",
+            },
+        )
         assert r.status_code == 400
 
     @patch("hearts.auth_routes.send_password_reset_email")
@@ -325,6 +382,7 @@ class TestResetPassword:
         from hearts.extensions import db
         from hearts.models import PasswordResetToken
         from hearts.email_utils import hash_token
+
         _register(auth_client)
         auth_client.post("/forgot-password", json={"email": "alice@example.com"})
         raw_token = mock_send.call_args[0][1]
@@ -332,25 +390,34 @@ class TestResetPassword:
         reset = PasswordResetToken.query.filter_by(token_hash=token_hash).first()
         reset.expires_at = datetime.utcnow() - timedelta(hours=1)
         db.session.commit()
-        r = auth_client.post("/reset-password", json={
-            "token": raw_token,
-            "password": "new_password_123",
-        })
+        r = auth_client.post(
+            "/reset-password",
+            json={
+                "token": raw_token,
+                "password": "new_password_123",
+            },
+        )
         assert r.status_code == 400
         assert "expired" in r.get_json()["error"].lower()
 
     def test_reset_password_short_new_password(self, auth_client):
-        r = auth_client.post("/reset-password", json={
-            "token": "some-token",
-            "password": "short",
-        })
+        r = auth_client.post(
+            "/reset-password",
+            json={
+                "token": "some-token",
+                "password": "short",
+            },
+        )
         assert r.status_code == 400
         assert "password" in r.get_json()["error"].lower()
 
     def test_reset_password_missing_token(self, auth_client):
-        r = auth_client.post("/reset-password", json={
-            "password": "new_password_123",
-        })
+        r = auth_client.post(
+            "/reset-password",
+            json={
+                "password": "new_password_123",
+            },
+        )
         assert r.status_code == 400
 
 
@@ -358,11 +425,14 @@ class TestResetPassword:
 # POST /resend-verification
 # -----------------------------------------------------------------------------
 
+
 class TestResendVerification:
     @patch("hearts.auth_routes.send_verification_email")
     def test_resend_for_unverified_user(self, mock_send, auth_client):
         _register(auth_client)
-        r = auth_client.post("/resend-verification", json={"email": "alice@example.com"})
+        r = auth_client.post(
+            "/resend-verification", json={"email": "alice@example.com"}
+        )
         assert r.status_code == 200
         mock_send.assert_called_once()
         assert mock_send.call_args[0][0] == "alice@example.com"
@@ -370,13 +440,17 @@ class TestResendVerification:
     @patch("hearts.auth_routes.send_verification_email")
     def test_resend_for_verified_user_does_not_send(self, mock_send, auth_client):
         _register_and_verify(auth_client)
-        r = auth_client.post("/resend-verification", json={"email": "alice@example.com"})
+        r = auth_client.post(
+            "/resend-verification", json={"email": "alice@example.com"}
+        )
         assert r.status_code == 200
         mock_send.assert_not_called()
 
     @patch("hearts.auth_routes.send_verification_email")
     def test_resend_for_nonexistent_email_does_not_send(self, mock_send, auth_client):
-        r = auth_client.post("/resend-verification", json={"email": "nobody@example.com"})
+        r = auth_client.post(
+            "/resend-verification", json={"email": "nobody@example.com"}
+        )
         assert r.status_code == 200
         mock_send.assert_not_called()
 
@@ -387,11 +461,13 @@ class TestResendVerification:
     @patch("hearts.auth_routes.send_verification_email")
     def test_resend_regenerates_token(self, mock_send, auth_client):
         from hearts.models import User
+
         _register(auth_client)
         user = User.query.filter_by(username="alice").first()
         old_token = user.verification_token
         auth_client.post("/resend-verification", json={"email": "alice@example.com"})
         from hearts.extensions import db
+
         db.session.refresh(user)
         assert user.verification_token != old_token
 
@@ -400,19 +476,25 @@ class TestResendVerification:
 # DELETE /account
 # -----------------------------------------------------------------------------
 
+
 class TestDeleteAccount:
     def _login_token(self, client):
         _register_and_verify(client)
-        r = client.post("/login", json={
-            "username": "alice",
-            "password": "password123",
-        })
+        r = client.post(
+            "/login",
+            json={
+                "username": "alice",
+                "password": "password123",
+            },
+        )
         return r.get_json()["token"]
 
     def test_delete_success(self, auth_client):
         from hearts.models import User
+
         token = self._login_token(auth_client)
-        r = auth_client.delete("/account",
+        r = auth_client.delete(
+            "/account",
             json={"password": "password123"},
             headers=auth_headers(token),
         )
@@ -422,7 +504,8 @@ class TestDeleteAccount:
 
     def test_delete_wrong_password(self, auth_client):
         token = self._login_token(auth_client)
-        r = auth_client.delete("/account",
+        r = auth_client.delete(
+            "/account",
             json={"password": "wrong"},
             headers=auth_headers(token),
         )
@@ -431,7 +514,8 @@ class TestDeleteAccount:
 
     def test_delete_missing_password(self, auth_client):
         token = self._login_token(auth_client)
-        r = auth_client.delete("/account",
+        r = auth_client.delete(
+            "/account",
             json={},
             headers=auth_headers(token),
         )
@@ -444,12 +528,14 @@ class TestDeleteAccount:
     def test_delete_cascades_stats(self, auth_client):
         from hearts.extensions import db
         from hearts.models import User, UserStats
+
         token = self._login_token(auth_client)
         user = User.query.filter_by(username="alice").first()
         stats = UserStats(user_id=user.id, games_played=5, games_won=2)
         db.session.add(stats)
         db.session.commit()
-        r = auth_client.delete("/account",
+        r = auth_client.delete(
+            "/account",
             json={"password": "password123"},
             headers=auth_headers(token),
         )
@@ -460,6 +546,7 @@ class TestDeleteAccount:
         from hearts.extensions import db
         from hearts.models import User, PasswordResetToken
         from hearts.email_utils import hash_token
+
         token = self._login_token(auth_client)
         user = User.query.filter_by(username="alice").first()
         reset = PasswordResetToken(
@@ -469,7 +556,8 @@ class TestDeleteAccount:
         )
         db.session.add(reset)
         db.session.commit()
-        r = auth_client.delete("/account",
+        r = auth_client.delete(
+            "/account",
             json={"password": "password123"},
             headers=auth_headers(token),
         )

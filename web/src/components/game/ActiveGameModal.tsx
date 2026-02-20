@@ -38,10 +38,7 @@ export const ActiveGameModal: React.FC<ActiveGameModalProps> = ({
                      Are you sure you wish to concede?
                   </p>
                   <div className={styles.buttons}>
-                     <Button
-                        name="No"
-                        onClick={() => setConfirming(false)}
-                     />
+                     <Button name="No" onClick={() => setConfirming(false)} />
                      <Button name="Yes" onClick={onConcede} />
                   </div>
                </>

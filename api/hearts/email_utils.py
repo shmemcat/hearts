@@ -19,13 +19,15 @@ def _send(to_email: str, subject: str, html_content: str) -> bool:
         current_app.logger.warning("SMTP2GO_API_KEY not set; skipping email send")
         return False
 
-    payload = json.dumps({
-        "api_key": api_key,
-        "to": [to_email],
-        "sender": f"Hearts <{from_email}>",
-        "subject": subject,
-        "html_body": html_content,
-    }).encode()
+    payload = json.dumps(
+        {
+            "api_key": api_key,
+            "to": [to_email],
+            "sender": f"Hearts <{from_email}>",
+            "subject": subject,
+            "html_body": html_content,
+        }
+    ).encode()
 
     req = urllib.request.Request(
         SMTP2GO_API_URL,
@@ -37,12 +39,17 @@ def _send(to_email: str, subject: str, html_content: str) -> bool:
         with urllib.request.urlopen(req, timeout=10) as resp:
             body = json.loads(resp.read())
             current_app.logger.info(
-                "SMTP2GO %s for %s: %s", resp.status, to_email, body.get("data", {}).get("succeeded", 0)
+                "SMTP2GO %s for %s: %s",
+                resp.status,
+                to_email,
+                body.get("data", {}).get("succeeded", 0),
             )
             return 200 <= resp.status < 300
     except urllib.error.HTTPError as exc:
         err_body = exc.read().decode(errors="replace") if exc.fp else ""
-        current_app.logger.exception("SMTP2GO %s for %s: %s", exc.code, to_email, err_body)
+        current_app.logger.exception(
+            "SMTP2GO %s for %s: %s", exc.code, to_email, err_body
+        )
         return False
     except Exception:
         current_app.logger.exception("Failed to send email to %s", to_email)

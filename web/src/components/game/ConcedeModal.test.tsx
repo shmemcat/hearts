@@ -13,12 +13,18 @@ describe("ConcedeModal", () => {
 
    it("shows Continue and Concede buttons in step 1", () => {
       render(<ConcedeModal onClose={vi.fn()} onConcede={vi.fn()} />);
-      expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Concede" })).toBeInTheDocument();
+      expect(
+         screen.getByRole("button", { name: "Continue" })
+      ).toBeInTheDocument();
+      expect(
+         screen.getByRole("button", { name: "Concede" })
+      ).toBeInTheDocument();
    });
 
    it("renders concede title", () => {
-      const { container } = render(<ConcedeModal onClose={vi.fn()} onConcede={vi.fn()} />);
+      const { container } = render(
+         <ConcedeModal onClose={vi.fn()} onConcede={vi.fn()} />
+      );
       const title = container.querySelector("[class*='title']");
       expect(title).toHaveTextContent("Concede");
    });

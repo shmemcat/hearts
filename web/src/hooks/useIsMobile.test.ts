@@ -13,11 +13,13 @@ beforeEach(() => {
          onchange: null,
          addListener: vi.fn(),
          removeListener: vi.fn(),
-         addEventListener: vi.fn((_, handler: (e: { matches: boolean }) => void) => {
-            const arr = listeners.get(query) ?? [];
-            arr.push(handler);
-            listeners.set(query, arr);
-         }),
+         addEventListener: vi.fn(
+            (_, handler: (e: { matches: boolean }) => void) => {
+               const arr = listeners.get(query) ?? [];
+               arr.push(handler);
+               listeners.set(query, arr);
+            }
+         ),
          removeEventListener: vi.fn(),
          dispatchEvent: vi.fn(),
       };

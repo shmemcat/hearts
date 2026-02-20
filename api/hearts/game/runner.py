@@ -27,8 +27,19 @@ from hearts.ai.factory import create_strategies
 HUMAN_PLAYER = 0
 DEFAULT_PLAYER_NAMES = ("You", "AI 1", "AI 2", "AI 3")
 AI_NAME_POOL = (
-    "Mary", "John", "Duffy", "Mike", "Joe", "Nelson",
-    "Brad", "Emily", "Kelly", "Megan", "Sue", "Bill", "Tim",
+    "Mary",
+    "John",
+    "Duffy",
+    "Mike",
+    "Joe",
+    "Nelson",
+    "Brad",
+    "Emily",
+    "Kelly",
+    "Megan",
+    "Sue",
+    "Bill",
+    "Tim",
 )
 
 
@@ -160,7 +171,11 @@ class GameRunner:
         self._state = apply_play(self._state, HUMAN_PLAYER, card)
         if on_play:
             on_play(play_event)
-        if on_trick_complete and self._state.phase == Phase.PLAYING and len(self._state.current_trick) == 0:
+        if (
+            on_trick_complete
+            and self._state.phase == Phase.PLAYING
+            and len(self._state.current_trick) == 0
+        ):
             on_trick_complete()
         self._run_ai_until_human_or_done(
             on_play=on_play,
@@ -223,15 +238,17 @@ class GameRunner:
                 first_lead_of_round=_is_first_lead(self._state, hand),
                 first_trick=_is_first_trick_of_round(self._state),
             )
-            card = self._play_strategy.choose_play(
-                self._state, player, legal
-            )
+            card = self._play_strategy.choose_play(self._state, player, legal)
             play_event = {"player_index": player, "card": card.to_code()}
             self._last_play_events.append(play_event)
             self._state = apply_play(self._state, player, card)
             if on_play:
                 on_play(play_event)
-            if on_trick_complete and self._state.phase == Phase.PLAYING and len(self._state.current_trick) == 0:
+            if (
+                on_trick_complete
+                and self._state.phase == Phase.PLAYING
+                and len(self._state.current_trick) == 0
+            ):
                 on_trick_complete()
             if self._handle_round_end_if_needed(on_done):
                 return
@@ -284,9 +301,7 @@ class GameRunner:
                 "round": s.round,
                 "phase": s.phase.value,
                 "pass_direction": s.pass_direction.value,
-                "hands": [
-                    [c.to_code() for c in s.hands[i]] for i in range(4)
-                ],
+                "hands": [[c.to_code() for c in s.hands[i]] for i in range(4)],
                 "current_trick": [
                     [idx, card.to_code()] for idx, card in s.current_trick
                 ],
@@ -314,9 +329,7 @@ class GameRunner:
     def from_dict(cls, data: Dict[str, Any]) -> "GameRunner":
         """Reconstruct a GameRunner from a dict produced by to_dict()."""
         sd = data["state"]
-        hands = tuple(
-            tuple(Card.from_code(c) for c in hand) for hand in sd["hands"]
-        )
+        hands = tuple(tuple(Card.from_code(c) for c in hand) for hand in sd["hands"])
         current_trick = tuple(
             (idx, Card.from_code(code)) for idx, code in sd["current_trick"]
         )
@@ -364,7 +377,9 @@ class GameRunner:
         s = self._state
         players = []
         for i in range(4):
-            name = self._player_names[i] if i < len(self._player_names) else f"Player {i}"
+            name = (
+                self._player_names[i] if i < len(self._player_names) else f"Player {i}"
+            )
             score = int(s.scores[i])
             card_count = len(s.hands[i])
             players.append({"name": name, "score": score, "card_count": card_count})

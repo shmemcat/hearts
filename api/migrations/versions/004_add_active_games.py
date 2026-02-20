@@ -5,6 +5,7 @@ Revises: 003
 Create Date: 2026-02-19
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -24,8 +25,12 @@ def upgrade():
         sa.Column("state_json", sa.Text(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=True),
     )
-    op.create_index(op.f("ix_active_games_game_id"), "active_games", ["game_id"], unique=True)
-    op.create_index(op.f("ix_active_games_user_id"), "active_games", ["user_id"], unique=False)
+    op.create_index(
+        op.f("ix_active_games_game_id"), "active_games", ["game_id"], unique=True
+    )
+    op.create_index(
+        op.f("ix_active_games_user_id"), "active_games", ["user_id"], unique=False
+    )
 
 
 def downgrade():

@@ -64,9 +64,7 @@ describe("ResendVerificationPage", () => {
          screen.getByRole("button", { name: "Resend verification" })
       );
       await waitFor(() => {
-         expect(
-            screen.getByText("Something went wrong")
-         ).toBeInTheDocument();
+         expect(screen.getByText("Something went wrong")).toBeInTheDocument();
       });
    });
 

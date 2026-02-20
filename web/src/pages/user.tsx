@@ -232,7 +232,9 @@ function StatsPanel() {
          <div className={containers["stats-grid"]}>
             <div className={containers["stats-col"]}>
                <div className={containers["stats-row"]}>
-                  <span className={containers["stats-label"]}>Games Played</span>
+                  <span className={containers["stats-label"]}>
+                     Games Played
+                  </span>
                   <span className={containers["stats-value"]}>
                      {fmt(stats.games_played)}
                   </span>
@@ -251,7 +253,9 @@ function StatsPanel() {
             <hr className={containers["stats-divider"]} />
             <div className={containers["stats-col"]}>
                <div className={containers["stats-row"]}>
-                  <span className={containers["stats-label"]}>Shot the Moon</span>
+                  <span className={containers["stats-label"]}>
+                     Shot the Moon
+                  </span>
                   <span className={containers["stats-value"]}>
                      {fmt(stats.moon_shots)}
                   </span>

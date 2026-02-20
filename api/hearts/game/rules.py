@@ -55,7 +55,8 @@ def get_legal_plays(
 
     if first_trick:
         safe = [
-            c for c in hand
+            c
+            for c in hand
             if c.suit != Suit.HEARTS
             and not (c.suit == Suit.SPADES and c.rank == QUEEN_OF_SPADES_RANK)
         ]

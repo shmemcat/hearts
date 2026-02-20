@@ -1,4 +1,3 @@
-
 """
 Tests for game WebSocket: connect with game_id, advance/play emit play, trick_complete, state.
 """
@@ -9,6 +8,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def clear_game_store():
     from hearts.game_routes import reset_store
+
     reset_store()
     yield
     reset_store()
@@ -19,6 +19,7 @@ def socket_env():
     """Provide app, socketio, rest client, and a factory for SocketIO test clients."""
     from hearts import app, socketio
     from hearts.extensions import db
+
     app.config["TESTING"] = True
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
     with app.app_context():
@@ -43,6 +44,7 @@ def _setup_game_at_phase(rest, target_whose_turn=None, seed_range=60):
     """Start a game, pass, and return (game_id, state) where phase=playing.
     If target_whose_turn is not None, keep trying seeds until whose_turn matches."""
     from hearts.game_routes import reset_store
+
     for seed in range(seed_range):
         reset_store()
         r = rest.post("/games/start", json={"seed": seed})
@@ -58,7 +60,10 @@ def _setup_game_at_phase(rest, target_whose_turn=None, seed_range=60):
         state = rest.get(f"/games/{game_id}").get_json()
         if state.get("phase") != "playing":
             continue
-        if target_whose_turn is not None and state.get("whose_turn") != target_whose_turn:
+        if (
+            target_whose_turn is not None
+            and state.get("whose_turn") != target_whose_turn
+        ):
             continue
         return game_id, state
     return None, None
@@ -68,6 +73,7 @@ def _setup_game_at_phase(rest, target_whose_turn=None, seed_range=60):
 # WebSocket advance (existing test, refactored)
 # -----------------------------------------------------------------------------
 
+
 def test_ws_advance_emits_play_trick_complete_state(socket_env):
     app, rest, make_socket = socket_env
     game_id, state = _setup_game_at_phase(rest, target_whose_turn=None)
@@ -76,9 +82,13 @@ def test_ws_advance_emits_play_trick_complete_state(socket_env):
     if state["whose_turn"] == 0:
         game_id, state = _setup_game_at_phase(rest, target_whose_turn=1, seed_range=80)
         if game_id is None:
-            game_id, state = _setup_game_at_phase(rest, target_whose_turn=2, seed_range=80)
+            game_id, state = _setup_game_at_phase(
+                rest, target_whose_turn=2, seed_range=80
+            )
         if game_id is None:
-            game_id, state = _setup_game_at_phase(rest, target_whose_turn=3, seed_range=80)
+            game_id, state = _setup_game_at_phase(
+                rest, target_whose_turn=3, seed_range=80
+            )
     if game_id is None or state["whose_turn"] == 0:
         pytest.fail("No seed gave AI lead after pass")
     client = make_socket()
@@ -93,13 +103,16 @@ def test_ws_advance_emits_play_trick_complete_state(socket_env):
     assert len(state_events) == 1, repr(received)
     assert state_events[0].get("args") and len(state_events[0]["args"]) == 1
     state_payload = state_events[0]["args"][0]
-    assert state_payload.get("whose_turn") == 0 or state_payload.get("phase") == "passing"
+    assert (
+        state_payload.get("whose_turn") == 0 or state_payload.get("phase") == "passing"
+    )
     assert len(play_events) >= 1
 
 
 # -----------------------------------------------------------------------------
 # WebSocket play event tests
 # -----------------------------------------------------------------------------
+
 
 class TestWSPlay:
     def test_play_emits_correct_event_order(self, socket_env):
@@ -123,9 +136,14 @@ class TestWSPlay:
         assert len(play_events) >= 1, "Should have at least the human play"
         assert play_events[0]["args"][0]["player_index"] == 0
         assert play_events[0]["args"][0]["card"] == legal[0]
-        assert len(state_events) == 1, f"Expected exactly 1 state event, got {len(state_events)}"
+        assert (
+            len(state_events) == 1
+        ), f"Expected exactly 1 state event, got {len(state_events)}"
         state_payload = state_events[0]["args"][0]
-        assert state_payload.get("whose_turn") == 0 or state_payload.get("phase") == "passing"
+        assert (
+            state_payload.get("whose_turn") == 0
+            or state_payload.get("phase") == "passing"
+        )
         # State is the last event
         last_event = received[-1]
         assert last_event.get("name") == "state"
@@ -152,9 +170,13 @@ class TestWSPlay:
         app, rest, make_socket = socket_env
         game_id, state = _setup_game_at_phase(rest, target_whose_turn=1, seed_range=80)
         if game_id is None:
-            game_id, state = _setup_game_at_phase(rest, target_whose_turn=2, seed_range=80)
+            game_id, state = _setup_game_at_phase(
+                rest, target_whose_turn=2, seed_range=80
+            )
         if game_id is None:
-            game_id, state = _setup_game_at_phase(rest, target_whose_turn=3, seed_range=80)
+            game_id, state = _setup_game_at_phase(
+                rest, target_whose_turn=3, seed_range=80
+            )
         if game_id is None:
             pytest.fail("No seed gave AI lead after pass")
         client = make_socket()

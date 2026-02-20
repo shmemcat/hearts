@@ -19,7 +19,9 @@ export const Toggle: React.FC<ToggleProps> = ({
    className,
 }) => (
    <label
-      className={`${styles.toggleLabel} ${checked ? styles.checked : ""} ${className ?? ""}`.trim()}
+      className={`${styles.toggleLabel} ${checked ? styles.checked : ""} ${
+         className ?? ""
+      }`.trim()}
    >
       <input
          type="checkbox"

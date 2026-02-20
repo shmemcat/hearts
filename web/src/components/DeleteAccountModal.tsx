@@ -44,10 +44,7 @@ export function DeleteAccountModal({
                   </p>
                   <div className={styles.buttons}>
                      <Button name="No" onClick={onClose} />
-                     <DangerButton
-                        label="Yes"
-                        onClick={() => setStep(2)}
-                     />
+                     <DangerButton label="Yes" onClick={() => setStep(2)} />
                   </div>
                </>
             ) : (

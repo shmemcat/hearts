@@ -35,9 +35,7 @@ describe("RegisterPage", () => {
    it("shows error for empty username", async () => {
       const user = userEvent.setup();
       renderWithProviders(<RegisterPage />, { route: "/register" });
-      await user.click(
-         screen.getByRole("button", { name: "Create account" })
-      );
+      await user.click(screen.getByRole("button", { name: "Create account" }));
       await waitFor(() => {
          expect(screen.getByPlaceholderText("Username")).toHaveAttribute(
             "aria-invalid",
@@ -50,9 +48,7 @@ describe("RegisterPage", () => {
       const user = userEvent.setup();
       renderWithProviders(<RegisterPage />, { route: "/register" });
       await user.type(screen.getByPlaceholderText("Username"), "ab");
-      await user.click(
-         screen.getByRole("button", { name: "Create account" })
-      );
+      await user.click(screen.getByRole("button", { name: "Create account" }));
       await waitFor(() => {
          expect(screen.getByPlaceholderText("Username")).toHaveAttribute(
             "aria-invalid",
@@ -67,9 +63,7 @@ describe("RegisterPage", () => {
       fillInput("Username", "validuser");
       fillInput("Email", "test@test.com");
       fillInput("Password", "short");
-      await user.click(
-         screen.getByRole("button", { name: "Create account" })
-      );
+      await user.click(screen.getByRole("button", { name: "Create account" }));
       await waitFor(() => {
          expect(screen.getByPlaceholderText("Password")).toHaveAttribute(
             "aria-invalid",
@@ -85,9 +79,7 @@ describe("RegisterPage", () => {
       fillInput("Email", "test@test.com");
       fillInput("Password", "password123");
       fillInput("Confirm password", "different123");
-      await user.click(
-         screen.getByRole("button", { name: "Create account" })
-      );
+      await user.click(screen.getByRole("button", { name: "Create account" }));
       await waitFor(() => {
          expect(
             screen.getByPlaceholderText("Confirm password")
@@ -106,9 +98,7 @@ describe("RegisterPage", () => {
       fillInput("Email", "test@test.com");
       fillInput("Password", "password123");
       fillInput("Confirm password", "password123");
-      await user.click(
-         screen.getByRole("button", { name: "Create account" })
-      );
+      await user.click(screen.getByRole("button", { name: "Create account" }));
       await waitFor(() => {
          expect(screen.getByText(/Account created!/)).toBeInTheDocument();
          expect(screen.getByText(/verify your account/i)).toBeInTheDocument();
@@ -126,9 +116,7 @@ describe("RegisterPage", () => {
       fillInput("Email", "test@test.com");
       fillInput("Password", "password123");
       fillInput("Confirm password", "password123");
-      await user.click(
-         screen.getByRole("button", { name: "Create account" })
-      );
+      await user.click(screen.getByRole("button", { name: "Create account" }));
       await waitFor(() => {
          expect(screen.getByText("Username taken")).toBeInTheDocument();
       });
@@ -136,8 +124,6 @@ describe("RegisterPage", () => {
 
    it("has link to sign in page", () => {
       renderWithProviders(<RegisterPage />, { route: "/register" });
-      expect(
-         screen.getByText(/Already have an account/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Already have an account/)).toBeInTheDocument();
    });
 });

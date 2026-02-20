@@ -8,7 +8,11 @@ from datetime import datetime, timedelta
 from hearts.extensions import db, limiter
 from hearts.models import User, UserStats, ActiveGame, PasswordResetToken
 from hearts.auth_utils import hash_password, verify_password
-from hearts.email_utils import send_verification_email, send_password_reset_email, hash_token
+from hearts.email_utils import (
+    send_verification_email,
+    send_password_reset_email,
+    hash_token,
+)
 from hearts.jwt_utils import get_current_user, require_jwt
 
 auth_bp = Blueprint("auth", __name__)
@@ -29,7 +33,10 @@ def _validate_username(username: str) -> tuple[bool, str]:
     if not username:
         return False, "Username required"
     if not USERNAME_RE.match(username):
-        return False, "Username must be 3–64 characters, letters, numbers, and underscores only"
+        return (
+            False,
+            "Username must be 3–64 characters, letters, numbers, and underscores only",
+        )
     return True, ""
 
 
@@ -74,10 +81,12 @@ def register():
     send_verification_email(email, user.verification_token)
 
     return (
-        jsonify({
-            "user": user.to_dict(),
-            "message": "Account created. Check your email to verify your account.",
-        }),
+        jsonify(
+            {
+                "user": user.to_dict(),
+                "message": "Account created. Check your email to verify your account.",
+            }
+        ),
         201,
     )
 
@@ -97,10 +106,15 @@ def login():
         return jsonify({"error": "Invalid username or password"}), 401
 
     if not user.email_verified:
-        return jsonify({
-            "error": "Please verify your email before signing in.",
-            "code": "EMAIL_NOT_VERIFIED",
-        }), 403
+        return (
+            jsonify(
+                {
+                    "error": "Please verify your email before signing in.",
+                    "code": "EMAIL_NOT_VERIFIED",
+                }
+            ),
+            403,
+        )
 
     secret = os.environ.get("JWT_SECRET")
     payload = {
@@ -111,10 +125,15 @@ def login():
     }
     token = jwt.encode(payload, secret, algorithm="HS256") if secret else None
 
-    return jsonify({
-        "user": user.to_dict(),
-        "token": token,
-    }), 200
+    return (
+        jsonify(
+            {
+                "user": user.to_dict(),
+                "token": token,
+            }
+        ),
+        200,
+    )
 
 
 @auth_bp.route("/verify-email", methods=["POST"])
@@ -161,7 +180,10 @@ def forgot_password():
         db.session.commit()
         send_password_reset_email(user.email, raw_token)
 
-    return jsonify({"message": "If that email is registered, we sent a reset link."}), 200
+    return (
+        jsonify({"message": "If that email is registered, we sent a reset link."}),
+        200,
+    )
 
 
 @auth_bp.route("/reset-password", methods=["POST"])
@@ -206,7 +228,14 @@ def resend_verification():
         db.session.commit()
         send_verification_email(user.email, user.verification_token)
 
-    return jsonify({"message": "If that email is registered and unverified, we sent a new verification link."}), 200
+    return (
+        jsonify(
+            {
+                "message": "If that email is registered and unverified, we sent a new verification link."
+            }
+        ),
+        200,
+    )
 
 
 @auth_bp.route("/me", methods=["GET"])

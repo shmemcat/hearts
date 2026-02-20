@@ -6,7 +6,10 @@ export interface HeartsLogoProps {
    size?: number;
 }
 
-export const HeartsLogo: React.FC<HeartsLogoProps> = ({ style, size = 250 }) => {
+export const HeartsLogo: React.FC<HeartsLogoProps> = ({
+   style,
+   size = 250,
+}) => {
    const fillColor = colors.heartslogo;
 
    return (

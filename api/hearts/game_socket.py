@@ -1,4 +1,3 @@
-
 """
 WebSocket handlers for game events: connect (with game_id), advance, play.
 Emits play, trick_complete, state (and error) to the client.
@@ -19,6 +18,7 @@ _sid_to_game_id: Dict[str, str] = {}
 
 def _make_callbacks(runner, game_id):
     """Build the on_play / on_trick_complete / on_done callbacks for WebSocket streaming."""
+
     def on_play(ev):
         emit("play", ev, namespace="/game")
 
@@ -65,14 +65,18 @@ def register_game_socket(socketio):
             return
         state = runner.state
         if state.phase.value != "playing":
-            emit("error", {"message": "Game is not in playing phase"}, namespace="/game")
+            emit(
+                "error", {"message": "Game is not in playing phase"}, namespace="/game"
+            )
             return
         if state.whose_turn == 0:
             emit("error", {"message": "Already human's turn"}, namespace="/game")
             return
         try:
             on_play, on_trick_complete, on_done = _make_callbacks(runner, game_id)
-            runner.advance_to_human_turn(on_play=on_play, on_trick_complete=on_trick_complete, on_done=on_done)
+            runner.advance_to_human_turn(
+                on_play=on_play, on_trick_complete=on_trick_complete, on_done=on_done
+            )
         except Exception as e:
             emit("error", {"message": str(e)}, namespace="/game")
 
@@ -97,6 +101,11 @@ def register_game_socket(socketio):
             return
         try:
             on_play, on_trick_complete, on_done = _make_callbacks(runner, game_id)
-            runner.submit_play(card, on_play=on_play, on_trick_complete=on_trick_complete, on_done=on_done)
+            runner.submit_play(
+                card,
+                on_play=on_play,
+                on_trick_complete=on_trick_complete,
+                on_done=on_done,
+            )
         except Exception as e:
             emit("error", {"message": str(e)}, namespace="/game")

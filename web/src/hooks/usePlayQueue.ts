@@ -164,12 +164,14 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
 
                // Re-check queue at execution time (not capture time) to
                // avoid a stale closure skipping the linger/clear delays.
-               const humanWonNoMore = result?.winner === 0 && queue.length === 0;
+               const humanWonNoMore =
+                  result?.winner === 0 && queue.length === 0;
                if (humanWonNoMore) {
                   setTrickResult(null);
                   processNext();
                } else {
-                  const linger = result && result.hearts > 0 ? BADGE_LINGER_MS : 0;
+                  const linger =
+                     result && result.hearts > 0 ? BADGE_LINGER_MS : 0;
                   timerRef.current = setTimeout(() => {
                      setTrickResult(null);
                      timerRef.current = setTimeout(processNext, CLEAR_MS);

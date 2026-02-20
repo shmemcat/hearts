@@ -12,7 +12,12 @@ const options: SelectOption<string>[] = [
 describe("Select", () => {
    it("renders all options", () => {
       render(
-         <Select value="a" onChange={() => {}} options={options} aria-label="test" />
+         <Select
+            value="a"
+            onChange={() => {}}
+            options={options}
+            aria-label="test"
+         />
       );
       const selectEl = screen.getByRole("combobox", { name: "test" });
       expect(selectEl).toBeInTheDocument();
@@ -23,7 +28,12 @@ describe("Select", () => {
 
    it("shows selected value", () => {
       render(
-         <Select value="b" onChange={() => {}} options={options} aria-label="test" />
+         <Select
+            value="b"
+            onChange={() => {}}
+            options={options}
+            aria-label="test"
+         />
       );
       expect(screen.getByRole("combobox")).toHaveValue("b");
    });
@@ -32,7 +42,12 @@ describe("Select", () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       render(
-         <Select value="a" onChange={onChange} options={options} aria-label="test" />
+         <Select
+            value="a"
+            onChange={onChange}
+            options={options}
+            aria-label="test"
+         />
       );
       await user.selectOptions(screen.getByRole("combobox"), "c");
       expect(onChange).toHaveBeenCalledWith("c");
@@ -40,7 +55,13 @@ describe("Select", () => {
 
    it("respects disabled state", () => {
       render(
-         <Select value="a" onChange={() => {}} options={options} disabled aria-label="test" />
+         <Select
+            value="a"
+            onChange={() => {}}
+            options={options}
+            disabled
+            aria-label="test"
+         />
       );
       expect(screen.getByRole("combobox")).toBeDisabled();
    });

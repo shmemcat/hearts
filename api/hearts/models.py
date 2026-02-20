@@ -16,7 +16,9 @@ class User(db.Model):
     verification_expires = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    stats = db.relationship("UserStats", uselist=False, back_populates="user", lazy="joined")
+    stats = db.relationship(
+        "UserStats", uselist=False, back_populates="user", lazy="joined"
+    )
 
     def to_dict(self):
         return {
@@ -36,7 +38,9 @@ class UserStats(db.Model):
     __tablename__ = "user_stats"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False
+    )
     games_played = db.Column(db.Integer, default=0, nullable=False)
     games_won = db.Column(db.Integer, default=0, nullable=False)
     moon_shots = db.Column(db.Integer, default=0, nullable=False)
@@ -66,7 +70,9 @@ class ActiveGame(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     game_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, index=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), nullable=True, index=True
+    )
     difficulty = db.Column(db.String(16), nullable=False, server_default="easy")
     state_json = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

@@ -215,9 +215,7 @@ describe("UserPage - Authenticated", () => {
             screen.getByRole("button", { name: "Delete Account" })
          ).toBeInTheDocument();
       });
-      await user.click(
-         screen.getByRole("button", { name: "Delete Account" })
-      );
+      await user.click(screen.getByRole("button", { name: "Delete Account" }));
       await waitFor(() => {
          expect(
             screen.getByText(/delete all your user data/i)

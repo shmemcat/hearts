@@ -67,8 +67,7 @@ export const Hand: React.FC<HandProps> = ({
       legalCodes !== undefined &&
       legalCodes.size > 0 &&
       sorted.some((c) => !legalCodes.has(c));
-   const shouldSmoosh =
-      isMobile && hasMix && onCardClick !== undefined;
+   const shouldSmoosh = isMobile && hasMix && onCardClick !== undefined;
 
    const [smooshLocked, setSmooshLocked] = React.useState(false);
    const prevShouldSmoosh = React.useRef(false);
@@ -76,7 +75,10 @@ export const Hand: React.FC<HandProps> = ({
    React.useEffect(() => {
       if (shouldSmoosh && !prevShouldSmoosh.current) {
          setSmooshLocked(true);
-         const id = setTimeout(() => setSmooshLocked(false), SMOOSH_DURATION_MS);
+         const id = setTimeout(
+            () => setSmooshLocked(false),
+            SMOOSH_DURATION_MS
+         );
          prevShouldSmoosh.current = shouldSmoosh;
          return () => clearTimeout(id);
       }
@@ -101,19 +103,25 @@ export const Hand: React.FC<HandProps> = ({
    const LEGAL_SPREAD = 0.35;
    const MAX_DISABLED_OVERLAP = CARD_WIDTH * 0.75;
    const legalOverlap = baseOverlap * (1 - LEGAL_SPREAD);
-   const disabledOverlap = nDisabled > 0
-      ? Math.min(
-           baseOverlap * (1 + (nLegal * LEGAL_SPREAD) / nDisabled),
-           MAX_DISABLED_OVERLAP,
-        )
-      : baseOverlap;
+   const disabledOverlap =
+      nDisabled > 0
+         ? Math.min(
+              baseOverlap * (1 + (nLegal * LEGAL_SPREAD) / nDisabled),
+              MAX_DISABLED_OVERLAP
+           )
+         : baseOverlap;
 
    /* Subtle arc: slight rotation + parabolic vertical offset for a gentle curve. */
    const centerIndex = (sorted.length - 1) / 2;
    const degPerCard = 1.2;
    const arcFactor = isMobile ? 0.2 : 0.5;
 
-   const wrap = (code: string, index: number, card: React.ReactNode, isDisabled?: boolean) => {
+   const wrap = (
+      code: string,
+      index: number,
+      card: React.ReactNode,
+      isDisabled?: boolean
+   ) => {
       const distance = index - centerIndex;
       const rotation = distance * degPerCard;
       const translateY = Math.pow(Math.abs(distance), 2) * arcFactor;
@@ -158,11 +166,7 @@ export const Hand: React.FC<HandProps> = ({
       inlineStyle.transform = transform;
 
       return (
-         <div
-            key={code}
-            className={styles.handCardWrap}
-            style={inlineStyle}
-         >
+         <div key={code} className={styles.handCardWrap} style={inlineStyle}>
             {content}
          </div>
       );
@@ -200,10 +204,14 @@ export const Hand: React.FC<HandProps> = ({
                   <Card
                      code={code}
                      disabled={disabled}
-                     onClick={effectiveOnCardClick ? () => effectiveOnCardClick(code) : undefined}
+                     onClick={
+                        effectiveOnCardClick
+                           ? () => effectiveOnCardClick(code)
+                           : undefined
+                     }
                      size={size}
                   />,
-                  disabled,
+                  disabled
                );
             })}
          </div>
