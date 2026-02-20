@@ -72,10 +72,10 @@ export const Card: React.FC<CardProps> = ({
           draggable={false}
         />
       ) : (
-        <>
+        <div className={styles.cardLabel}>
           <span className={isRed ? styles.rankRed : styles.rankBlack}>{rank}</span>
           <span className={isRed ? styles.suitRed : styles.suitBlack}>{symbol}</span>
-        </>
+        </div>
       )}
     </button>
   );

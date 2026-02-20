@@ -98,5 +98,5 @@ def register_game_socket(socketio):
         try:
             on_play, on_trick_complete, on_done = _make_callbacks(runner, game_id)
             runner.submit_play(card, on_play=on_play, on_trick_complete=on_trick_complete, on_done=on_done)
-        except ValueError as e:
+        except Exception as e:
             emit("error", {"message": str(e)}, namespace="/game")

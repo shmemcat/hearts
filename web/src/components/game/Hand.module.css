@@ -11,7 +11,7 @@
 }
 .handCardWrap {
    display: inline-block;
-   transition: transform 0.15s ease;
+   transition: transform 0.25s ease, margin 0.25s ease;
    transform-origin: center bottom;
    margin: 0 -12px;
 }
@@ -203,10 +203,10 @@
       margin: 0 -23.5px;
    }
    .handCardWrap:first-child {
-      margin-left: 0;
+      margin-left: 0 !important;
    }
    .handCardWrap:last-child {
-      margin-right: 0;
+      margin-right: 0 !important;
    }
    .handSlotEmpty {
       display: none;

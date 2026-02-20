@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useMemo } from "react";
 
 import { Card } from "@/components/game/Card";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -102,6 +102,11 @@ export const Trick: React.FC<TrickProps> = ({
     cardRefs.current[index] = el;
   }, []);
 
+  const cardRefCallbacks = useMemo(
+    () => [0, 1, 2, 3].map((i) => (el: HTMLDivElement | null) => { setCardRef(i, el); }),
+    [setCardRef],
+  );
+
   useEffect(() => {
     collectAnimsRef.current.forEach((a) => a.cancel());
     collectAnimsRef.current = [];
@@ -159,7 +164,7 @@ export const Trick: React.FC<TrickProps> = ({
               {slot && (
                 <div
                   key={slot.card}
-                  ref={(el) => { setCardRef(index, el); }}
+                  ref={cardRefCallbacks[index]}
                   className={styles.trickSlotCard}
                 >
                   <Card code={slot.card} size={isMobile ? "large" : "medium"} />

@@ -4,6 +4,28 @@ import { Card } from "@/components/game/Card";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import styles from "./Hand.module.css";
 
+const SMOOSH_DURATION_MS = 250;
+
+const CARD_WIDTH = 72;
+const INITIAL_OVERLAP = 23.5;
+const FULL_HAND = 13;
+/** Total px width of a 13-card fan: n*w - 2*o*(n-1). */
+const INITIAL_WIDTH =
+   FULL_HAND * CARD_WIDTH - 2 * INITIAL_OVERLAP * (FULL_HAND - 1); // 372
+
+/**
+ * Compute the exact overlap needed so `count` cards occupy the same total
+ * width as the original 13-card fan.  Once the overlap would drop below
+ * 40 % of the card width between neighbors, stop expanding and hold there
+ * so small hands don't look goofy with too-sparse cards.
+ */
+const MIN_OVERLAP = CARD_WIDTH * 0.2; // 40 % overlap between neighbors = 20 % per side
+function getMobileOverlap(count: number): number {
+   if (count <= 1) return 0;
+   const needed = (CARD_WIDTH * count - INITIAL_WIDTH) / (2 * (count - 1));
+   return Math.max(MIN_OVERLAP, needed);
+}
+
 export interface HandProps {
    cards: string[];
    /** For passing: which card codes are selected (max 3). */
@@ -40,11 +62,56 @@ export const Hand: React.FC<HandProps> = ({
       [cards]
    );
 
+   /* ── Smoosh: only when there's a real mix of legal vs disabled cards ── */
+   const hasDisabled =
+      legalCodes !== undefined && sorted.some((c) => !legalCodes.has(c));
+   const shouldSmoosh =
+      isMobile && hasDisabled && onCardClick !== undefined;
+
+   const [smooshLocked, setSmooshLocked] = React.useState(false);
+   const prevShouldSmoosh = React.useRef(false);
+
+   React.useEffect(() => {
+      if (shouldSmoosh && !prevShouldSmoosh.current) {
+         setSmooshLocked(true);
+         const id = setTimeout(() => setSmooshLocked(false), SMOOSH_DURATION_MS);
+         prevShouldSmoosh.current = shouldSmoosh;
+         return () => clearTimeout(id);
+      }
+      prevShouldSmoosh.current = shouldSmoosh;
+   }, [shouldSmoosh]);
+
+   /* ── Mobile overlap + smoosh margins ──────────────────────────────────── */
+   const baseOverlap = isMobile ? getMobileOverlap(sorted.length) : 0;
+
+   const nLegal = legalCodes
+      ? sorted.filter((c) => legalCodes.has(c)).length
+      : 0;
+   const nDisabled = sorted.length - nLegal;
+
+   /*
+    * Smoosh overlaps: redistribute margin budget from disabled → legal cards
+    * so legal cards expose ~35 % more face while total width stays constant.
+    *   legalOverlap    = base × (1 - SPREAD)
+    *   disabledOverlap = base × (1 + nLegal × SPREAD / nDisabled)
+    * Cap the disabled overlap so cards never disappear entirely.
+    */
+   const LEGAL_SPREAD = 0.35;
+   const MAX_DISABLED_OVERLAP = CARD_WIDTH * 0.75;
+   const legalOverlap = baseOverlap * (1 - LEGAL_SPREAD);
+   const disabledOverlap = nDisabled > 0
+      ? Math.min(
+           baseOverlap * (1 + (nLegal * LEGAL_SPREAD) / nDisabled),
+           MAX_DISABLED_OVERLAP,
+        )
+      : baseOverlap;
+
    /* Subtle arc: slight rotation + parabolic vertical offset for a gentle curve. */
    const centerIndex = (sorted.length - 1) / 2;
    const degPerCard = 1.2;
    const arcFactor = isMobile ? 0.2 : 0.5;
-   const wrap = (code: string, index: number, card: React.ReactNode) => {
+
+   const wrap = (code: string, index: number, card: React.ReactNode, isDisabled?: boolean) => {
       const distance = index - centerIndex;
       const rotation = distance * degPerCard;
       const translateY = Math.pow(Math.abs(distance), 2) * arcFactor;
@@ -68,18 +135,38 @@ export const Hand: React.FC<HandProps> = ({
          content = <div className={cls}>{card}</div>;
       }
 
+      let transform = `translateY(${translateY}px) rotate(${rotation}deg)`;
+      const inlineStyle: React.CSSProperties = {};
+
+      if (isMobile && legalCodes !== undefined) {
+         let overlap = baseOverlap;
+
+         if (shouldSmoosh) {
+            if (isDisabled) {
+               overlap = disabledOverlap;
+               transform += " scale(0.8)";
+            } else {
+               overlap = legalOverlap;
+            }
+         }
+
+         inlineStyle.margin = `0 -${overlap}px`;
+      }
+
+      inlineStyle.transform = transform;
+
       return (
          <div
             key={code}
             className={styles.handCardWrap}
-            style={{
-               transform: `translateY(${translateY}px) rotate(${rotation}deg)`,
-            }}
+            style={inlineStyle}
          >
             {content}
          </div>
       );
    };
+
+   const effectiveOnCardClick = smooshLocked ? undefined : onCardClick;
 
    if (selectionMode && selectedCodes) {
       return (
@@ -103,18 +190,20 @@ export const Hand: React.FC<HandProps> = ({
    if (legalCodes !== undefined) {
       return (
          <div className={styles.hand} role="group" aria-label="Your hand">
-            {sorted.map((code, i) =>
-               wrap(
+            {sorted.map((code, i) => {
+               const disabled = !legalCodes.has(code);
+               return wrap(
                   code,
                   i,
                   <Card
                      code={code}
-                     disabled={!legalCodes.has(code)}
-                     onClick={onCardClick ? () => onCardClick(code) : undefined}
+                     disabled={disabled}
+                     onClick={effectiveOnCardClick ? () => effectiveOnCardClick(code) : undefined}
                      size={size}
-                  />
-               )
-            )}
+                  />,
+                  disabled,
+               );
+            })}
          </div>
       );
    }

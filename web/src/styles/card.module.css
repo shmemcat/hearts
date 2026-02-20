@@ -103,12 +103,24 @@
    color: var(--cardredsuit);
 }
 
-/* ── Mobile: rank + suit pinned to top-left ───────────────── */
+/* ── Card label: inner wrapper that centers rank over suit ── */
+.cardLabel {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 2px;
+}
+
+/* ── Mobile: rank + suit pinned to top-left, centered on each other ── */
 @media only screen and (max-width: 768px) {
    .card {
       align-items: flex-start;
       justify-content: flex-start;
-      padding: 4px 6px;
+      padding: 4px 4px;
+      gap: 0;
+   }
+
+   .cardLabel {
       gap: 0;
    }
 

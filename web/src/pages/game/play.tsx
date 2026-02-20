@@ -384,7 +384,14 @@ export default function PlayGamePage() {
          won,
          moon_shots: state.human_moon_shots,
       });
-   }, [state?.game_over, state?.winner_index, state?.players, state?.human_moon_shots, token, gameId]);
+   }, [
+      state?.game_over,
+      state?.winner_index,
+      state?.players,
+      state?.human_moon_shots,
+      token,
+      gameId,
+   ]);
 
    // ── AI turn: advance when it's not the human's turn ────────────────
    useEffect(() => {
@@ -444,6 +451,58 @@ export default function PlayGamePage() {
       noPassHold,
       enqueue,
       enqueueRestPlays,
+   ]);
+
+   // ── Recovery: re-fetch state if stuck after optimistic update ─────
+   // After playing a card, the optimistic update clears legal_plays.
+   // If the server response is lost (WS drop, unhandled error, etc.),
+   // the client gets stuck. Detect this and re-fetch via REST.
+   useEffect(() => {
+      if (
+         !gameId ||
+         !state ||
+         state.phase !== "playing" ||
+         state.game_over ||
+         state.whose_turn !== 0 ||
+         state.legal_plays.length > 0 ||
+         state.human_hand.length === 0 ||
+         busy ||
+         loading
+      ) {
+         return;
+      }
+      const t = setTimeout(() => {
+         getGameState(gameId).then((result) => {
+            if (result.ok) {
+               setState(result.data);
+               if (result.data.phase === "playing" && result.data.current_trick) {
+                  const slots: CurrentTrickSlot[] = [null, null, null, null];
+                  for (const s of result.data.current_trick) {
+                     if (
+                        s &&
+                        typeof s.player_index === "number" &&
+                        s.player_index >= 0 &&
+                        s.player_index < 4
+                     ) {
+                        slots[s.player_index] = s;
+                     }
+                  }
+                  setSlots(slots);
+               }
+            }
+         });
+      }, 3000);
+      return () => clearTimeout(t);
+   }, [
+      gameId,
+      state?.phase,
+      state?.whose_turn,
+      state?.game_over,
+      state?.legal_plays?.length,
+      state?.human_hand?.length,
+      busy,
+      loading,
+      setSlots,
    ]);
 
    // ── Round banner → deal timer ─────────────────────────────────────
@@ -933,9 +992,7 @@ export default function PlayGamePage() {
                      </div>
                   )}
                   {!roundSummary && isMobile && (
-                     <InfoButton
-                        onClick={() => setInfoModalOpen(true)}
-                     />
+                     <InfoButton onClick={() => setInfoModalOpen(true)} />
                   )}
                   {infoModalOpen && isMobile && (
                      <InfoModal
@@ -957,9 +1014,7 @@ export default function PlayGamePage() {
                   {conceded && (
                      <div className={styles.concededBackdrop}>
                         <div className={styles.concededModal}>
-                           <p className={styles.concededTitle}>
-                              Game Conceded
-                           </p>
+                           <p className={styles.concededTitle}>Game Conceded</p>
                            <table className={styles.scoreTable}>
                               <thead>
                                  <tr>
@@ -993,10 +1048,7 @@ export default function PlayGamePage() {
                               />
                            </Link>
                            <Link to="/" onClick={() => triggerLogoFadeOut()}>
-                              <Button
-                                 name="Home"
-                                 style={{ width: "250px" }}
-                              />
+                              <Button name="Home" style={{ width: "250px" }} />
                            </Link>
                         </div>
                      </div>
