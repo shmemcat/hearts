@@ -4,6 +4,22 @@ POST /games/<id>/advance, POST play.
 """
 
 import pytest
+from unittest.mock import patch
+
+
+def _register_verified(client, username, email, password="password123"):
+    """Register a user and immediately verify their email."""
+    from hearts.extensions import db
+    from hearts.models import User
+    with patch("hearts.auth_routes.send_verification_email"):
+        client.post("/register", json={
+            "username": username, "email": email, "password": password,
+        })
+    user = User.query.filter_by(username=username).first()
+    user.email_verified = True
+    user.verification_token = None
+    user.verification_expires = None
+    db.session.commit()
 
 
 @pytest.fixture(autouse=True)
@@ -301,12 +317,7 @@ class TestConcedeGame:
         from hearts.models import UserStats
         from tests.conftest import make_jwt, auth_headers, JWT_SECRET
 
-        # Register a user
-        auth_client.post("/register", json={
-            "username": "moonplayer",
-            "email": "moon@example.com",
-            "password": "password123",
-        })
+        _register_verified(auth_client, "moonplayer", "moon@example.com")
         login_r = auth_client.post("/login", json={
             "username": "moonplayer",
             "password": "password123",
@@ -341,11 +352,7 @@ class TestActiveGame:
     def test_active_game_returns_game_id(self, auth_client):
         from tests.conftest import make_jwt, auth_headers
 
-        auth_client.post("/register", json={
-            "username": "activeplayer",
-            "email": "active@example.com",
-            "password": "password123",
-        })
+        _register_verified(auth_client, "activeplayer", "active@example.com")
         login_r = auth_client.post("/login", json={
             "username": "activeplayer",
             "password": "password123",
@@ -363,11 +370,7 @@ class TestActiveGame:
     def test_active_game_none_when_no_game(self, auth_client):
         from tests.conftest import make_jwt, auth_headers
 
-        auth_client.post("/register", json={
-            "username": "nogame",
-            "email": "nogame@example.com",
-            "password": "password123",
-        })
+        _register_verified(auth_client, "nogame", "nogame@example.com")
         login_r = auth_client.post("/login", json={
             "username": "nogame",
             "password": "password123",

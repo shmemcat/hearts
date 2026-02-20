@@ -96,10 +96,64 @@ describe("UserPage - Guest", () => {
          expect(screen.getByText("Create an account")).toBeInTheDocument();
       });
    });
+
+   it("has link to forgot password", async () => {
+      renderWithProviders(<UserPage />, { route: "/user" });
+      await waitFor(() => {
+         expect(screen.getByText("Forgot password?")).toBeInTheDocument();
+      });
+   });
+
+   it("shows resend verification link on unverified email error", async () => {
+      const user = userEvent.setup();
+      mockFetch.mockResolvedValueOnce({
+         ok: false,
+         status: 403,
+         json: () =>
+            Promise.resolve({
+               error: "Check your email to verify your account before signing in.",
+               code: "EMAIL_NOT_VERIFIED",
+            }),
+      });
+      renderWithProviders(<UserPage />, { route: "/user" });
+      await waitFor(() => {
+         expect(screen.getByPlaceholderText("Username")).toBeInTheDocument();
+      });
+      await user.type(screen.getByPlaceholderText("Username"), "testuser");
+      await user.type(screen.getByPlaceholderText("Password"), "pass1234");
+      await user.click(screen.getByRole("button", { name: "Sign In" }));
+      await waitFor(() => {
+         expect(
+            screen.getByText("Resend verification email")
+         ).toBeInTheDocument();
+      });
+   });
+
+   it("does not show resend link on regular login error", async () => {
+      const user = userEvent.setup();
+      mockFetch.mockResolvedValueOnce({
+         ok: false,
+         status: 401,
+         json: () => Promise.resolve({ error: "Invalid credentials" }),
+      });
+      renderWithProviders(<UserPage />, { route: "/user" });
+      await waitFor(() => {
+         expect(screen.getByPlaceholderText("Username")).toBeInTheDocument();
+      });
+      await user.type(screen.getByPlaceholderText("Username"), "testuser");
+      await user.type(screen.getByPlaceholderText("Password"), "wrongpass");
+      await user.click(screen.getByRole("button", { name: "Sign In" }));
+      await waitFor(() => {
+         expect(screen.getByText("Invalid credentials")).toBeInTheDocument();
+      });
+      expect(
+         screen.queryByText("Resend verification email")
+      ).not.toBeInTheDocument();
+   });
 });
 
 describe("UserPage - Authenticated", () => {
-   it("shows welcome message when authenticated", async () => {
+   function setAuthToken() {
       const token = makeJwt({
          sub: "1",
          username: "alice",
@@ -121,7 +175,10 @@ describe("UserPage - Authenticated", () => {
                },
             }),
       });
+   }
 
+   it("shows welcome message when authenticated", async () => {
+      setAuthToken();
       renderWithProviders(<UserPage />, { route: "/user" });
       await waitFor(() => {
          expect(screen.getByText(/Welcome/)).toBeInTheDocument();
@@ -130,20 +187,7 @@ describe("UserPage - Authenticated", () => {
    });
 
    it("shows Sign Out button when authenticated", async () => {
-      const token = makeJwt({
-         sub: "1",
-         username: "alice",
-         exp: Math.floor(Date.now() / 1000) + 3600,
-      });
-      localStorage.setItem(STORAGE_KEY, token);
-      mockFetch.mockResolvedValueOnce({
-         ok: true,
-         json: () =>
-            Promise.resolve({
-               stats: { games_played: 0, games_won: 0, moon_shots: 0 },
-            }),
-      });
-
+      setAuthToken();
       renderWithProviders(<UserPage />, { route: "/user" });
       await waitFor(() => {
          expect(
@@ -152,35 +196,44 @@ describe("UserPage - Authenticated", () => {
       });
    });
 
-   it("displays stats when available", async () => {
-      const token = makeJwt({
-         sub: "1",
-         username: "alice",
-         exp: Math.floor(Date.now() / 1000) + 3600,
+   it("shows Delete Account button when authenticated", async () => {
+      setAuthToken();
+      renderWithProviders(<UserPage />, { route: "/user" });
+      await waitFor(() => {
+         expect(
+            screen.getByRole("button", { name: "Delete Account" })
+         ).toBeInTheDocument();
       });
-      localStorage.setItem(STORAGE_KEY, token);
-      mockFetch.mockResolvedValueOnce({
-         ok: true,
-         json: () =>
-            Promise.resolve({
-               stats: {
-                  games_played: 20,
-                  games_won: 8,
-                  moon_shots: 2,
-                  best_score: 5,
-                  worst_score: 95,
-                  average_score: 42,
-               },
-            }),
-      });
+   });
 
+   it("opens delete modal on Delete Account click", async () => {
+      const user = userEvent.setup();
+      setAuthToken();
+      renderWithProviders(<UserPage />, { route: "/user" });
+      await waitFor(() => {
+         expect(
+            screen.getByRole("button", { name: "Delete Account" })
+         ).toBeInTheDocument();
+      });
+      await user.click(
+         screen.getByRole("button", { name: "Delete Account" })
+      );
+      await waitFor(() => {
+         expect(
+            screen.getByText(/delete all your user data/i)
+         ).toBeInTheDocument();
+      });
+   });
+
+   it("displays stats when available", async () => {
+      setAuthToken();
       renderWithProviders(<UserPage />, { route: "/user" });
       await waitFor(() => {
          expect(screen.getByText("Your Stats")).toBeInTheDocument();
       });
-      expect(screen.getByText("20")).toBeInTheDocument(); // games_played
-      expect(screen.getByText("8")).toBeInTheDocument(); // games_won
-      expect(screen.getByText("40%")).toBeInTheDocument(); // win rate
-      expect(screen.getByText("2")).toBeInTheDocument(); // moon_shots
+      expect(screen.getByText("10")).toBeInTheDocument();
+      expect(screen.getByText("3")).toBeInTheDocument();
+      expect(screen.getByText("30%")).toBeInTheDocument();
+      expect(screen.getByText("1")).toBeInTheDocument();
    });
 });

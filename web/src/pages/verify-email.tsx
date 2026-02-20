@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { Link, useSearchParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/Buttons";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
@@ -13,8 +13,12 @@ export default function VerifyEmailPage() {
       "loading"
    );
    const [message, setMessage] = useState("");
+   const didRun = useRef(false);
 
    useEffect(() => {
+      if (didRun.current) return;
+      didRun.current = true;
+
       if (!token) {
          setStatus("error");
          setMessage("Missing verification link.");

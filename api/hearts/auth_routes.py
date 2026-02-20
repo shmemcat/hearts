@@ -6,9 +6,9 @@ from flask import Blueprint, request, jsonify, g
 from datetime import datetime, timedelta
 
 from hearts.extensions import db, limiter
-from hearts.models import User, PasswordResetToken
+from hearts.models import User, UserStats, ActiveGame, PasswordResetToken
 from hearts.auth_utils import hash_password, verify_password
-from hearts.email_utils import send_password_reset_email, hash_token
+from hearts.email_utils import send_verification_email, send_password_reset_email, hash_token
 from hearts.jwt_utils import get_current_user, require_jwt
 
 auth_bp = Blueprint("auth", __name__)
@@ -17,6 +17,7 @@ EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 USERNAME_RE = re.compile(r"^[a-zA-Z0-9_]{3,64}$")
 MIN_PASSWORD_LEN = 8
 AUTH_LIMIT = "5 per minute"
+EMAIL_LIMIT = "3 per minute;5 per hour"
 
 
 def _validate_email(email: str) -> bool:
@@ -39,7 +40,7 @@ def _validate_password(password: str) -> tuple[bool, str]:
 
 
 @auth_bp.route("/register", methods=["POST"])
-@limiter.limit(AUTH_LIMIT)
+@limiter.limit("5 per minute;10 per hour")
 def register():
     data = request.get_json() or {}
     username = (data.get("username") or "").strip()
@@ -64,15 +65,18 @@ def register():
         username=username,
         email=email,
         password_hash=hash_password(password),
-        email_verified=True,
+        email_verified=False,
     )
+    user.set_verification_token()
     db.session.add(user)
     db.session.commit()
+
+    send_verification_email(email, user.verification_token)
 
     return (
         jsonify({
             "user": user.to_dict(),
-            "message": "Account created. You can sign in now.",
+            "message": "Account created. Check your email to verify your account.",
         }),
         201,
     )
@@ -91,6 +95,12 @@ def login():
     user = User.query.filter_by(username=username).first()
     if not user or not verify_password(password, user.password_hash):
         return jsonify({"error": "Invalid username or password"}), 401
+
+    if not user.email_verified:
+        return jsonify({
+            "error": "Please verify your email before signing in.",
+            "code": "EMAIL_NOT_VERIFIED",
+        }), 403
 
     secret = os.environ.get("JWT_SECRET")
     payload = {
@@ -131,7 +141,7 @@ def verify_email():
 
 
 @auth_bp.route("/forgot-password", methods=["POST"])
-@limiter.limit(AUTH_LIMIT)
+@limiter.limit(EMAIL_LIMIT)
 def forgot_password():
     data = request.get_json() or {}
     email = (data.get("email") or "").strip().lower()
@@ -182,8 +192,47 @@ def reset_password():
     return jsonify({"message": "Password updated"}), 200
 
 
+@auth_bp.route("/resend-verification", methods=["POST"])
+@limiter.limit(EMAIL_LIMIT)
+def resend_verification():
+    data = request.get_json() or {}
+    email = (data.get("email") or "").strip().lower()
+    if not _validate_email(email):
+        return jsonify({"error": "Valid email required"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if user and not user.email_verified:
+        user.set_verification_token()
+        db.session.commit()
+        send_verification_email(user.email, user.verification_token)
+
+    return jsonify({"message": "If that email is registered and unverified, we sent a new verification link."}), 200
+
+
 @auth_bp.route("/me", methods=["GET"])
 @require_jwt
 def me():
-    """Example protected route: requires Authorization: Bearer <jwt>."""
     return jsonify({"user": g.current_user.to_dict()}), 200
+
+
+@auth_bp.route("/account", methods=["DELETE"])
+@require_jwt
+@limiter.limit("3 per minute")
+def delete_account():
+    data = request.get_json() or {}
+    password = data.get("password") or ""
+
+    if not password:
+        return jsonify({"error": "Password required"}), 400
+
+    user = g.current_user
+    if not verify_password(password, user.password_hash):
+        return jsonify({"error": "Incorrect password"}), 401
+
+    PasswordResetToken.query.filter_by(user_id=user.id).delete()
+    ActiveGame.query.filter_by(user_id=user.id).delete()
+    UserStats.query.filter_by(user_id=user.id).delete()
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({"message": "Account deleted"}), 200

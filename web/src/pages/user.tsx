@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -12,9 +12,12 @@ import {
    ErrorMessage,
    ButtonGroup,
 } from "@/components/ui";
+import { DeleteAccountModal } from "@/components/DeleteAccountModal";
 import { triggerLogoFadeOut } from "@/components/Navbar";
+import { getApiUrl } from "@/lib/api";
 import { fetchStats, type UserStatsResponse } from "@/lib/gameApi";
 import containers from "@/styles/containers.module.css";
+import deleteStyles from "@/components/DeleteAccountModal.module.css";
 
 export default function UserPage() {
    return (
@@ -30,19 +33,23 @@ export default function UserPage() {
 }
 
 function UserInfo() {
-   const { user, status, login, logout } = useAuth();
+   const { user, token, status, login, logout } = useAuth();
+   const navigate = useNavigate();
    const [username, setUsername] = useState("");
    const [password, setPassword] = useState("");
    const [error, setError] = useState("");
+   const [isVerificationError, setIsVerificationError] = useState(false);
    const [fieldError, setFieldError] = useState<{
       username?: string;
       password?: string;
    }>({});
    const [loading, setLoading] = useState(false);
+   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
    const handleSignIn = async (e: React.FormEvent) => {
       e.preventDefault();
       setError("");
+      setIsVerificationError(false);
       setFieldError({});
       const trimmedUsername = username.trim();
       if (!trimmedUsername) {
@@ -58,10 +65,33 @@ function UserInfo() {
       setLoading(false);
       if (result.error) {
          setError(result.error);
+         if (result.error.toLowerCase().includes("verify")) {
+            setIsVerificationError(true);
+         }
          return;
       }
       setUsername("");
       setPassword("");
+   };
+
+   const handleDeleteAccount = async (
+      pw: string
+   ): Promise<{ error?: string }> => {
+      const res = await fetch(`${getApiUrl()}/account`, {
+         method: "DELETE",
+         headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+         },
+         body: JSON.stringify({ password: pw }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+         return { error: (data.error as string) || "Something went wrong" };
+      }
+      logout();
+      navigate("/");
+      return {};
    };
 
    if (status === "loading") {
@@ -88,6 +118,24 @@ function UserInfo() {
                   <Button name="Home" />
                </Link>
             </ButtonGroup>
+            <div className="mt-6">
+               <button
+                  className={deleteStyles.dangerButton}
+                  onClick={() => setShowDeleteModal(true)}
+                  type="button"
+                  aria-label="Delete Account"
+                  tabIndex={-1}
+               >
+                  <div className={deleteStyles.dangerShine} />
+                  Delete Account
+               </button>
+            </div>
+            {showDeleteModal && (
+               <DeleteAccountModal
+                  onClose={() => setShowDeleteModal(false)}
+                  onDelete={handleDeleteAccount}
+               />
+            )}
          </>
       );
    }
@@ -123,7 +171,18 @@ function UserInfo() {
                autoComplete="current-password"
                error={fieldError.password}
             />
-            {error && <ErrorMessage>{error}</ErrorMessage>}
+            {error && (
+               <>
+                  <ErrorMessage>{error}</ErrorMessage>
+                  {isVerificationError && (
+                     <div className="mt-1">
+                        <StyledLink href="/resend-verification">
+                           Resend verification email
+                        </StyledLink>
+                     </div>
+                  )}
+               </>
+            )}
             <div>
                <Button
                   name={loading ? "Signing in…" : "Sign In"}
@@ -132,7 +191,8 @@ function UserInfo() {
             </div>
          </FormContainer>
 
-         <div className="mt-4">
+         <div className="mt-4 flex flex-col items-center gap-2">
+            <StyledLink href="/forgot-password">Forgot password?</StyledLink>
             <StyledLink href="/register">Create an account</StyledLink>
          </div>
 

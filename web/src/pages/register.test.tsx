@@ -110,7 +110,8 @@ describe("RegisterPage", () => {
          screen.getByRole("button", { name: "Create account" })
       );
       await waitFor(() => {
-         expect(screen.getByText("Account created!")).toBeInTheDocument();
+         expect(screen.getByText(/Account created!/)).toBeInTheDocument();
+         expect(screen.getByText(/verify your account/i)).toBeInTheDocument();
       });
    });
 

@@ -95,7 +95,10 @@ export default function RegisterPage() {
          <PageLayout title="REGISTER">
             {success ? (
                <div className="text-center">
-                  <p className="mb-2">Account created!</p>
+                  <p className="mb-2">
+                     Account created! Check your email to verify your account
+                     before signing in.
+                  </p>
                   <StyledLink href="/user">Sign in</StyledLink>
                </div>
             ) : (

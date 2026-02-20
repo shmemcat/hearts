@@ -3,7 +3,7 @@ from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
 
-from hearts.extensions import db, limiter, mail
+from hearts.extensions import db, limiter
 from flask_migrate import Migrate
 
 _cors_origins = [
@@ -21,19 +21,12 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["FRONTEND_URL"] = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-app.config["MAIL_SERVER"] = os.environ.get("MAIL_SERVER", "localhost")
-app.config["MAIL_PORT"] = int(os.environ.get("MAIL_PORT", "1025"))
-app.config["MAIL_USE_TLS"] = os.environ.get("MAIL_USE_TLS", "").lower() in ("1", "true")
-app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME", "")
-app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD", "")
-app.config["MAIL_DEFAULT_SENDER"] = os.environ.get(
-    "MAIL_DEFAULT_SENDER", "noreply@hearts.local"
-)
+app.config["SMTP2GO_API_KEY"] = os.environ.get("SMTP2GO_API_KEY", "")
+app.config["SMTP2GO_FROM_EMAIL"] = os.environ.get("SMTP2GO_FROM_EMAIL", "noreply@shmem.dev")
 
 db.init_app(app)
 migrate = Migrate(app, db)
 limiter.init_app(app)
-mail.init_app(app)
 CORS(app, origins=_cors_origins)
 
 from hearts.auth_routes import auth_bp  # noqa: E402

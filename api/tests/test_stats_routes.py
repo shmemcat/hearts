@@ -4,6 +4,7 @@ Tests for stats routes: GET /stats, POST /stats/record.
 
 import os
 import pytest
+from unittest.mock import patch
 
 from tests.conftest import JWT_SECRET, make_jwt, auth_headers
 
@@ -19,11 +20,12 @@ def _reset_dedup():
 
 def _create_user_and_token(auth_client):
     """Register a user and return (user_id, jwt_token)."""
-    r = auth_client.post("/register", json={
-        "username": "statsuser",
-        "email": "stats@example.com",
-        "password": "password123",
-    })
+    with patch("hearts.auth_routes.send_verification_email"):
+        r = auth_client.post("/register", json={
+            "username": "statsuser",
+            "email": "stats@example.com",
+            "password": "password123",
+        })
     user = r.get_json()["user"]
     token = make_jwt(user["id"], username=user["username"], email=user["email"])
     return user["id"], token

@@ -23,12 +23,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
-      MAIL_SERVER: ${MAIL_SERVER:-}
-      MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_USE_TLS: ${MAIL_USE_TLS:-true}
-      MAIL_USERNAME: ${MAIL_USERNAME:-}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
-      MAIL_DEFAULT_SENDER: ${MAIL_DEFAULT_SENDER:-noreply@hearts.local}
+      SMTP2GO_API_KEY: ${SMTP2GO_API_KEY:-}
+      SMTP2GO_FROM_EMAIL: ${SMTP2GO_FROM_EMAIL:-noreply@shmem.dev}
     depends_on:
       - db
     restart: unless-stopped

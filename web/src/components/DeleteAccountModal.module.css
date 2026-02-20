@@ -1,0 +1,164 @@
+.backdrop {
+   position: fixed;
+   inset: 0;
+   z-index: 100;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   background: rgba(0, 0, 0, 0.4);
+   backdrop-filter: blur(4px);
+   -webkit-backdrop-filter: blur(4px);
+   animation: fadeIn 0.2s ease-out;
+}
+
+.modal {
+   background: var(--contentbox);
+   border-radius: 16px;
+   padding: 24px 28px;
+   min-width: 260px;
+   max-width: 340px;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 14px;
+   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+   animation: slideUp 0.2s ease-out;
+}
+
+.title {
+   font-size: 1.5rem;
+   font-weight: 700;
+   color: var(--header);
+}
+
+.message {
+   font-size: 1rem;
+   color: var(--text);
+   text-align: center;
+   margin: 0;
+}
+
+.buttons {
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+   width: 100%;
+   align-items: center;
+   margin-top: 4px;
+}
+
+.passwordInput {
+   width: 100%;
+}
+
+.error {
+   color: hsl(0, 65%, 50%);
+   font-size: 0.875rem;
+   text-align: center;
+   margin: 0;
+}
+
+/* ── Red danger button ───────────────────── */
+
+.dangerButton {
+   background-color: hsl(0, 55%, 58%);
+   position: relative;
+   border-style: none;
+   color: hsl(0, 0%, 100%);
+   font-family: "appFont";
+   font-weight: 900;
+   font-size: 13px;
+   letter-spacing: 5px;
+   text-indent: 0.5em;
+   text-align: center;
+   text-transform: uppercase;
+   border-radius: 8px;
+   width: 225px;
+   height: 35px;
+   box-shadow: inset -3px -3px 0px hsla(0, 50%, 40%, 0.4);
+}
+
+.dangerButton:not(:disabled):hover {
+   background-color: hsl(0, 60%, 48%);
+   cursor: pointer;
+   box-shadow: inset -3px -3px 0px hsla(0, 55%, 32%, 0.5);
+}
+
+.dangerButton:disabled {
+   opacity: 0.5;
+   cursor: not-allowed;
+   box-shadow: inset -3px -3px 0px hsla(0, 50%, 40%, 0.2);
+}
+
+.dangerButton:not(:disabled):hover:active {
+   background-color: hsl(0, 60%, 48%);
+   box-shadow: inset 3px 3px 0px hsla(0, 55%, 32%, 0.5);
+}
+
+.dangerShine {
+   position: absolute;
+   top: 2.5px;
+   left: 2px;
+   transform: rotate(-25deg);
+   width: 12px;
+   height: 7px;
+   border-radius: 100%;
+   background-color: hsla(0, 100%, 90%, 0.5);
+}
+
+.dangerButton:not(:disabled):hover .dangerShine {
+   background-color: hsla(0, 80%, 80%, 0.5);
+}
+
+.dangerButton:disabled .dangerShine {
+   background-color: hsla(0, 100%, 90%, 0.25);
+}
+
+.dangerButton:not(:disabled):hover:active .dangerShine {
+   transition: 0ms;
+   background-color: transparent;
+}
+
+@keyframes fadeIn {
+   from {
+      opacity: 0;
+   }
+   to {
+      opacity: 1;
+   }
+}
+
+@keyframes slideUp {
+   from {
+      opacity: 0;
+      transform: translateY(12px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+
+/* for mobile */
+@media only screen and (max-width: 768px) {
+   .dangerButton {
+      font-size: 14px;
+      letter-spacing: 4px;
+      font-weight: 900;
+      width: 190px;
+      height: 44px;
+   }
+}
+
+/* for touch screens */
+@media (hover: none) {
+   .dangerButton:not(:disabled):hover {
+      background-color: hsl(0, 55%, 58%);
+      cursor: default;
+      box-shadow: inset -3px -3px 0px hsla(0, 50%, 40%, 0.4);
+   }
+
+   .dangerButton:not(:disabled):hover .dangerShine {
+      background-color: hsla(0, 100%, 90%, 0.5);
+   }
+}

@@ -11,8 +11,12 @@ Requires-Dist: argon2-cffi>=23.1.0
 Requires-Dist: pyjwt>=2.8.0
 Requires-Dist: flask-cors>=4.0.0
 Requires-Dist: flask-limiter>=3.5.0
-Requires-Dist: flask-mail>=0.9.1
+Requires-Dist: sendgrid>=6.11.0
 Requires-Dist: flask-migrate>=4.0.0
+Requires-Dist: flask-socketio>=5.3.0
+Requires-Dist: eventlet>=0.33.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
 
 # Hearts API
 
