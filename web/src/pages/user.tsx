@@ -230,46 +230,50 @@ function StatsPanel() {
       <div className={containers["stats-card"]}>
          <p className={containers["stats-card-title"]}>Your Stats</p>
          <div className={containers["stats-grid"]}>
-            <div className={containers["stats-row"]}>
-               <span className={containers["stats-label"]}>Games Played</span>
-               <span className={containers["stats-value"]}>
-                  {fmt(stats.games_played)}
-               </span>
-            </div>
-            <div className={containers["stats-row"]}>
-               <span className={containers["stats-label"]}>Games Won</span>
-               <span className={containers["stats-value"]}>
-                  {fmt(stats.games_won)}
-               </span>
-            </div>
-            <div className={containers["stats-row"]}>
-               <span className={containers["stats-label"]}>Win Rate</span>
-               <span className={containers["stats-value"]}>{winRate}</span>
+            <div className={containers["stats-col"]}>
+               <div className={containers["stats-row"]}>
+                  <span className={containers["stats-label"]}>Games Played</span>
+                  <span className={containers["stats-value"]}>
+                     {fmt(stats.games_played)}
+                  </span>
+               </div>
+               <div className={containers["stats-row"]}>
+                  <span className={containers["stats-label"]}>Games Won</span>
+                  <span className={containers["stats-value"]}>
+                     {fmt(stats.games_won)}
+                  </span>
+               </div>
+               <div className={containers["stats-row"]}>
+                  <span className={containers["stats-label"]}>Win Rate</span>
+                  <span className={containers["stats-value"]}>{winRate}</span>
+               </div>
             </div>
             <hr className={containers["stats-divider"]} />
-            <div className={containers["stats-row"]}>
-               <span className={containers["stats-label"]}>Shot the Moon</span>
-               <span className={containers["stats-value"]}>
-                  {fmt(stats.moon_shots)}
-               </span>
-            </div>
-            <div className={containers["stats-row"]}>
-               <span className={containers["stats-label"]}>Best Score</span>
-               <span className={containers["stats-value"]}>
-                  {fmt(stats.best_score)}
-               </span>
-            </div>
-            <div className={containers["stats-row"]}>
-               <span className={containers["stats-label"]}>Worst Score</span>
-               <span className={containers["stats-value"]}>
-                  {fmt(stats.worst_score)}
-               </span>
-            </div>
-            <div className={containers["stats-row"]}>
-               <span className={containers["stats-label"]}>Avg Score</span>
-               <span className={containers["stats-value"]}>
-                  {fmt(stats.average_score)}
-               </span>
+            <div className={containers["stats-col"]}>
+               <div className={containers["stats-row"]}>
+                  <span className={containers["stats-label"]}>Shot the Moon</span>
+                  <span className={containers["stats-value"]}>
+                     {fmt(stats.moon_shots)}
+                  </span>
+               </div>
+               <div className={containers["stats-row"]}>
+                  <span className={containers["stats-label"]}>Best Score</span>
+                  <span className={containers["stats-value"]}>
+                     {fmt(stats.best_score)}
+                  </span>
+               </div>
+               <div className={containers["stats-row"]}>
+                  <span className={containers["stats-label"]}>Worst Score</span>
+                  <span className={containers["stats-value"]}>
+                     {fmt(stats.worst_score)}
+                  </span>
+               </div>
+               <div className={containers["stats-row"]}>
+                  <span className={containers["stats-label"]}>Avg Score</span>
+                  <span className={containers["stats-value"]}>
+                     {fmt(stats.average_score)}
+                  </span>
+               </div>
             </div>
          </div>
       </div>
