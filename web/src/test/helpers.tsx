@@ -5,6 +5,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { CardStyleProvider } from "@/context/CardStyleContext";
+import { HardLevelProvider } from "@/context/HardLevelContext";
 import { SoundProvider } from "@/context/SoundContext";
 import type { GameState, PlayEvent, GamePlayer } from "@/types/game";
 
@@ -22,11 +23,13 @@ function createWrapper(options: WrapperOptions = {}) {
          <HelmetProvider>
             <ThemeProvider>
                <CardStyleProvider>
+                  <HardLevelProvider>
                   <SoundProvider>
                      <MemoryRouter initialEntries={[route]}>
                         {children}
                      </MemoryRouter>
                   </SoundProvider>
+                  </HardLevelProvider>
                </CardStyleProvider>
             </ThemeProvider>
          </HelmetProvider>

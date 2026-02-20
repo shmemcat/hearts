@@ -14,6 +14,8 @@ export const STORAGE_KEY = "hearts_token";
 export const CARD_STYLE_KEY = "hearts_card_style";
 export const SOUND_MUTED_KEY = "hearts_sound_muted";
 export const SOUND_VOLUME_KEY = "hearts_sound_volume";
+export const HARD_LEVEL_KEY = "hearts_hard_level";
+export const HARD_LEVEL_CHANGED_KEY = "hearts_hard_level_changed";
 
 /* ── Card / Game ──────────────────────────────────────────────────────── */
 

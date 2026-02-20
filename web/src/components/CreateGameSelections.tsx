@@ -1,6 +1,7 @@
 import React from "react";
 import containers from "@/styles/containers.module.css";
 import { Select, Toggle, type SelectOption } from "@/components/ui";
+import { Tooltip } from "@/components/Tooltip";
 
 export type NumAiPlayers = 1 | 2 | 3;
 
@@ -16,6 +17,8 @@ export interface CreateGameSelectionsProps {
    onAiPlayersEnabledChange?: (value: boolean) => void;
    numAiPlayers?: NumAiPlayers;
    onNumAiPlayersChange?: (value: NumAiPlayers) => void;
+   /** Show tooltip nudging user to Options for hard sub-difficulty */
+   showHardTooltip?: boolean;
 }
 
 export const CreateGameSelections: React.FC<CreateGameSelectionsProps> = ({
@@ -27,6 +30,7 @@ export const CreateGameSelections: React.FC<CreateGameSelectionsProps> = ({
    onAiPlayersEnabledChange,
    numAiPlayers: controlledNumAi,
    onNumAiPlayersChange,
+   showHardTooltip = false,
 }) => {
    const [internalGameType, setInternalGameType] = React.useState("Versus AI");
    const [internalDifficulty, setInternalDifficulty] = React.useState("Easy");
@@ -78,6 +82,7 @@ export const CreateGameSelections: React.FC<CreateGameSelectionsProps> = ({
             <Difficulty
                difficulty={difficulty}
                onDifficultyChange={setDifficulty}
+               showHardTooltip={showHardTooltip}
             />
          ) : gameType === "Online" ? (
             <OnlineAiOptions
@@ -96,11 +101,26 @@ export const CreateGameSelections: React.FC<CreateGameSelectionsProps> = ({
 const Difficulty: React.FC<{
    difficulty: string;
    onDifficultyChange: (value: string) => void;
-}> = ({ difficulty, onDifficultyChange }) => {
+   showHardTooltip?: boolean;
+}> = ({ difficulty, onDifficultyChange, showHardTooltip = false }) => {
    function onChangeValue(event: React.ChangeEvent<HTMLInputElement>) {
       const value = event.target.value;
       if (value) onDifficultyChange(value);
    }
+
+   const myMomLabel = (
+      <label className="select-none">
+         <input
+            type="radio"
+            value="My Mom"
+            name="difficulty"
+            className="radio mr-[5px]"
+            checked={difficulty === "My Mom"}
+            onChange={onChangeValue}
+         />{" "}
+         My Mom
+      </label>
+   );
 
    return (
       <>
@@ -130,17 +150,16 @@ const Difficulty: React.FC<{
                />{" "}
                Medium
             </label>
-            <label className="select-none">
-               <input
-                  type="radio"
-                  value="My Mom"
-                  name="difficulty"
-                  className="radio mr-[5px]"
-                  checked={difficulty === "My Mom"}
-                  onChange={onChangeValue}
-               />{" "}
-               My Mom
-            </label>
+            {showHardTooltip ? (
+               <Tooltip
+                  content="Want more of a challenge? Bump up the difficulty in Options!"
+                  side="bottom"
+               >
+                  <span>{myMomLabel}</span>
+               </Tooltip>
+            ) : (
+               myMomLabel
+            )}
          </div>
       </>
    );

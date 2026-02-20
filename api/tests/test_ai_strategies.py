@@ -355,6 +355,19 @@ class TestFactory:
         ps, pl = create_strategies("hard")
         assert isinstance(ps, HardPassStrategy)
         assert isinstance(pl, HardPlayStrategy)
+        assert pl._num_worlds == 50
+
+    def test_harder(self):
+        ps, pl = create_strategies("harder")
+        assert isinstance(ps, HardPassStrategy)
+        assert isinstance(pl, HardPlayStrategy)
+        assert pl._num_worlds == 100
+
+    def test_hardest(self):
+        ps, pl = create_strategies("hardest")
+        assert isinstance(ps, HardPassStrategy)
+        assert isinstance(pl, HardPlayStrategy)
+        assert pl._num_worlds == 150
 
     def test_case_insensitive(self):
         ps, pl = create_strategies("  Medium  ")
@@ -373,7 +386,7 @@ class TestFullRoundIntegration:
     """Smoke-test: run a complete round with each difficulty and verify the
     round_scores sum to 26 (or 0 if no points were taken due to scoring)."""
 
-    @pytest.mark.parametrize("difficulty", ["easy", "medium", "hard"])
+    @pytest.mark.parametrize("difficulty", ["easy", "medium", "hard", "harder", "hardest"])
     def test_complete_round(self, difficulty):
         from hearts.game.card import shuffle_deck, deal_into_4_hands
         from hearts.game.runner import GameRunner

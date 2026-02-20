@@ -5,6 +5,7 @@ import { Button } from "@/components/Buttons";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { Card } from "@/components/game/Card";
 import { useCardStyle, type CardStyle } from "@/context/CardStyleContext";
+import { useHardLevel, type HardLevel } from "@/context/HardLevelContext";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import styles from "@/styles/options.module.css";
 
@@ -15,6 +16,12 @@ const STYLES: { id: CardStyle; label: string }[] = [
    { id: "flourish", label: "Flourish" },
 ];
 
+const HARD_LEVELS: { id: HardLevel; label: string; description: string }[] = [
+   { id: "hard", label: "Hard", description: "She's paying attention" },
+   { id: "harder", label: "Harder", description: "She means business" },
+   { id: "hardest", label: "Hardest", description: "No mercy" },
+];
+
 export default function OptionsPage() {
    return (
       <>
@@ -22,7 +29,18 @@ export default function OptionsPage() {
             <title>Options | Hearts</title>
          </Helmet>
          <PageLayout title="OPTIONS">
-            <CardStylePicker />
+            <div className="flex flex-col gap-4">
+               <CardStylePicker />
+               <HardLevelPicker />
+               <ButtonGroup padding="loose">
+                  <Link to="/user">
+                     <Button name="Back" />
+                  </Link>
+                  <Link to="/" onClick={() => triggerLogoFadeOut()}>
+                     <Button name="Home" />
+                  </Link>
+               </ButtonGroup>
+            </div>
          </PageLayout>
       </>
    );
@@ -90,15 +108,45 @@ function CardStylePicker() {
                );
             })}
          </div>
-
-         <ButtonGroup padding="loose">
-            <Link to="/user">
-               <Button name="Back" />
-            </Link>
-            <Link to="/" onClick={() => triggerLogoFadeOut()}>
-               <Button name="Home" />
-            </Link>
-         </ButtonGroup>
       </>
+   );
+}
+
+function HardLevelPicker() {
+   const { hardLevel, setHardLevel } = useHardLevel();
+
+   return (
+      <div className={styles.hardLevelSection}>
+         <h2>How hard should my mom try to beat you?</h2>
+         <div className={styles.hardLevelGrid}>
+            {HARD_LEVELS.map(({ id, label, description }) => {
+               const active = hardLevel === id;
+               return (
+                  <div
+                     key={id}
+                     role="button"
+                     tabIndex={0}
+                     aria-pressed={active}
+                     className={`${styles.hardLevelChoice} ${
+                        active ? styles.hardLevelChoiceActive : ""
+                     }`}
+                     onClick={() => setHardLevel(id)}
+                     onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                           e.preventDefault();
+                           setHardLevel(id);
+                        }
+                     }}
+                  >
+                     <span className={styles.hardLevelLabel}>{label}</span>
+                     <span className={styles.hardLevelDesc}>{description}</span>
+                     {active && (
+                        <span className={styles.styleBadge}>Selected</span>
+                     )}
+                  </div>
+               );
+            })}
+         </div>
+      </div>
    );
 }

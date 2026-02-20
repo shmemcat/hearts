@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { CardStyleProvider } from "@/context/CardStyleContext";
+import { HardLevelProvider } from "@/context/HardLevelContext";
 import { SoundProvider } from "@/context/SoundContext";
 
 import Home from "@/pages/index";
@@ -27,6 +28,7 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <CardStyleProvider>
+          <HardLevelProvider>
           <SoundProvider>
             <div>
               <AnimatePresence mode="wait">
@@ -51,6 +53,7 @@ export default function App() {
               </AnimatePresence>
             </div>
           </SoundProvider>
+          </HardLevelProvider>
         </CardStyleProvider>
       </AuthProvider>
     </ThemeProvider>

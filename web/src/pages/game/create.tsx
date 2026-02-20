@@ -13,11 +13,13 @@ import { Tooltip } from "@/components/Tooltip";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { useHardLevel } from "@/context/HardLevelContext";
 import { startGame, checkActiveGame, concedeGame } from "@/lib/gameApi";
 
 export default function CreateGamePage() {
    const navigate = useNavigate();
    const { user, token } = useAuth();
+   const { hardLevel, hasChanged: hardLevelChanged } = useHardLevel();
    const [gameType, setGameType] = React.useState("Versus AI");
    const [difficulty, setDifficulty] = React.useState("Easy");
    const [aiPlayersEnabled, setAiPlayersEnabled] = React.useState(false);
@@ -46,7 +48,7 @@ export default function CreateGamePage() {
             {
                player_name: user?.name || undefined,
                difficulty:
-                  difficulty === "My Mom" ? "hard" : difficulty.toLowerCase(),
+                  difficulty === "My Mom" ? hardLevel : difficulty.toLowerCase(),
             },
             token
          );
@@ -86,6 +88,7 @@ export default function CreateGamePage() {
                   onAiPlayersEnabledChange={setAiPlayersEnabled}
                   numAiPlayers={numAiPlayers}
                   onNumAiPlayersChange={setNumAiPlayers}
+                  showHardTooltip={!!user && !hardLevelChanged}
                />
 
                <div className="pt-4 mt-4">

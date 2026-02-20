@@ -15,7 +15,8 @@ def create_strategies(
 ) -> Tuple[PassStrategy, PlayStrategy]:
     """Return (PassStrategy, PlayStrategy) for the given difficulty level.
 
-    Valid levels: ``"easy"``, ``"medium"``, ``"hard"``.
+    Valid levels: ``"easy"``, ``"medium"``, ``"hard"``, ``"harder"``,
+    ``"hardest"``.
     """
     difficulty = difficulty.lower().strip()
 
@@ -24,8 +25,13 @@ def create_strategies(
     if difficulty == "medium":
         return MediumPassStrategy(rng=rng), MediumPlayStrategy(rng=rng)
     if difficulty == "hard":
-        return HardPassStrategy(rng=rng), HardPlayStrategy(rng=rng)
+        return HardPassStrategy(rng=rng), HardPlayStrategy(rng=rng, num_worlds=50)
+    if difficulty == "harder":
+        return HardPassStrategy(rng=rng), HardPlayStrategy(rng=rng, num_worlds=100)
+    if difficulty == "hardest":
+        return HardPassStrategy(rng=rng), HardPlayStrategy(rng=rng, num_worlds=150)
 
     raise ValueError(
-        f"Unknown difficulty: {difficulty!r}. Use 'easy', 'medium', or 'hard'."
+        f"Unknown difficulty: {difficulty!r}. "
+        "Use 'easy', 'medium', 'hard', 'harder', or 'hardest'."
     )

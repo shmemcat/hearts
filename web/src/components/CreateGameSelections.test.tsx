@@ -133,4 +133,38 @@ describe("CreateGameSelections", () => {
       );
       expect(screen.getByText("AI Difficulty")).toBeInTheDocument();
    });
+
+   it("shows tooltip on My Mom when showHardTooltip is true", async () => {
+      const user = userEvent.setup();
+      render(
+         <CreateGameSelections
+            gameType="Versus AI"
+            onGameTypeChange={() => {}}
+            difficulty="Easy"
+            onDifficultyChange={() => {}}
+            showHardTooltip={true}
+         />
+      );
+      const myMom = screen.getByLabelText("My Mom");
+      await user.hover(myMom);
+      const matches = await screen.findAllByText(
+         /Bump up the difficulty in Options/
+      );
+      expect(matches.length).toBeGreaterThan(0);
+   });
+
+   it("does not show tooltip on My Mom when showHardTooltip is false", () => {
+      render(
+         <CreateGameSelections
+            gameType="Versus AI"
+            onGameTypeChange={() => {}}
+            difficulty="Easy"
+            onDifficultyChange={() => {}}
+            showHardTooltip={false}
+         />
+      );
+      expect(
+         screen.queryByText(/Bump up the difficulty in Options/)
+      ).not.toBeInTheDocument();
+   });
 });

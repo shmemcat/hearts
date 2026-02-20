@@ -17,7 +17,8 @@
    background-color: var(--mediumpink);
    cursor: pointer;
    border: 3px solid transparent;
-   transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+   transition: border-color 0.2s ease, transform 0.15s ease,
+      box-shadow 0.15s ease;
 }
 
 .styleChoice:hover {
@@ -27,7 +28,7 @@
 
 .styleChoiceActive {
    border-color: var(--cardhighlight);
-   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .previewFan {
@@ -62,6 +63,64 @@
    border-radius: 10px;
 }
 
+/* ── Hard Level Picker ──────────────────────────────────────────────── */
+
+.hardLevelSection {
+   margin-top: 32px;
+}
+
+.hardLevelGrid {
+   display: flex;
+   gap: 20px;
+   justify-content: center;
+   align-items: stretch;
+   flex-wrap: wrap;
+   margin-top: 8px;
+}
+
+.hardLevelChoice {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 8px;
+   padding: 20px 28px 16px;
+   border-radius: 20px;
+   background-color: var(--mediumpink);
+   cursor: pointer;
+   border: 3px solid transparent;
+   transition: border-color 0.2s ease, transform 0.15s ease,
+      box-shadow 0.15s ease;
+   min-width: 130px;
+   flex: 1 1 0;
+}
+
+.hardLevelChoice:hover {
+   transform: translateY(-3px);
+   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.hardLevelChoiceActive {
+   border-color: var(--cardhighlight);
+   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.hardLevelLabel {
+   font-size: 15px;
+   font-weight: 900;
+   letter-spacing: 4px;
+   text-transform: uppercase;
+   color: var(--header);
+   text-align: center;
+}
+
+.hardLevelDesc {
+   font-size: 12px;
+   font-weight: 600;
+   letter-spacing: 1.5px;
+   color: var(--hoverpink);
+   text-align: center;
+}
+
 @media only screen and (max-width: 768px) {
    .optionsGrid {
       gap: 24px;
@@ -74,5 +133,18 @@
    .previewFan {
       min-height: 100px;
       padding: 8px 4px 14px;
+   }
+
+   .hardLevelGrid {
+      gap: 14px;
+   }
+
+   .hardLevelGrid {
+      flex-direction: column;
+   }
+
+   .hardLevelChoice {
+      padding: 16px 20px 12px;
+      min-width: 100px;
    }
 }
