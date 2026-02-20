@@ -171,28 +171,73 @@ const NightModeButton: React.FC = () => {
    );
 };
 
+const useIsTouch = () => {
+   const [touch, setTouch] = React.useState(false);
+   React.useEffect(() => {
+      const mql = window.matchMedia("(hover: none)");
+      setTouch(mql.matches);
+      const handler = (e: MediaQueryListEvent) => setTouch(e.matches);
+      mql.addEventListener("change", handler);
+      return () => mql.removeEventListener("change", handler);
+   }, []);
+   return touch;
+};
+
 const SoundButton: React.FC = () => {
    const { muted, setMuted, volume, setVolume, play } = useSound();
    const [animation, setAnimation] = React.useState(0);
    const [mounted, setMounted] = React.useState(false);
+   const [sliderOpen, setSliderOpen] = React.useState(false);
+   const wrapRef = React.useRef<HTMLDivElement>(null);
+   const isTouch = useIsTouch();
 
    React.useEffect(() => {
       setMounted(true);
    }, []);
 
+   // Close slider when tapping outside on touch devices
+   React.useEffect(() => {
+      if (!isTouch || !sliderOpen) return;
+      const handler = (e: PointerEvent) => {
+         if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+            setSliderOpen(false);
+         }
+      };
+      document.addEventListener("pointerdown", handler);
+      return () => document.removeEventListener("pointerdown", handler);
+   }, [isTouch, sliderOpen]);
+
    if (!mounted) return <></>;
 
    const onClickHandler = () => {
-      const willUnmute = muted;
-      setMuted(!muted);
       setAnimation(1);
-      if (willUnmute) {
-         setTimeout(() => play("soundOn"), 50);
+      if (isTouch) {
+         setSliderOpen((prev) => !prev);
+      } else {
+         const willUnmute = muted;
+         setMuted(!muted);
+         if (willUnmute) {
+            setTimeout(() => play("soundOn"), 50);
+         }
+      }
+   };
+
+   const onVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const v = parseFloat(e.target.value);
+      setVolume(v);
+      if (v === 0 && !muted) {
+         setMuted(true);
+      } else if (v > 0 && muted) {
+         setMuted(false);
       }
    };
 
    return (
-      <div className={buttons.soundButtonWrap}>
+      <div
+         ref={wrapRef}
+         className={buttons.soundButtonWrap}
+         data-slider-open={sliderOpen}
+      >
          <div
             role="button"
             aria-label="Toggle sound on or off"
@@ -215,7 +260,7 @@ const SoundButton: React.FC = () => {
                   max={1}
                   step={0.01}
                   value={volume}
-                  onChange={(e) => setVolume(parseFloat(e.target.value))}
+                  onChange={onVolumeChange}
                   className={buttons.volumeSlider}
                   aria-label="Volume"
                />

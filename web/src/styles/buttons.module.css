@@ -210,7 +210,8 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
    z-index: 50;
 }
 
-.soundButtonWrap:hover .volumeSliderDrop {
+.soundButtonWrap:hover .volumeSliderDrop,
+.soundButtonWrap[data-slider-open="true"] .volumeSliderDrop {
    opacity: 1;
    pointer-events: auto;
    transform: translateX(-50%) scale(1);
@@ -375,6 +376,18 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
 
 /* for touch screens */
 @media (hover: none) {
+   .soundButtonWrap:hover .volumeSliderDrop {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) scale(0.92);
+   }
+
+   .soundButtonWrap[data-slider-open="true"] .volumeSliderDrop {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) scale(1);
+   }
+
    .icon:hover {
       color: var(--lightpink);
    }
