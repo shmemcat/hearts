@@ -1,3 +1,4 @@
+import React from "react";
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
@@ -74,16 +75,15 @@ vi.mock("framer-motion", async () => {
    );
    return {
       ...actual,
-      AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+      AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
       motion: new Proxy(
          {},
          {
             get: (_target, prop: string) => {
-               return ({
-                  children,
-                  ...rest
-               }: React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }) => {
-                  const Element = prop as keyof JSX.IntrinsicElements;
+               const MotionComponent = React.forwardRef<
+                  HTMLElement,
+                  Record<string, unknown> & { children?: React.ReactNode }
+               >(({ children, ...rest }, ref) => {
                   const safeProps: Record<string, unknown> = {};
                   for (const [k, v] of Object.entries(rest)) {
                      if (
@@ -101,8 +101,10 @@ vi.mock("framer-motion", async () => {
                         safeProps[k] = v;
                      }
                   }
-                  return <Element {...(safeProps as any)}>{children}</Element>;
-               };
+                  return React.createElement(prop, { ...safeProps, ref }, children);
+               });
+               MotionComponent.displayName = `motion.${prop}`;
+               return MotionComponent;
             },
          }
       ),
