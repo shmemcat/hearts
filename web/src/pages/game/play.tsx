@@ -236,9 +236,6 @@ export default function PlayGamePage() {
    const resetRef = useRef(reset);
    resetRef.current = reset;
 
-   const busyRef = useRef(busy);
-   busyRef.current = busy;
-
    // ── REST fallback: load intermediate_plays into the queue ──────────
    const enqueueRestPlays = useCallback(
       (
@@ -298,7 +295,7 @@ export default function PlayGamePage() {
             }
             return;
          }
-         if (!busyRef.current) {
+         if (!isActive()) {
             applyPendingRef.current();
          }
       });
@@ -732,6 +729,10 @@ export default function PlayGamePage() {
       roundPendingStateRef.current = null;
       setRoundSummary(null);
       setShootTheMoon(null);
+      // Reset hearts tracking in the same batch as setState so the mid-round
+      // moon detection effect doesn't fire with stale data from the old round.
+      setHeartsPerPlayer([0, 0, 0, 0]);
+      setHeartsVisuallyBroken(false);
       if (pending) {
          setState(pending);
          prevScoresRef.current = pending.players.map(
