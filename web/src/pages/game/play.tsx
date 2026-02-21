@@ -535,15 +535,12 @@ export default function PlayGamePage() {
       moonAdjustmentRef.current = [0, 0, 0, 0];
    }, [currentRound]);
 
-   // Track when a heart/QS first appears on the visible trick table
+   // Track when a heart first appears on the visible trick table
    useEffect(() => {
-      const hasHeartOrQs = displaySlots.some(
-         (s) =>
-            s &&
-            (s.card.toLowerCase().endsWith("h") ||
-               s.card.toLowerCase() === "qs")
+      const hasHeart = displaySlots.some(
+         (s) => s && s.card.toLowerCase().endsWith("h")
       );
-      if (hasHeartOrQs) {
+      if (hasHeart) {
          setHeartsVisuallyBroken(true);
       }
    }, [displaySlots]);

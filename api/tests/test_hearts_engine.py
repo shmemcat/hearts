@@ -210,6 +210,57 @@ class TestApplyPlay:
         assert sum(state.round_scores) >= 0
 
 
+class TestHeartsBreaking:
+    def test_playing_heart_breaks_hearts(self):
+        """Playing a heart should set hearts_broken = True."""
+        lead = Card(Suit.DIAMONDS, 14)
+        hand0 = [Card(Suit.DIAMONDS, i) for i in range(2, 12)]
+        hand1 = [Card(Suit.HEARTS, i) for i in range(2, 12)]
+        hand2 = [Card(Suit.CLUBS, i) for i in range(2, 12)]
+        hand3 = [Card(Suit.SPADES, i) for i in range(2, 12)]
+        state = GameState(
+            round=1,
+            phase=Phase.PLAYING,
+            pass_direction=PassDirection.LEFT,
+            hands=tuple(tuple(h) for h in [hand0, hand1, hand2, hand3]),
+            current_trick=((0, lead),),
+            whose_turn=1,
+            scores=(0, 0, 0, 0),
+            round_scores=(0, 0, 0, 0),
+            hearts_broken=False,
+            game_over=False,
+            winner_index=None,
+        )
+        state2 = apply_play(state, 1, Card(Suit.HEARTS, 2))
+        assert state2.hearts_broken is True
+
+    def test_playing_queen_of_spades_does_not_break_hearts(self):
+        """Playing the Queen of Spades should NOT set hearts_broken = True."""
+        from hearts.game.card import QUEEN_OF_SPADES_RANK
+
+        qs = Card(Suit.SPADES, QUEEN_OF_SPADES_RANK)
+        lead = Card(Suit.DIAMONDS, 14)
+        hand0 = [Card(Suit.DIAMONDS, i) for i in range(2, 12)]
+        hand1 = [qs] + [Card(Suit.SPADES, i) for i in range(2, 11)]
+        hand2 = [Card(Suit.CLUBS, i) for i in range(2, 12)]
+        hand3 = [Card(Suit.HEARTS, i) for i in range(2, 12)]
+        state = GameState(
+            round=1,
+            phase=Phase.PLAYING,
+            pass_direction=PassDirection.LEFT,
+            hands=tuple(tuple(h) for h in [hand0, hand1, hand2, hand3]),
+            current_trick=((0, lead),),
+            whose_turn=1,
+            scores=(0, 0, 0, 0),
+            round_scores=(0, 0, 0, 0),
+            hearts_broken=False,
+            game_over=False,
+            winner_index=None,
+        )
+        state2 = apply_play(state, 1, qs)
+        assert state2.hearts_broken is False
+
+
 class TestApplyRoundScoring:
     def test_shoot_the_moon(self):
         state = GameState(
@@ -672,8 +723,10 @@ class TestRoundBoundary:
                     runner.advance_to_human_turn()
                 plays = runner.get_last_play_events()
                 if runner.get_last_round_ended():
-                    # All plays should total a multiple of 4 (complete tricks only)
-                    assert len(plays) % 4 == 0 or len(plays) == 0
+                    assert len(plays) >= 1
+                    # No plays leaked from the new round: all new hands still full
+                    for i in range(4):
+                        assert len(runner.state.hands[i]) == 13
                     return
         pytest.fail("No seed produced round end via REST path")
 

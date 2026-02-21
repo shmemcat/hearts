@@ -111,10 +111,7 @@ def apply_play(state: GameState, player_index: int, card: Card) -> GameState:
 
     new_hand = [c for c in hand if c != card]
     new_trick = state.trick_list() + [(player_index, card)]
-    played_hearts_or_qs = card.suit == Suit.HEARTS or (
-        card.suit == Suit.SPADES and card.rank == QUEEN_OF_SPADES_RANK
-    )
-    new_hearts_broken = state.hearts_broken or played_hearts_or_qs
+    new_hearts_broken = state.hearts_broken or card.suit == Suit.HEARTS
 
     if len(new_trick) < 4:
         next_turn = (player_index + 1) % 4
