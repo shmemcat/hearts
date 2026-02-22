@@ -203,13 +203,13 @@ const MOBILE_LAYOUTS: {
    {
       id: "single",
       label: "One Row",
-      description: "All cards in a single row at the bottom",
+      description: "All cards in a single row",
       preview: <SingleRowPreview />,
    },
    {
       id: "double",
       label: "Two Rows",
-      description: "Cards split into two rows for bigger touch targets",
+      description: "Two rows of cards, easier to tap",
       preview: <DoubleRowPreview />,
    },
 ];
