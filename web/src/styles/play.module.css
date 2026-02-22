@@ -258,9 +258,9 @@
       ".     seatBottom .";
    align-items: center;
    justify-items: center;
-   max-height: 420px;
+   max-height: 440px;
    aspect-ratio: 1.5;
-   margin: 8px auto 24px;
+   margin: 0px auto 24px;
    gap: 10px;
 }
 

@@ -21,12 +21,12 @@
 .gameTableSeatLeft {
    grid-area: seatLeft;
    justify-self: end;
-   margin-right: 75px;
+   margin-right: 77px;
 }
 .gameTableSeatRight {
    grid-area: seatRight;
    justify-self: start;
-   margin-left: 75px;
+   margin-left: 77px;
 }
 
 .gameTableSeatName {
