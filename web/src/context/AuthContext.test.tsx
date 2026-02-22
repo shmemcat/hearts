@@ -44,6 +44,19 @@ describe("AuthContext", () => {
       });
       localStorage.setItem(STORAGE_KEY, token);
 
+      mockFetch.mockResolvedValueOnce({
+         ok: true,
+         json: () =>
+            Promise.resolve({
+               user: {
+                  id: 42,
+                  username: "alice",
+                  email: "alice@test.com",
+                  preferences: null,
+               },
+            }),
+      });
+
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => {
          expect(result.current.status).toBe("authenticated");
@@ -140,6 +153,19 @@ describe("AuthContext", () => {
       const futureExp = Math.floor(Date.now() / 1000) + 3600;
       const token = makeJwt({ sub: "1", username: "user", exp: futureExp });
       localStorage.setItem(STORAGE_KEY, token);
+
+      mockFetch.mockResolvedValueOnce({
+         ok: true,
+         json: () =>
+            Promise.resolve({
+               user: {
+                  id: 1,
+                  username: "user",
+                  email: "",
+                  preferences: null,
+               },
+            }),
+      });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.status).toBe("authenticated"));

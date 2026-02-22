@@ -6,7 +6,13 @@ from flask import Blueprint, request, jsonify, g
 from datetime import datetime, timedelta
 
 from hearts.extensions import db, limiter
-from hearts.models import User, UserStats, ActiveGame, PasswordResetToken
+from hearts.models import (
+    User,
+    UserStats,
+    UserPreferences,
+    ActiveGame,
+    PasswordResetToken,
+)
 from hearts.auth_utils import hash_password, verify_password
 from hearts.email_utils import (
     send_verification_email,
@@ -261,6 +267,7 @@ def delete_account():
     PasswordResetToken.query.filter_by(user_id=user.id).delete()
     ActiveGame.query.filter_by(user_id=user.id).delete()
     UserStats.query.filter_by(user_id=user.id).delete()
+    UserPreferences.query.filter_by(user_id=user.id).delete()
     db.session.delete(user)
     db.session.commit()
 

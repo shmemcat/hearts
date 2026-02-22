@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { CardStyleProvider } from "@/context/CardStyleContext";
 import { HardLevelProvider } from "@/context/HardLevelContext";
 import { SoundProvider } from "@/context/SoundContext";
+import { MobileLayoutProvider } from "@/context/MobileLayoutContext";
 import type { GameState, PlayEvent, GamePlayer } from "@/types/game";
 
 interface WrapperOptions {
@@ -25,9 +26,11 @@ function createWrapper(options: WrapperOptions = {}) {
                <CardStyleProvider>
                   <HardLevelProvider>
                      <SoundProvider>
-                        <MemoryRouter initialEntries={[route]}>
-                           {children}
-                        </MemoryRouter>
+                        <MobileLayoutProvider>
+                           <MemoryRouter initialEntries={[route]}>
+                              {children}
+                           </MemoryRouter>
+                        </MobileLayoutProvider>
                      </SoundProvider>
                   </HardLevelProvider>
                </CardStyleProvider>

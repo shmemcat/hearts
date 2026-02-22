@@ -27,6 +27,7 @@ class User(db.Model):
             "email": self.email,
             "name": self.username,
             "email_verified": self.email_verified,
+            "preferences": self.preferences.to_dict() if self.preferences else None,
         }
 
     def set_verification_token(self, expires_hours=24):
@@ -62,6 +63,29 @@ class UserStats(db.Model):
                 if self.games_played > 0
                 else None
             ),
+        }
+
+
+class UserPreferences(db.Model):
+    __tablename__ = "user_preferences"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False
+    )
+    card_style = db.Column(db.String(20), default="standard", nullable=False)
+    hard_level = db.Column(db.String(20), default="hard", nullable=False)
+    mobile_layout = db.Column(db.String(20), default="single", nullable=False)
+
+    user = db.relationship(
+        "User", backref=db.backref("preferences", uselist=False, lazy="joined")
+    )
+
+    def to_dict(self):
+        return {
+            "card_style": self.card_style,
+            "hard_level": self.hard_level,
+            "mobile_layout": self.mobile_layout,
         }
 
 

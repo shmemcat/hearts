@@ -1,5 +1,6 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { vi, beforeEach, afterEach } from "vitest";
+import { AuthProvider } from "@/context/AuthContext";
 import { HardLevelProvider, useHardLevel } from "./HardLevelContext";
 import { HARD_LEVEL_KEY, HARD_LEVEL_CHANGED_KEY } from "@/lib/constants";
 
@@ -12,7 +13,11 @@ afterEach(() => {
 });
 
 function wrapper({ children }: { children: React.ReactNode }) {
-   return <HardLevelProvider>{children}</HardLevelProvider>;
+   return (
+      <AuthProvider>
+         <HardLevelProvider>{children}</HardLevelProvider>
+      </AuthProvider>
+   );
 }
 
 describe("HardLevelContext", () => {

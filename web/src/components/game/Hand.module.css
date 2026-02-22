@@ -222,4 +222,45 @@
    .handCardWrap:hover:has(button:not(:disabled)) {
       z-index: auto;
    }
+
+   /* ── Two-row layout (8+ cards) ──────────────────────── */
+   .handTwoRow {
+      position: fixed;
+      bottom: 0px;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform: translateY(30px);
+   }
+   .handBackRow,
+   .handFrontRow {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 0;
+      padding: 0 16px;
+      width: 100%;
+   }
+   .handFrontRow {
+      margin-top: -35px;
+      position: relative;
+      z-index: 1;
+   }
+   .handBackRow .handCardWrap,
+   .handFrontRow .handCardWrap {
+      position: relative;
+      z-index: 0;
+   }
+   .handBackRow .handCardWrap:first-child,
+   .handFrontRow .handCardWrap:first-child {
+      margin-left: 0 !important;
+   }
+   .handBackRow .handCardWrap:last-child,
+   .handFrontRow .handCardWrap:last-child {
+      margin-right: 0 !important;
+   }
 }

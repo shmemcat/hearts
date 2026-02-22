@@ -5,8 +5,12 @@ import { Navbar } from "./Navbar";
 import { renderWithProviders } from "@/test/helpers";
 import { STORAGE_KEY } from "@/lib/constants";
 
+const mockFetch = vi.fn();
+
 beforeEach(() => {
    localStorage.clear();
+   mockFetch.mockReset();
+   vi.stubGlobal("fetch", mockFetch);
 });
 
 afterEach(() => {
@@ -37,6 +41,19 @@ describe("Navbar", () => {
          JSON.stringify({ sub: "1", username: "alice", exp: futureExp })
       );
       localStorage.setItem(STORAGE_KEY, `${header}.${payload}.sig`);
+
+      mockFetch.mockResolvedValueOnce({
+         ok: true,
+         json: () =>
+            Promise.resolve({
+               user: {
+                  id: 1,
+                  username: "alice",
+                  email: "alice@test.com",
+                  preferences: null,
+               },
+            }),
+      });
 
       renderWithProviders(<Navbar />, { route: "/game/create" });
       await waitFor(() => {

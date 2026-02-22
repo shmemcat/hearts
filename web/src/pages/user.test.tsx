@@ -161,20 +161,33 @@ describe("UserPage - Authenticated", () => {
          exp: Math.floor(Date.now() / 1000) + 3600,
       });
       localStorage.setItem(STORAGE_KEY, token);
-      mockFetch.mockResolvedValueOnce({
-         ok: true,
-         json: () =>
-            Promise.resolve({
-               stats: {
-                  games_played: 10,
-                  games_won: 3,
-                  moon_shots: 1,
-                  best_score: 12,
-                  worst_score: 85,
-                  average_score: 45,
-               },
-            }),
-      });
+      mockFetch
+         .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+               Promise.resolve({
+                  user: {
+                     id: 1,
+                     username: "alice",
+                     email: "a@test.com",
+                     preferences: null,
+                  },
+               }),
+         })
+         .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+               Promise.resolve({
+                  stats: {
+                     games_played: 10,
+                     games_won: 3,
+                     moon_shots: 1,
+                     best_score: 12,
+                     worst_score: 85,
+                     average_score: 45,
+                  },
+               }),
+         });
    }
 
    it("shows welcome message when authenticated", async () => {

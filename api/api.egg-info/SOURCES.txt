@@ -16,6 +16,7 @@ hearts/game_socket.py
 hearts/gunicorn_worker.py
 hearts/jwt_utils.py
 hearts/models.py
+hearts/prefs_routes.py
 hearts/stats_routes.py
 hearts/ai/__init__.py
 hearts/ai/base.py

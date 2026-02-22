@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CardStyleProvider } from "@/context/CardStyleContext";
 import { HardLevelProvider } from "@/context/HardLevelContext";
 import { SoundProvider } from "@/context/SoundContext";
+import { MobileLayoutProvider } from "@/context/MobileLayoutContext";
 
 import Home from "@/pages/index";
 import User from "@/pages/user";
@@ -30,52 +31,57 @@ export default function App() {
             <CardStyleProvider>
                <HardLevelProvider>
                   <SoundProvider>
-                     <div>
-                        <AnimatePresence mode="wait">
-                           <motion.div key={location.pathname}>
-                              <Routes location={location}>
-                                 <Route path="/" element={<Home />} />
-                                 <Route path="/user" element={<User />} />
-                                 <Route path="/about" element={<About />} />
-                                 <Route path="/options" element={<Options />} />
-                                 <Route path="/rules" element={<Rules />} />
-                                 <Route
-                                    path="/register"
-                                    element={<Register />}
-                                 />
-                                 <Route
-                                    path="/forgot-password"
-                                    element={<ForgotPassword />}
-                                 />
-                                 <Route
-                                    path="/reset-password"
-                                    element={<ResetPassword />}
-                                 />
-                                 <Route
-                                    path="/verify-email"
-                                    element={<VerifyEmail />}
-                                 />
-                                 <Route
-                                    path="/resend-verification"
-                                    element={<ResendVerification />}
-                                 />
-                                 <Route
-                                    path="/game/create"
-                                    element={<CreateGame />}
-                                 />
-                                 <Route
-                                    path="/game/join"
-                                    element={<JoinGame />}
-                                 />
-                                 <Route
-                                    path="/game/play"
-                                    element={<PlayGame />}
-                                 />
-                                 <Route path="*" element={<NotFound />} />
-                              </Routes>
-                           </motion.div>
-                        </AnimatePresence>
-                     </div>
+                     <MobileLayoutProvider>
+                        <div>
+                           <AnimatePresence mode="wait">
+                              <motion.div key={location.pathname}>
+                                 <Routes location={location}>
+                                    <Route path="/" element={<Home />} />
+                                    <Route path="/user" element={<User />} />
+                                    <Route path="/about" element={<About />} />
+                                    <Route
+                                       path="/options"
+                                       element={<Options />}
+                                    />
+                                    <Route path="/rules" element={<Rules />} />
+                                    <Route
+                                       path="/register"
+                                       element={<Register />}
+                                    />
+                                    <Route
+                                       path="/forgot-password"
+                                       element={<ForgotPassword />}
+                                    />
+                                    <Route
+                                       path="/reset-password"
+                                       element={<ResetPassword />}
+                                    />
+                                    <Route
+                                       path="/verify-email"
+                                       element={<VerifyEmail />}
+                                    />
+                                    <Route
+                                       path="/resend-verification"
+                                       element={<ResendVerification />}
+                                    />
+                                    <Route
+                                       path="/game/create"
+                                       element={<CreateGame />}
+                                    />
+                                    <Route
+                                       path="/game/join"
+                                       element={<JoinGame />}
+                                    />
+                                    <Route
+                                       path="/game/play"
+                                       element={<PlayGame />}
+                                    />
+                                    <Route path="*" element={<NotFound />} />
+                                 </Routes>
+                              </motion.div>
+                           </AnimatePresence>
+                        </div>
+                     </MobileLayoutProvider>
                   </SoundProvider>
                </HardLevelProvider>
             </CardStyleProvider>

@@ -2,13 +2,16 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { Card } from "./Card";
+import { AuthProvider } from "@/context/AuthContext";
 import { CardStyleProvider } from "@/context/CardStyleContext";
 
 function renderCard(props: React.ComponentProps<typeof Card>) {
    return render(
-      <CardStyleProvider>
-         <Card {...props} />
-      </CardStyleProvider>
+      <AuthProvider>
+         <CardStyleProvider>
+            <Card {...props} />
+         </CardStyleProvider>
+      </AuthProvider>
    );
 }
 

@@ -1,5 +1,6 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { vi, beforeEach, afterEach } from "vitest";
+import { AuthProvider } from "@/context/AuthContext";
 import { CardStyleProvider, useCardStyle } from "./CardStyleContext";
 import { CARD_STYLE_KEY } from "@/lib/constants";
 
@@ -12,7 +13,11 @@ afterEach(() => {
 });
 
 function wrapper({ children }: { children: React.ReactNode }) {
-   return <CardStyleProvider>{children}</CardStyleProvider>;
+   return (
+      <AuthProvider>
+         <CardStyleProvider>{children}</CardStyleProvider>
+      </AuthProvider>
+   );
 }
 
 describe("CardStyleContext", () => {

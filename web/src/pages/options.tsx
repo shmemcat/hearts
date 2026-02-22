@@ -6,6 +6,10 @@ import { triggerLogoFadeOut } from "@/components/Navbar";
 import { Card } from "@/components/game/Card";
 import { useCardStyle, type CardStyle } from "@/context/CardStyleContext";
 import { useHardLevel, type HardLevel } from "@/context/HardLevelContext";
+import {
+   useMobileLayout,
+   type MobileLayout,
+} from "@/context/MobileLayoutContext";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import styles from "@/styles/options.module.css";
 
@@ -31,6 +35,7 @@ export default function OptionsPage() {
          <PageLayout title="OPTIONS">
             <div className="flex flex-col gap-4">
                <CardStylePicker />
+               <MobileLayoutPicker />
                <HardLevelPicker />
                <ButtonGroup padding="loose">
                   <Link to="/user">
@@ -109,6 +114,147 @@ function CardStylePicker() {
             })}
          </div>
       </>
+   );
+}
+
+const LAYOUT_SUITS = [
+   "b",
+   "b",
+   "b",
+   "r",
+   "r",
+   "r",
+   "r",
+   "b",
+   "b",
+   "b",
+   "b",
+   "r",
+   "r",
+] as const;
+
+function MiniCardRow({
+   count,
+   suitOffset,
+   overlap,
+   arc,
+}: {
+   count: number;
+   suitOffset: number;
+   overlap: number;
+   arc: number;
+}) {
+   const center = (count - 1) / 2;
+   return (
+      <>
+         {Array.from({ length: count }, (_, i) => {
+            const dist = i - center;
+            const rot = dist * arc;
+            const yOff = Math.pow(Math.abs(dist), 2) * (arc * 0.2);
+            const suit = LAYOUT_SUITS[(i + suitOffset) % LAYOUT_SUITS.length];
+            return (
+               <div
+                  key={i}
+                  className={`${styles.miniCard} ${
+                     suit === "r" ? styles.miniCardRed : styles.miniCardBlack
+                  }`}
+                  style={{
+                     transform: `translateY(${yOff}px) rotate(${rot}deg)`,
+                     marginLeft: i === 0 ? 0 : overlap,
+                  }}
+               />
+            );
+         })}
+      </>
+   );
+}
+
+function SingleRowPreview() {
+   return (
+      <div className={styles.layoutPreview} style={{ paddingBottom: 22 }}>
+         <div className={styles.layoutPreviewRow}>
+            <MiniCardRow count={13} suitOffset={0} overlap={-6} arc={1.2} />
+         </div>
+      </div>
+   );
+}
+
+function DoubleRowPreview() {
+   return (
+      <div className={styles.layoutPreview}>
+         <div className={styles.layoutPreviewRow}>
+            <MiniCardRow count={6} suitOffset={0} overlap={-4} arc={0.8} />
+         </div>
+         <div
+            className={`${styles.layoutPreviewRow} ${styles.layoutPreviewFrontRow}`}
+         >
+            <MiniCardRow count={7} suitOffset={6} overlap={-4} arc={0.8} />
+         </div>
+      </div>
+   );
+}
+
+const MOBILE_LAYOUTS: {
+   id: MobileLayout;
+   label: string;
+   description: string;
+   preview: React.ReactNode;
+}[] = [
+   {
+      id: "single",
+      label: "One Row",
+      description: "All cards in a single row at the bottom",
+      preview: <SingleRowPreview />,
+   },
+   {
+      id: "double",
+      label: "Two Rows",
+      description: "Cards split into two rows for bigger touch targets",
+      preview: <DoubleRowPreview />,
+   },
+];
+
+function MobileLayoutPicker() {
+   const { mobileLayout, setMobileLayout } = useMobileLayout();
+
+   return (
+      <div className={styles.hardLevelSection}>
+         <h2>Mobile Card Layout</h2>
+         <p className={styles.hardLevelDesc} style={{ marginBottom: 8 }}>
+            How should cards above 7 behave on mobile?
+         </p>
+         <div className={styles.optionsGrid}>
+            {MOBILE_LAYOUTS.map(({ id, label, description, preview }) => {
+               const active = mobileLayout === id;
+               return (
+                  <div
+                     key={id}
+                     role="button"
+                     tabIndex={0}
+                     aria-pressed={active}
+                     className={`${styles.styleChoice} ${
+                        active ? styles.styleChoiceActive : ""
+                     }`}
+                     style={{ flex: "1 1 0" }}
+                     onClick={() => setMobileLayout(id)}
+                     onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                           e.preventDefault();
+                           setMobileLayout(id);
+                        }
+                     }}
+                  >
+                     <span className={styles.styleLabel}>{label}</span>
+                     {preview}
+                     <span className={styles.hardLevelDesc}>{description}</span>
+                     {active && (
+                        <span className={styles.styleBadge}>Selected</span>
+                     )}
+                  </div>
+               );
+            })}
+         </div>
+      </div>
    );
 }
 

@@ -119,6 +119,60 @@
    letter-spacing: 1.5px;
    color: var(--hoverpink);
    text-align: center;
+   padding-bottom: 10px;
+}
+
+/* ── Mobile Layout Preview ─────────────────────────────────────────── */
+
+.layoutPreview {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   padding: 0px 0 8px;
+   margin-top: 0px;
+   min-height: 60px;
+   justify-content: flex-end;
+}
+
+.layoutPreviewSingle {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   padding: 0px 0 8px;
+   margin-top: -20px;
+   min-height: 60px;
+   justify-content: flex-end;
+}
+
+.layoutPreviewRow {
+   display: flex;
+   justify-content: center;
+   align-items: flex-end;
+}
+
+.layoutPreviewFrontRow {
+   margin-top: -8px;
+   position: relative;
+   z-index: 1;
+}
+
+.miniCard {
+   width: 18px;
+   height: 26px;
+   border-radius: 3px;
+   border: 1.5px solid var(--cardborder);
+   background: var(--contentbox);
+   display: inline-block;
+   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+   transform-origin: center bottom;
+}
+
+.miniCardRed {
+   border-top: 3px solid var(--cardredsuit);
+}
+
+.miniCardBlack {
+   border-top: 3px solid var(--cardblacksuit);
 }
 
 @media only screen and (max-width: 768px) {

@@ -2,13 +2,19 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { Hand } from "./Hand";
+import { AuthProvider } from "@/context/AuthContext";
 import { CardStyleProvider } from "@/context/CardStyleContext";
+import { MobileLayoutProvider } from "@/context/MobileLayoutContext";
 
 function renderHand(props: React.ComponentProps<typeof Hand>) {
    return render(
-      <CardStyleProvider>
-         <Hand {...props} />
-      </CardStyleProvider>
+      <AuthProvider>
+         <CardStyleProvider>
+            <MobileLayoutProvider>
+               <Hand {...props} />
+            </MobileLayoutProvider>
+         </CardStyleProvider>
+      </AuthProvider>
    );
 }
 

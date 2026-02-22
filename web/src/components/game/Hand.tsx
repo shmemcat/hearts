@@ -2,6 +2,7 @@ import React from "react";
 
 import { Card } from "@/components/game/Card";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useMobileLayout } from "@/context/MobileLayoutContext";
 import styles from "./Hand.module.css";
 
 const SMOOSH_DURATION_MS = 250;
@@ -20,11 +21,40 @@ const INITIAL_WIDTH =
  * so small hands don't look goofy with too-sparse cards.
  */
 const HAND_PADDING = 32; // 16px on each side (from mobile CSS)
-const MIN_OVERLAP = CARD_WIDTH * 0.2; // 40 % overlap between neighbors = 20 % per side
+const MIN_OVERLAP = CARD_WIDTH * 0.17; // 40 % overlap between neighbors = 20 % per side
+const DOUBLE_ROW_THRESHOLD = 7;
+
 function getMobileOverlap(count: number, targetWidth: number): number {
    if (count <= 1) return 0;
    const needed = (CARD_WIDTH * count - targetWidth) / (2 * (count - 1));
    return Math.max(MIN_OVERLAP, needed);
+}
+
+/** Clamp per-card overlaps so total width fits targetWidth and edge cards stay readable. */
+function clampRowOverlaps(overlaps: number[], targetWidth: number): void {
+   const n = overlaps.length;
+   if (n <= 1) return;
+   const sum = overlaps.reduce((s, v) => s + v, 0);
+   let totalWidth = n * CARD_WIDTH - 2 * sum + overlaps[0] + overlaps[n - 1];
+   if (totalWidth > targetWidth) {
+      const delta = (totalWidth - targetWidth) / (2 * (n - 1));
+      for (let i = 0; i < n; i++) overlaps[i] += delta;
+      totalWidth = targetWidth;
+   }
+   const MIN_EDGE_VISIBLE = 36;
+   const maxEdgeOverlap = CARD_WIDTH - MIN_EDGE_VISIBLE;
+   const last = n - 1;
+   let freed = 0;
+   for (const idx of [0, last]) {
+      if (overlaps[idx] > maxEdgeOverlap) {
+         freed += overlaps[idx] - maxEdgeOverlap;
+         overlaps[idx] = maxEdgeOverlap;
+      }
+   }
+   if (freed > 0 && n > 2) {
+      const extra = freed / (2 * (n - 2));
+      for (let i = 1; i < last; i++) overlaps[i] += extra;
+   }
 }
 
 export interface HandProps {
@@ -58,32 +88,35 @@ export const Hand: React.FC<HandProps> = ({
    enterDirection,
 }) => {
    const isMobile = useIsMobile();
+   const { mobileLayout } = useMobileLayout();
 
-   const [availableWidth, setAvailableWidth] = React.useState(() =>
+   const [screenWidth, setScreenWidth] = React.useState(() =>
       typeof window !== "undefined"
-         ? Math.min(INITIAL_WIDTH, window.innerWidth - HAND_PADDING)
+         ? window.innerWidth - HAND_PADDING
          : INITIAL_WIDTH
    );
    React.useEffect(() => {
-      if (!isMobile) {
-         setAvailableWidth(INITIAL_WIDTH);
-         return;
-      }
+      if (!isMobile) return;
       const update = () => {
-         setAvailableWidth(
-            Math.min(INITIAL_WIDTH, window.innerWidth - HAND_PADDING)
-         );
+         setScreenWidth(window.innerWidth - HAND_PADDING);
       };
       update();
       window.addEventListener("resize", update);
       return () => window.removeEventListener("resize", update);
    }, [isMobile]);
-   const targetWidth = isMobile ? availableWidth : INITIAL_WIDTH;
+   const targetWidth = isMobile
+      ? Math.min(INITIAL_WIDTH, screenWidth)
+      : INITIAL_WIDTH;
 
    const sorted = React.useMemo(
       () => [...cards].sort(compareCardCodes),
       [cards]
    );
+
+   const useTwoRows =
+      isMobile &&
+      mobileLayout === "double" &&
+      sorted.length > DOUBLE_ROW_THRESHOLD;
 
    /* ── Smoosh: only when there's a genuine mix of legal AND disabled cards ── */
    const hasMix =
@@ -107,6 +140,128 @@ export const Hand: React.FC<HandProps> = ({
       }
       prevShouldSmoosh.current = shouldSmoosh;
    }, [shouldSmoosh]);
+
+   /* ── Two-row mobile layout (8+ cards) ──────────────────────────────── */
+   if (useTwoRows) {
+      const splitIdx = Math.floor(sorted.length / 2);
+      const backCards = sorted.slice(0, splitIdx);
+      const frontCards = sorted.slice(splitIdx);
+
+      const twoRowOverlap = (count: number) => {
+         if (count <= 1) return 0;
+         const needed = (CARD_WIDTH * count - screenWidth) / (2 * (count - 1));
+         return Math.max(0, needed);
+      };
+
+      const backOverlaps = backCards.map(() => twoRowOverlap(backCards.length));
+      clampRowOverlaps(backOverlaps, screenWidth);
+
+      const frontOverlaps = frontCards.map(() =>
+         twoRowOverlap(frontCards.length)
+      );
+      clampRowOverlaps(frontOverlaps, screenWidth);
+
+      const wrapTwo = (
+         code: string,
+         index: number,
+         overlaps: number[],
+         rowLen: number,
+         card: React.ReactNode
+      ) => {
+         let content = card;
+         if (exitingCodes?.has(code) && exitDirection) {
+            const cls =
+               exitDirection === "left"
+                  ? styles.handExitLeft
+                  : exitDirection === "right"
+                  ? styles.handExitRight
+                  : styles.handExitUp;
+            content = <div className={cls}>{card}</div>;
+         } else if (enteringCodes?.has(code) && enterDirection) {
+            const cls =
+               enterDirection === "left"
+                  ? styles.handEnterFromLeft
+                  : enterDirection === "right"
+                  ? styles.handEnterFromRight
+                  : styles.handEnterFromAbove;
+            content = <div className={cls}>{card}</div>;
+         }
+
+         const center = (rowLen - 1) / 2;
+         const dist = index - center;
+         const rotation = dist * 0.8;
+         const yOff = Math.pow(Math.abs(dist), 2) * 0.15;
+
+         return (
+            <div
+               key={code}
+               className={styles.handCardWrap}
+               style={{
+                  margin: `0 -${overlaps[index]}px`,
+                  transform: `translateY(${yOff}px) rotate(${rotation}deg)`,
+               }}
+            >
+               {content}
+            </div>
+         );
+      };
+
+      const renderRow = (
+         rowCards: string[],
+         overlaps: number[],
+         className: string
+      ) => (
+         <div className={className}>
+            {rowCards.map((code, i) => {
+               if (selectionMode && selectedCodes) {
+                  return wrapTwo(
+                     code,
+                     i,
+                     overlaps,
+                     rowCards.length,
+                     <Card
+                        code={code}
+                        selected={selectedCodes.has(code)}
+                        onClick={() => onCardClick?.(code)}
+                        size={size}
+                     />
+                  );
+               }
+               if (legalCodes !== undefined) {
+                  const disabled = legalCodes.size > 0 && !legalCodes.has(code);
+                  return wrapTwo(
+                     code,
+                     i,
+                     overlaps,
+                     rowCards.length,
+                     <Card
+                        code={code}
+                        disabled={disabled}
+                        onClick={
+                           onCardClick ? () => onCardClick(code) : undefined
+                        }
+                        size={size}
+                     />
+                  );
+               }
+               return wrapTwo(
+                  code,
+                  i,
+                  overlaps,
+                  rowCards.length,
+                  <Card code={code} size={size} />
+               );
+            })}
+         </div>
+      );
+
+      return (
+         <div className={styles.handTwoRow} role="group" aria-label="Your hand">
+            {renderRow(backCards, backOverlaps, styles.handBackRow)}
+            {renderRow(frontCards, frontOverlaps, styles.handFrontRow)}
+         </div>
+      );
+   }
 
    /* ── Mobile overlap + smoosh margins ──────────────────────────────────── */
    const baseOverlap = isMobile
@@ -145,42 +300,7 @@ export const Hand: React.FC<HandProps> = ({
    });
 
    if (isMobile && sorted.length > 1) {
-      const sum = cardOverlaps.reduce((s, v) => s + v, 0);
-      let totalWidth =
-         sorted.length * CARD_WIDTH -
-         2 * sum +
-         cardOverlaps[0] +
-         cardOverlaps[sorted.length - 1];
-      if (totalWidth > targetWidth) {
-         const delta = (totalWidth - targetWidth) / (2 * (sorted.length - 1));
-         for (let i = 0; i < cardOverlaps.length; i++) {
-            cardOverlaps[i] += delta;
-         }
-         totalWidth = targetWidth;
-      }
-
-      /*
-       * Edge cards only lose overlap on one side (outer margin is zeroed by
-       * CSS), so they need a lower overlap cap to keep rank + suit readable.
-       * If capping the edge frees up width, redistribute to interior cards.
-       */
-      const MIN_EDGE_VISIBLE = 36;
-      const maxEdgeOverlap = CARD_WIDTH - MIN_EDGE_VISIBLE;
-      const last = sorted.length - 1;
-      let freed = 0;
-      for (const idx of [0, last]) {
-         if (cardOverlaps[idx] > maxEdgeOverlap) {
-            freed += cardOverlaps[idx] - maxEdgeOverlap;
-            cardOverlaps[idx] = maxEdgeOverlap;
-         }
-      }
-      if (freed > 0 && sorted.length > 2) {
-         const interiorCount = sorted.length - 2;
-         const extra = freed / (2 * interiorCount);
-         for (let i = 1; i < last; i++) {
-            cardOverlaps[i] += extra;
-         }
-      }
+      clampRowOverlaps(cardOverlaps, targetWidth);
    }
 
    /* Subtle arc: slight rotation + parabolic vertical offset for a gentle curve. */
