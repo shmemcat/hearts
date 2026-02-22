@@ -19,10 +19,11 @@ const INITIAL_WIDTH =
  * 40 % of the card width between neighbors, stop expanding and hold there
  * so small hands don't look goofy with too-sparse cards.
  */
+const HAND_PADDING = 32; // 16px on each side (from mobile CSS)
 const MIN_OVERLAP = CARD_WIDTH * 0.2; // 40 % overlap between neighbors = 20 % per side
-function getMobileOverlap(count: number): number {
+function getMobileOverlap(count: number, targetWidth: number): number {
    if (count <= 1) return 0;
-   const needed = (CARD_WIDTH * count - INITIAL_WIDTH) / (2 * (count - 1));
+   const needed = (CARD_WIDTH * count - targetWidth) / (2 * (count - 1));
    return Math.max(MIN_OVERLAP, needed);
 }
 
@@ -57,6 +58,28 @@ export const Hand: React.FC<HandProps> = ({
    enterDirection,
 }) => {
    const isMobile = useIsMobile();
+
+   const [availableWidth, setAvailableWidth] = React.useState(() =>
+      typeof window !== "undefined"
+         ? Math.min(INITIAL_WIDTH, window.innerWidth - HAND_PADDING)
+         : INITIAL_WIDTH
+   );
+   React.useEffect(() => {
+      if (!isMobile) {
+         setAvailableWidth(INITIAL_WIDTH);
+         return;
+      }
+      const update = () => {
+         setAvailableWidth(
+            Math.min(INITIAL_WIDTH, window.innerWidth - HAND_PADDING)
+         );
+      };
+      update();
+      window.addEventListener("resize", update);
+      return () => window.removeEventListener("resize", update);
+   }, [isMobile]);
+   const targetWidth = isMobile ? availableWidth : INITIAL_WIDTH;
+
    const sorted = React.useMemo(
       () => [...cards].sort(compareCardCodes),
       [cards]
@@ -86,7 +109,9 @@ export const Hand: React.FC<HandProps> = ({
    }, [shouldSmoosh]);
 
    /* ── Mobile overlap + smoosh margins ──────────────────────────────────── */
-   const baseOverlap = isMobile ? getMobileOverlap(sorted.length) : 0;
+   const baseOverlap = isMobile
+      ? getMobileOverlap(sorted.length, targetWidth)
+      : 0;
 
    const nLegal = legalCodes
       ? sorted.filter((c) => legalCodes.has(c)).length
@@ -110,6 +135,53 @@ export const Hand: React.FC<HandProps> = ({
               MAX_DISABLED_OVERLAP
            )
          : baseOverlap;
+
+   /* ── Per-card overlaps with screen-width clamping ────────────────────── */
+   const cardOverlaps = sorted.map((code) => {
+      if (!isMobile || legalCodes === undefined) return baseOverlap;
+      if (!shouldSmoosh) return baseOverlap;
+      const isDisabled = legalCodes.size > 0 && !legalCodes.has(code);
+      return isDisabled ? disabledOverlap : legalOverlap;
+   });
+
+   if (isMobile && sorted.length > 1) {
+      const sum = cardOverlaps.reduce((s, v) => s + v, 0);
+      let totalWidth =
+         sorted.length * CARD_WIDTH -
+         2 * sum +
+         cardOverlaps[0] +
+         cardOverlaps[sorted.length - 1];
+      if (totalWidth > targetWidth) {
+         const delta = (totalWidth - targetWidth) / (2 * (sorted.length - 1));
+         for (let i = 0; i < cardOverlaps.length; i++) {
+            cardOverlaps[i] += delta;
+         }
+         totalWidth = targetWidth;
+      }
+
+      /*
+       * Edge cards only lose overlap on one side (outer margin is zeroed by
+       * CSS), so they need a lower overlap cap to keep rank + suit readable.
+       * If capping the edge frees up width, redistribute to interior cards.
+       */
+      const MIN_EDGE_VISIBLE = 36;
+      const maxEdgeOverlap = CARD_WIDTH - MIN_EDGE_VISIBLE;
+      const last = sorted.length - 1;
+      let freed = 0;
+      for (const idx of [0, last]) {
+         if (cardOverlaps[idx] > maxEdgeOverlap) {
+            freed += cardOverlaps[idx] - maxEdgeOverlap;
+            cardOverlaps[idx] = maxEdgeOverlap;
+         }
+      }
+      if (freed > 0 && sorted.length > 2) {
+         const interiorCount = sorted.length - 2;
+         const extra = freed / (2 * interiorCount);
+         for (let i = 1; i < last; i++) {
+            cardOverlaps[i] += extra;
+         }
+      }
+   }
 
    /* Subtle arc: slight rotation + parabolic vertical offset for a gentle curve. */
    const centerIndex = (sorted.length - 1) / 2;
@@ -149,17 +221,10 @@ export const Hand: React.FC<HandProps> = ({
       const inlineStyle: React.CSSProperties = {};
 
       if (isMobile && legalCodes !== undefined) {
-         let overlap = baseOverlap;
-
-         if (shouldSmoosh) {
-            if (isDisabled) {
-               overlap = disabledOverlap;
-               transform += " scale(0.8)";
-            } else {
-               overlap = legalOverlap;
-            }
+         const overlap = cardOverlaps[index];
+         if (shouldSmoosh && isDisabled) {
+            transform += " scale(0.8)";
          }
-
          inlineStyle.margin = `0 -${overlap}px`;
       }
 
