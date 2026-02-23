@@ -71,11 +71,33 @@ const SoundContext = createContext<SoundContextValue | null>(null);
 
 /* ── Provider ────────────────────────────────────────────────────────── */
 
+function readBool(key: string, fallback: boolean): boolean {
+   if (typeof window === "undefined") return fallback;
+   const v = localStorage.getItem(key);
+   return v != null ? v === "true" : fallback;
+}
+
+function readNum(key: string, fallback: number): number {
+   if (typeof window === "undefined") return fallback;
+   const raw = localStorage.getItem(key);
+   if (raw == null) return fallback;
+   const v = parseFloat(raw);
+   return isNaN(v) ? fallback : Math.max(0, Math.min(1, v));
+}
+
 export function SoundProvider({ children }: { children: React.ReactNode }) {
-   const [muted, setMutedState] = useState(false);
-   const [volume, setVolumeState] = useState(0.25);
-   const [musicMuted, setMusicMutedState] = useState(false);
-   const [musicVolume, setMusicVolumeState] = useState(0.15);
+   const [muted, setMutedState] = useState(() =>
+      readBool(SOUND_MUTED_KEY, false)
+   );
+   const [volume, setVolumeState] = useState(() =>
+      readNum(SOUND_VOLUME_KEY, 0.25)
+   );
+   const [musicMuted, setMusicMutedState] = useState(() =>
+      readBool(MUSIC_MUTED_KEY, false)
+   );
+   const [musicVolume, setMusicVolumeState] = useState(() =>
+      readNum(MUSIC_VOLUME_KEY, 0.15)
+   );
 
    const howlsRef = useRef<Record<SoundName, Howl[]> | null>(null);
    const musicHowlRef = useRef<Howl | null>(null);
@@ -88,25 +110,6 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
    volumeRef.current = volume;
    musicMutedRef.current = musicMuted;
    musicVolumeRef.current = musicVolume;
-
-   // Hydrate from localStorage on mount
-   useEffect(() => {
-      if (typeof window === "undefined") return;
-      const storedMuted = localStorage.getItem(SOUND_MUTED_KEY);
-      if (storedMuted === "true") setMutedState(true);
-      const storedVol = localStorage.getItem(SOUND_VOLUME_KEY);
-      if (storedVol != null) {
-         const v = parseFloat(storedVol);
-         if (!isNaN(v)) setVolumeState(Math.max(0, Math.min(1, v)));
-      }
-      const storedMusicMuted = localStorage.getItem(MUSIC_MUTED_KEY);
-      if (storedMusicMuted === "true") setMusicMutedState(true);
-      const storedMusicVol = localStorage.getItem(MUSIC_VOLUME_KEY);
-      if (storedMusicVol != null) {
-         const v = parseFloat(storedMusicVol);
-         if (!isNaN(v)) setMusicVolumeState(Math.max(0, Math.min(1, v)));
-      }
-   }, []);
 
    // Pre-load all sound effects
    useEffect(() => {

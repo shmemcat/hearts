@@ -288,5 +288,6 @@
    .toastStack {
       bottom: 16px;
       max-width: 90vw;
+      transform: translateX(-50%);
    }
 }

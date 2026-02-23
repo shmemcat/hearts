@@ -302,37 +302,40 @@ function AchievementsPanel({
 
    const achievements = computeAchievements(stats);
 
-   // Backwards-compat: toast unseen achievements on first load
    if (!toastedRef.current) {
       toastedRef.current = true;
       const storageKey = `hearts_seen_achievements_${userId}`;
-      const seen = new Set<string>(
-         JSON.parse(localStorage.getItem(storageKey) || "[]")
-      );
+      const storedSeen = localStorage.getItem(storageKey);
 
       const unlocked = achievements.filter((a) => a.unlocked);
-      const unseen = unlocked.filter((a) => {
-         const key = a.tier ? `${a.def.id}_${a.tier}` : a.def.id;
-         return !seen.has(key);
-      });
+      const allKeys = unlocked.map((a) =>
+         a.tier ? `${a.def.id}_${a.tier}` : a.def.id
+      );
 
-      if (unseen.length > 0) {
-         const toastItems = unseen.map((a) => ({
-            achievementId: a.tier ? `${a.def.id}_${a.tier}` : a.def.id,
-            name: a.def.secret
-               ? a.def.singleName ?? a.def.id
-               : a.def.tiers
-               ? a.def.tiers[a.tier!].name
-               : a.def.id,
-            icon: <FontAwesomeIcon icon={a.def.icon} />,
-            tier: a.tier,
-         }));
-         addToasts(toastItems);
+      if (!storedSeen) {
+         // New browser — seed the seen list so old achievements don't re-toast
+         localStorage.setItem(storageKey, JSON.stringify(allKeys));
+      } else {
+         const seen = new Set<string>(JSON.parse(storedSeen));
+         const unseen = unlocked.filter((a) => {
+            const key = a.tier ? `${a.def.id}_${a.tier}` : a.def.id;
+            return !seen.has(key);
+         });
 
-         const allSeen = unlocked.map((a) =>
-            a.tier ? `${a.def.id}_${a.tier}` : a.def.id
-         );
-         localStorage.setItem(storageKey, JSON.stringify(allSeen));
+         if (unseen.length > 0) {
+            const toastItems = unseen.map((a) => ({
+               achievementId: a.tier ? `${a.def.id}_${a.tier}` : a.def.id,
+               name: a.def.secret
+                  ? a.def.singleName ?? a.def.id
+                  : a.def.tiers
+                  ? a.def.tiers[a.tier!].name
+                  : a.def.id,
+               icon: <FontAwesomeIcon icon={a.def.icon} />,
+               tier: a.tier,
+            }));
+            addToasts(toastItems);
+            localStorage.setItem(storageKey, JSON.stringify(allKeys));
+         }
       }
    }
 
