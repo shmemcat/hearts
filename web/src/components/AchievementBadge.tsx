@@ -1,4 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Sparkle } from "@/components/Sparkle";
 import { Tooltip } from "@/components/Tooltip";
 import type { ComputedAchievement, Tier } from "@/lib/achievements";
 import styles from "@/styles/achievements.module.css";
@@ -23,6 +24,7 @@ export function AchievementBadge({ achievement }: Props) {
                }`}
             >
                {unlocked && <div className={styles.badgeShine} />}
+               {unlocked && <Sparkle className={styles.badgeSparkle} />}
                {unlocked ? (
                   <span
                      className={`${styles.badgeIcon} ${

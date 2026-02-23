@@ -52,6 +52,30 @@
    color: var(--achievement-gold);
 }
 
+.badgeSparkle {
+   position: absolute;
+   z-index: 3;
+   width: 14px;
+   height: 14px;
+   top: -3px;
+   left: -1px;
+   pointer-events: none;
+   transform: scale(0);
+   animation: badgeSparkle 4s 0.5s infinite both;
+}
+
+@keyframes badgeSparkle {
+   0% {
+      transform: scale(0) rotate(0deg);
+   }
+   8% {
+      transform: scale(1) rotate(15deg);
+   }
+   16% {
+      transform: scale(0) rotate(30deg);
+   }
+}
+
 .badgeSecretQuestion {
    font-family: "appFont";
    font-size: 16px;
