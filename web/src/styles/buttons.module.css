@@ -190,7 +190,7 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
    }
 }
 
-/* Sound button + volume slider */
+/* Sound button + volume modal */
 
 .soundButtonWrap {
    position: relative;
@@ -198,11 +198,12 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
    align-items: center;
 }
 
-.volumeSliderDrop {
+.volumeModalDrop {
    position: absolute;
    top: 100%;
    left: 50%;
    transform: translateX(-50%) scale(0.92);
+   transform-origin: top center;
    padding-top: 6px;
    opacity: 0;
    pointer-events: none;
@@ -210,20 +211,43 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
    z-index: 50;
 }
 
-.soundButtonWrap:hover .volumeSliderDrop,
-.soundButtonWrap[data-slider-open="true"] .volumeSliderDrop {
+.soundButtonWrap[data-modal-open="true"] .volumeModalDrop {
    opacity: 1;
    pointer-events: auto;
    transform: translateX(-50%) scale(1);
 }
 
-.volumeSliderDrop > .volumeSliderInner {
+.volumeModalInner {
    font-size: 9px;
-   border: 0.5em solid var(--volumesliderbg);
-   border-radius: 2em;
-   box-shadow: 0 0 1em #0001, 0 0.25em 0.5em #0001;
-   overflow: hidden;
-   line-height: 0;
+   background: var(--volumesliderbg);
+   border-radius: 1.4em;
+   box-shadow: 0 0 1em #0002, 0 0.25em 0.5em #0002;
+   padding: 0.8em 1em;
+   display: flex;
+   flex-direction: column;
+   gap: 0.6em;
+}
+
+.volumeRow {
+   display: flex;
+   align-items: center;
+   gap: 0.8em;
+}
+
+.volumeRowIcon {
+   color: var(--lightpink);
+   width: 16px;
+   height: 16px;
+   font-size: 14px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   cursor: pointer;
+   flex-shrink: 0;
+}
+
+.volumeRowIcon:hover {
+   color: var(--hoverpink);
 }
 
 .volumeSlider {
@@ -372,18 +396,6 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
 
 /* for touch screens */
 @media (hover: none) {
-   .soundButtonWrap:hover .volumeSliderDrop {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateX(-50%) scale(0.92);
-   }
-
-   .soundButtonWrap[data-slider-open="true"] .volumeSliderDrop {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateX(-50%) scale(1);
-   }
-
    .icon:hover {
       color: var(--lightpink);
    }
@@ -410,5 +422,9 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
 
    .rules-button:hover {
       color: var(--hoverpink);
+   }
+
+   .volumeRowIcon:hover {
+      color: var(--lightpink);
    }
 }

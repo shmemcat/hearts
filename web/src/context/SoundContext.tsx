@@ -8,7 +8,12 @@ import React, {
 } from "react";
 import { Howl } from "howler";
 
-import { SOUND_MUTED_KEY, SOUND_VOLUME_KEY } from "@/lib/constants";
+import {
+   SOUND_MUTED_KEY,
+   SOUND_VOLUME_KEY,
+   MUSIC_MUTED_KEY,
+   MUSIC_VOLUME_KEY,
+} from "@/lib/constants";
 
 /* ── Sound registry ──────────────────────────────────────────────────── */
 
@@ -56,6 +61,10 @@ interface SoundContextValue {
    volume: number;
    setVolume: (v: number) => void;
    play: (name: SoundName) => void;
+   musicMuted: boolean;
+   setMusicMuted: (m: boolean) => void;
+   musicVolume: number;
+   setMusicVolume: (v: number) => void;
 }
 
 const SoundContext = createContext<SoundContextValue | null>(null);
@@ -65,14 +74,20 @@ const SoundContext = createContext<SoundContextValue | null>(null);
 export function SoundProvider({ children }: { children: React.ReactNode }) {
    const [muted, setMutedState] = useState(false);
    const [volume, setVolumeState] = useState(0.25);
+   const [musicMuted, setMusicMutedState] = useState(false);
+   const [musicVolume, setMusicVolumeState] = useState(0.15);
 
    const howlsRef = useRef<Record<SoundName, Howl[]> | null>(null);
+   const musicHowlRef = useRef<Howl | null>(null);
    const mutedRef = useRef(muted);
    const volumeRef = useRef(volume);
+   const musicMutedRef = useRef(musicMuted);
+   const musicVolumeRef = useRef(musicVolume);
 
-   // Keep refs in sync for use inside callbacks
    mutedRef.current = muted;
    volumeRef.current = volume;
+   musicMutedRef.current = musicMuted;
+   musicVolumeRef.current = musicVolume;
 
    // Hydrate from localStorage on mount
    useEffect(() => {
@@ -84,9 +99,16 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
          const v = parseFloat(storedVol);
          if (!isNaN(v)) setVolumeState(Math.max(0, Math.min(1, v)));
       }
+      const storedMusicMuted = localStorage.getItem(MUSIC_MUTED_KEY);
+      if (storedMusicMuted === "true") setMusicMutedState(true);
+      const storedMusicVol = localStorage.getItem(MUSIC_VOLUME_KEY);
+      if (storedMusicVol != null) {
+         const v = parseFloat(storedMusicVol);
+         if (!isNaN(v)) setMusicVolumeState(Math.max(0, Math.min(1, v)));
+      }
    }, []);
 
-   // Pre-load all sounds client-side
+   // Pre-load all sound effects
    useEffect(() => {
       if (typeof window === "undefined") return;
       const howls = {} as Record<SoundName, Howl[]>;
@@ -101,6 +123,27 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
          );
       }
       howlsRef.current = howls;
+   }, []);
+
+   // Create music loop Howl and manage playback
+   useEffect(() => {
+      if (typeof window === "undefined") return;
+      const howl = new Howl({
+         src: ["/sounds/music-loop.mp3"],
+         loop: true,
+         preload: true,
+         volume: musicVolumeRef.current,
+      });
+      musicHowlRef.current = howl;
+
+      if (!musicMutedRef.current) {
+         howl.play();
+      }
+
+      return () => {
+         howl.unload();
+         musicHowlRef.current = null;
+      };
    }, []);
 
    // Persist + apply muted
@@ -132,9 +175,40 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       howl.play();
    }, []);
 
+   const setMusicMuted = useCallback((m: boolean) => {
+      setMusicMutedState(m);
+      if (typeof window !== "undefined")
+         localStorage.setItem(MUSIC_MUTED_KEY, String(m));
+      const howl = musicHowlRef.current;
+      if (!howl) return;
+      if (m) {
+         howl.pause();
+      } else {
+         howl.play();
+      }
+   }, []);
+
+   const setMusicVolume = useCallback((v: number) => {
+      const clamped = Math.max(0, Math.min(1, v));
+      setMusicVolumeState(clamped);
+      if (typeof window !== "undefined")
+         localStorage.setItem(MUSIC_VOLUME_KEY, String(clamped));
+      musicHowlRef.current?.volume(clamped);
+   }, []);
+
    return (
       <SoundContext.Provider
-         value={{ muted, setMuted, volume, setVolume, play }}
+         value={{
+            muted,
+            setMuted,
+            volume,
+            setVolume,
+            play,
+            musicMuted,
+            setMusicMuted,
+            musicVolume,
+            setMusicVolume,
+         }}
       >
          {children}
       </SoundContext.Provider>

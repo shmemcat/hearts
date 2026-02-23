@@ -19,6 +19,10 @@ import {
    faSunBright as fasSunBright,
    faMusicNote as fasMusicNote,
    faMusicNoteSlash as fasMusicNoteSlash,
+   faVolume as fasVolume,
+   faVolumeSlash as fasVolumeSlash,
+   faMusic as fasMusic,
+   faMusicSlash as fasMusicSlash,
 } from "@fortawesome/pro-solid-svg-icons";
 import { HeartIcon } from "@/components/game";
 
@@ -174,48 +178,45 @@ const NightModeButton: React.FC = () => {
    );
 };
 
-const useIsTouch = () => {
-   const [touch, setTouch] = React.useState(false);
-   React.useEffect(() => {
-      const mql = window.matchMedia("(hover: none)");
-      setTouch(mql.matches);
-      const handler = (e: MediaQueryListEvent) => setTouch(e.matches);
-      mql.addEventListener("change", handler);
-      return () => mql.removeEventListener("change", handler);
-   }, []);
-   return touch;
-};
+let _geezerFired = false;
 
 const SoundButton: React.FC = () => {
-   const { muted, setMuted, volume, setVolume, play } = useSound();
+   const {
+      muted,
+      setMuted,
+      volume,
+      setVolume,
+      play,
+      musicMuted,
+      setMusicMuted,
+      musicVolume,
+      setMusicVolume,
+   } = useSound();
    const { token } = useAuth();
    const { addToast } = useToast();
    const [animation, setAnimation] = React.useState(0);
    const [mounted, setMounted] = React.useState(false);
-   const [sliderOpen, setSliderOpen] = React.useState(false);
+   const [modalOpen, setModalOpen] = React.useState(false);
    const wrapRef = React.useRef<HTMLDivElement>(null);
-   const geezerFiredRef = React.useRef(false);
-   const isTouch = useIsTouch();
 
    React.useEffect(() => {
       setMounted(true);
    }, []);
 
-   // Close slider when tapping outside on touch devices
    React.useEffect(() => {
-      if (!isTouch || !sliderOpen) return;
+      if (!modalOpen) return;
       const handler = (e: PointerEvent) => {
          if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-            setSliderOpen(false);
+            setModalOpen(false);
          }
       };
       document.addEventListener("pointerdown", handler);
       return () => document.removeEventListener("pointerdown", handler);
-   }, [isTouch, sliderOpen]);
+   }, [modalOpen]);
 
    const fireGeezer = React.useCallback(() => {
-      if (!token || geezerFiredRef.current) return;
-      geezerFiredRef.current = true;
+      if (!token || _geezerFired) return;
+      _geezerFired = true;
       unlockAchievement(token, "geezer").then((res) => {
          if (!res.ok || res.newly_unlocked.length === 0) return;
          for (const id of res.newly_unlocked) {
@@ -234,29 +235,52 @@ const SoundButton: React.FC = () => {
 
    if (!mounted) return <></>;
 
+   const allMuted = muted && musicMuted;
+
    const onClickHandler = () => {
       setAnimation(1);
-      if (isTouch) {
-         setSliderOpen((prev) => !prev);
-      } else {
-         const willUnmute = muted;
-         setMuted(!muted);
-         if (willUnmute) {
-            setTimeout(() => play("soundOn"), 50);
-         } else {
-            fireGeezer();
-         }
+      setModalOpen((prev) => !prev);
+   };
+
+   const onSoundToggle = () => {
+      const willUnmute = muted;
+      setMuted(!muted);
+      if (willUnmute) {
+         setTimeout(() => play("soundOn"), 50);
+      } else if (musicMuted) {
+         fireGeezer();
       }
    };
 
-   const onVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+   const onSoundVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const v = parseFloat(e.target.value);
       setVolume(v);
       if (v === 0 && !muted) {
          setMuted(true);
-         fireGeezer();
+         if (musicMuted) fireGeezer();
       } else if (v > 0 && muted) {
          setMuted(false);
+      }
+   };
+
+   const onMusicToggle = () => {
+      const willUnmute = musicMuted;
+      setMusicMuted(!musicMuted);
+      if (willUnmute && musicVolume === 0) {
+         setMusicVolume(0.15);
+      } else if (!willUnmute && muted) {
+         fireGeezer();
+      }
+   };
+
+   const onMusicVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const v = parseFloat(e.target.value);
+      setMusicVolume(v);
+      if (v === 0 && !musicMuted) {
+         setMusicMuted(true);
+         if (muted) fireGeezer();
+      } else if (v > 0 && musicMuted) {
+         setMusicMuted(false);
       }
    };
 
@@ -264,34 +288,68 @@ const SoundButton: React.FC = () => {
       <div
          ref={wrapRef}
          className={buttons.soundButtonWrap}
-         data-slider-open={sliderOpen}
+         data-modal-open={modalOpen}
       >
          <div
             role="button"
-            aria-label="Toggle sound on or off"
+            aria-label="Sound and music settings"
             onClick={onClickHandler}
          >
             <FontAwesomeIcon
                className={buttons.icon}
-               icon={muted ? fasMusicNoteSlash : fasMusicNote}
+               icon={allMuted ? fasMusicNoteSlash : fasMusicNote}
                {...({
                   clicked: animation,
                   onAnimationEnd: () => setAnimation(0),
                } as IconAnimationProps)}
             />
          </div>
-         <div className={buttons.volumeSliderDrop}>
-            <div className={buttons.volumeSliderInner}>
-               <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={volume}
-                  onChange={onVolumeChange}
-                  className={buttons.volumeSlider}
-                  aria-label="Volume"
-               />
+         <div className={buttons.volumeModalDrop}>
+            <div className={buttons.volumeModalInner}>
+               <div className={buttons.volumeRow}>
+                  <div
+                     role="button"
+                     aria-label="Toggle sound effects"
+                     onClick={onSoundToggle}
+                     className={buttons.volumeRowIcon}
+                  >
+                     <FontAwesomeIcon
+                        icon={muted ? fasVolumeSlash : fasVolume}
+                     />
+                  </div>
+                  <input
+                     type="range"
+                     min={0}
+                     max={1}
+                     step={0.01}
+                     value={volume}
+                     onChange={onSoundVolumeChange}
+                     className={buttons.volumeSlider}
+                     aria-label="Sound effects volume"
+                  />
+               </div>
+               <div className={buttons.volumeRow}>
+                  <div
+                     role="button"
+                     aria-label="Toggle music"
+                     onClick={onMusicToggle}
+                     className={buttons.volumeRowIcon}
+                  >
+                     <FontAwesomeIcon
+                        icon={musicMuted ? fasMusicSlash : fasMusic}
+                     />
+                  </div>
+                  <input
+                     type="range"
+                     min={0}
+                     max={1}
+                     step={0.01}
+                     value={musicVolume}
+                     onChange={onMusicVolumeChange}
+                     className={buttons.volumeSlider}
+                     aria-label="Music volume"
+                  />
+               </div>
             </div>
          </div>
       </div>

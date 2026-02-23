@@ -32,13 +32,13 @@ export default function About() {
                      </span>
                   </span>
                   . I&apos;m a software engineer developing this web application
-                  in React and Python. Eventually, you&apos;ll be able to play
-                  Hearts games locally with AI and online with friends. This has
-                  been a fun project to work on; it&apos;s been a decade and a
-                  half since I&apos;ve been immersed in web development (as you
-                  can imagine, a lot&apos;s changed since then) so learning an
-                  array of new technologies has been an exceptionally fun
-                  challenge. Check out my{" "}
+                  in React and Python. You can play Hearts locally with AI, and
+                  eventually, you&apos;ll be able to play online with friends.
+                  This has been a fun project to work on; it&apos;s been a
+                  decade and a half since I&apos;ve been immersed in web
+                  development (as you can imagine, a lot&apos;s changed since
+                  then) so learning an array of new technologies has been an
+                  exceptionally fun challenge. Check out my{" "}
                   <StyledLink
                      href="https://github.com/shmemcat/hearts"
                      target="_blank"
@@ -65,6 +65,30 @@ export default function About() {
                   <span className="text-xs">*ahem*</span> homely, so I&apos;d
                   love to create for her an aesthetically pleasing experience of
                   her favorite card game.
+               </span>
+               <span className="block mt-4">
+                  If you have any feedback or suggestions, please feel free to
+                  open an issue on my{" "}
+                  <StyledLink
+                     href="https://github.com/shmemcat/hearts"
+                     target="_blank"
+                     rel="noreferrer"
+                  >
+                     github
+                  </StyledLink>
+                  &nbsp;or shoot me an email at&nbsp;
+                  <span className="bold">emily@shmem.dev</span>.
+               </span>
+               <span className="block mt-4">
+                  Credit for this lovely music you're listening to goes to{" "}
+                  <StyledLink
+                     href="https://chajamakesmusic.itch.io/"
+                     target="_blank"
+                     rel="noreferrer"
+                  >
+                     Chaja
+                  </StyledLink>
+                  !
                </span>
                <span className="block pt-4">
                   <br />
