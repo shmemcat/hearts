@@ -3,31 +3,23 @@ import React from "react";
 import { Card } from "@/components/game/Card";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useMobileLayout } from "@/context/MobileLayoutContext";
+import {
+   CARD_WIDTH,
+   INITIAL_OVERLAP,
+   FULL_HAND,
+   INITIAL_HAND_WIDTH,
+   HAND_PADDING,
+   MIN_CARD_OVERLAP,
+   DOUBLE_ROW_THRESHOLD,
+   MIN_EDGE_VISIBLE,
+   SMOOSH_DURATION_MS,
+} from "@/lib/constants";
 import styles from "./Hand.module.css";
-
-const SMOOSH_DURATION_MS = 250;
-
-const CARD_WIDTH = 72;
-const INITIAL_OVERLAP = 23.5;
-const FULL_HAND = 13;
-/** Total px width of a 13-card fan: n*w - 2*o*(n-1). */
-const INITIAL_WIDTH =
-   FULL_HAND * CARD_WIDTH - 2 * INITIAL_OVERLAP * (FULL_HAND - 1); // 372
-
-/**
- * Compute the exact overlap needed so `count` cards occupy the same total
- * width as the original 13-card fan.  Once the overlap would drop below
- * 40 % of the card width between neighbors, stop expanding and hold there
- * so small hands don't look goofy with too-sparse cards.
- */
-const HAND_PADDING = 32; // 16px on each side (from mobile CSS)
-const MIN_OVERLAP = CARD_WIDTH * 0.17; // 40 % overlap between neighbors = 20 % per side
-const DOUBLE_ROW_THRESHOLD = 7;
 
 function getMobileOverlap(count: number, targetWidth: number): number {
    if (count <= 1) return 0;
    const needed = (CARD_WIDTH * count - targetWidth) / (2 * (count - 1));
-   return Math.max(MIN_OVERLAP, needed);
+   return Math.max(MIN_CARD_OVERLAP, needed);
 }
 
 /** Clamp per-card overlaps so total width fits targetWidth and edge cards stay readable. */
@@ -41,7 +33,6 @@ function clampRowOverlaps(overlaps: number[], targetWidth: number): void {
       for (let i = 0; i < n; i++) overlaps[i] += delta;
       totalWidth = targetWidth;
    }
-   const MIN_EDGE_VISIBLE = 36;
    const maxEdgeOverlap = CARD_WIDTH - MIN_EDGE_VISIBLE;
    const last = n - 1;
    let freed = 0;
@@ -93,7 +84,7 @@ export const Hand: React.FC<HandProps> = ({
    const [screenWidth, setScreenWidth] = React.useState(() =>
       typeof window !== "undefined"
          ? window.innerWidth - HAND_PADDING
-         : INITIAL_WIDTH
+         : INITIAL_HAND_WIDTH
    );
    React.useEffect(() => {
       if (!isMobile) return;
@@ -105,8 +96,8 @@ export const Hand: React.FC<HandProps> = ({
       return () => window.removeEventListener("resize", update);
    }, [isMobile]);
    const targetWidth = isMobile
-      ? Math.min(INITIAL_WIDTH, screenWidth)
-      : INITIAL_WIDTH;
+      ? Math.min(INITIAL_HAND_WIDTH, screenWidth)
+      : INITIAL_HAND_WIDTH;
 
    const sorted = React.useMemo(
       () => [...cards].sort(compareCardCodes),

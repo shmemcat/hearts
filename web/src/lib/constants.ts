@@ -50,6 +50,34 @@ export const RANK_ORDER: Record<string, number> = {
 /** Minimum ms between confetti bursts on the rules page. */
 export const CONFETTI_COOLDOWN_MS = 1000;
 
+/* ── Toast ────────────────────────────────────────────────────────────── */
+
+export const TOAST_DURATION_MS = 3000;
+export const TOAST_EXIT_MS = 350;
+export const TOAST_STAGGER_MS = 800;
+export const MAX_VISIBLE_TOASTS = 3;
+
+/* ── Card / Hand Layout ──────────────────────────────────────────────── */
+
+export const CARD_WIDTH = 72;
+export const INITIAL_OVERLAP = 23.5;
+export const FULL_HAND = 13;
+export const INITIAL_HAND_WIDTH =
+   FULL_HAND * CARD_WIDTH - 2 * INITIAL_OVERLAP * (FULL_HAND - 1);
+export const HAND_PADDING = 32;
+export const MIN_CARD_OVERLAP = CARD_WIDTH * 0.17;
+export const DOUBLE_ROW_THRESHOLD = 7;
+export const MIN_EDGE_VISIBLE = 36;
+export const SMOOSH_DURATION_MS = 250;
+
+/* ── Play Page Timing (ms) ───────────────────────────────────────────── */
+
+export const GAME_POLL_TIMEOUT_MS = 3000;
+export const ROUND_BANNER_MS = 1000;
+export const DEAL_HAND_MS = 350;
+export const PASS_EXIT_MS = 400;
+export const NO_PASS_HOLD_MS = 2500;
+
 /* ── Animation Timing (ms) ────────────────────────────────────────────── */
 
 /** How long all 4 cards are shown before the collect sweep begins. */

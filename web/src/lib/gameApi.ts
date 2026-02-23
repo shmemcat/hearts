@@ -175,7 +175,9 @@ export async function submitPlay(
 export async function concedeGame(
    gameId: string,
    token?: string | null
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<
+   { ok: true; newly_unlocked: string[] } | { ok: false; error: string }
+> {
    const headers: Record<string, string> = {};
    if (token) headers["Authorization"] = `Bearer ${token}`;
    const res = await fetch(
@@ -190,7 +192,8 @@ export async function concedeGame(
             (data as GameApiError).error ?? `Request failed (${res.status})`,
       };
    }
-   return { ok: true };
+   const data = await parseJson<{ newly_unlocked?: string[] }>(res);
+   return { ok: true, newly_unlocked: data.newly_unlocked ?? [] };
 }
 
 /** GET /games/active – check if the authenticated user has an active game */
@@ -222,6 +225,24 @@ export type UserStatsResponse = {
    best_score: number | null;
    worst_score: number | null;
    average_score: number | null;
+   hard_wins: number;
+   harder_wins: number;
+   hardest_wins: number;
+   current_win_streak: number;
+   max_win_streak: number;
+   night_owl: boolean;
+   lucky_seven: boolean;
+   double_moon: boolean;
+   geezer: boolean;
+   wimp: boolean;
+   early_bird: boolean;
+   lonely_heart: boolean;
+   photo_finish: boolean;
+   demolition: boolean;
+   speed_demon: boolean;
+   marathon: boolean;
+   eclipse: boolean;
+   heartbreaker: boolean;
 };
 
 export async function fetchStats(
@@ -245,6 +266,11 @@ export async function fetchStats(
    return { ok: true, data: (data as { stats: UserStatsResponse }).stats };
 }
 
+export type RecordGameStatsResponse = {
+   stats: UserStatsResponse;
+   newly_unlocked: string[];
+};
+
 export async function recordGameStats(
    token: string,
    body: {
@@ -252,9 +278,12 @@ export async function recordGameStats(
       final_score: number;
       won: boolean;
       moon_shots: number;
+      round_count: number;
+      all_scores: number[];
+      hearts_broken_count: number;
    }
 ): Promise<
-   { ok: true; data: UserStatsResponse } | { ok: false; error: string }
+   { ok: true; data: RecordGameStatsResponse } | { ok: false; error: string }
 > {
    const res = await fetch(`${base()}/stats/record`, {
       method: "POST",
@@ -264,7 +293,33 @@ export async function recordGameStats(
       },
       body: JSON.stringify(body),
    });
-   const data = await parseJson<{ stats: UserStatsResponse } & GameApiError>(
+   const data = await parseJson<RecordGameStatsResponse & GameApiError>(res);
+   if (!res.ok) {
+      return {
+         ok: false,
+         error:
+            (data as GameApiError).error ?? `Request failed (${res.status})`,
+      };
+   }
+   return { ok: true, data: data as RecordGameStatsResponse };
+}
+
+/** POST /stats/unlock – unlock a UI-triggered achievement */
+export async function unlockAchievement(
+   token: string,
+   achievement: string
+): Promise<
+   { ok: true; newly_unlocked: string[] } | { ok: false; error: string }
+> {
+   const res = await fetch(`${base()}/stats/unlock`, {
+      method: "POST",
+      headers: {
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ achievement }),
+   });
+   const data = await parseJson<{ newly_unlocked: string[] } & GameApiError>(
       res
    );
    if (!res.ok) {
@@ -274,5 +329,8 @@ export async function recordGameStats(
             (data as GameApiError).error ?? `Request failed (${res.status})`,
       };
    }
-   return { ok: true, data: (data as { stats: UserStatsResponse }).stats };
+   return {
+      ok: true,
+      newly_unlocked: (data as { newly_unlocked: string[] }).newly_unlocked,
+   };
 }

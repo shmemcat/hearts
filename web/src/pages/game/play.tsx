@@ -33,6 +33,9 @@ import {
 } from "@/lib/gameApi";
 import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
+import { useToast } from "@/context/ToastContext";
+import { resolveUnlockId } from "@/lib/achievements";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
    connect as connectGameSocket,
    disconnect as disconnectGameSocket,
@@ -46,7 +49,14 @@ import {
 } from "@/lib/gameSocket";
 import type { CurrentTrickSlot, GameState, PlayEvent } from "@/types/game";
 import type { GameSocketState } from "@/lib/gameSocket";
-import { PLAY_PAGE_LAYOUT_CLASS } from "@/lib/constants";
+import {
+   PLAY_PAGE_LAYOUT_CLASS,
+   GAME_POLL_TIMEOUT_MS,
+   ROUND_BANNER_MS,
+   DEAL_HAND_MS,
+   PASS_EXIT_MS,
+   NO_PASS_HOLD_MS,
+} from "@/lib/constants";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import handStyles from "@/components/game/Hand.module.css";
 import styles from "@/styles/play.module.css";
@@ -78,6 +88,7 @@ export default function PlayGamePage() {
    const { token } = useAuth();
    const isMobile = useIsMobile();
    const { play: playSound } = useSound();
+   const { addToast } = useToast();
 
    // ── Stats tracking ──────────────────────────────────────────────────
    const humanMoonShotsRef = useRef(0);
@@ -383,6 +394,23 @@ export default function PlayGamePage() {
          final_score: humanScore,
          won,
          moon_shots: state.human_moon_shots,
+         round_count: state.round,
+         all_scores: state.players.map((p) => p.score),
+         hearts_broken_count: state.human_hearts_broken,
+      }).then((res) => {
+         if (!res.ok) return;
+         const { newly_unlocked } = res.data;
+         for (const unlockId of newly_unlocked) {
+            const info = resolveUnlockId(unlockId);
+            if (info) {
+               addToast({
+                  achievementId: unlockId,
+                  name: info.name,
+                  icon: <FontAwesomeIcon icon={info.def.icon} />,
+                  tier: info.tier,
+               });
+            }
+         }
       });
    }, [
       state?.game_over,
@@ -391,6 +419,7 @@ export default function PlayGamePage() {
       state?.human_moon_shots,
       token,
       gameId,
+      addToast,
    ]);
 
    // ── AI turn: advance when it's not the human's turn ────────────────
@@ -494,7 +523,7 @@ export default function PlayGamePage() {
                }
             }
          });
-      }, 3000);
+      }, GAME_POLL_TIMEOUT_MS);
       return () => clearTimeout(t);
    }, [
       gameId,
@@ -514,13 +543,13 @@ export default function PlayGamePage() {
       const t = setTimeout(() => {
          setRoundBanner(null);
          setDealingHand(true);
-      }, 1000);
+      }, ROUND_BANNER_MS);
       return () => clearTimeout(t);
    }, [roundBanner]);
 
    useEffect(() => {
       if (!dealingHand) return;
-      const t = setTimeout(() => setDealingHand(false), 350);
+      const t = setTimeout(() => setDealingHand(false), DEAL_HAND_MS);
       return () => clearTimeout(t);
    }, [dealingHand]);
 
@@ -676,7 +705,7 @@ export default function PlayGamePage() {
       });
 
       const apiPromise = submitPass(gameId, { cards });
-      const exitTimer = new Promise<void>((r) => setTimeout(r, 400));
+      const exitTimer = new Promise<void>((r) => setTimeout(r, PASS_EXIT_MS));
 
       Promise.all([apiPromise, exitTimer])
          .then(([result]) => {
@@ -762,7 +791,7 @@ export default function PlayGamePage() {
                setSlots(slots);
             }
             setNoPassHold(true);
-            setTimeout(() => setNoPassHold(false), 2500);
+            setTimeout(() => setNoPassHold(false), NO_PASS_HOLD_MS);
          }
       }
    }, [reset, setSlots]);
@@ -844,10 +873,23 @@ export default function PlayGamePage() {
    // ── Concede handler ────────────────────────────────────────────────
    const handleConcede = useCallback(async () => {
       if (!gameId) return;
-      await concedeGame(gameId, token);
+      const res = await concedeGame(gameId, token);
       setConcedeModalOpen(false);
       setConceded(true);
-   }, [gameId, token]);
+      if (res.ok) {
+         for (const unlockId of res.newly_unlocked) {
+            const info = resolveUnlockId(unlockId);
+            if (info) {
+               addToast({
+                  achievementId: unlockId,
+                  name: info.name,
+                  icon: <FontAwesomeIcon icon={info.def.icon} />,
+                  tier: info.tier,
+               });
+            }
+         }
+      }
+   }, [gameId, token, addToast]);
 
    // ── Early returns ──────────────────────────────────────────────────
    if (!gameId) {

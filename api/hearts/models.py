@@ -49,6 +49,46 @@ class UserStats(db.Model):
     worst_score = db.Column(db.Integer, nullable=True)
     total_points = db.Column(db.Integer, default=0, nullable=False)
 
+    hard_wins = db.Column(db.Integer, default=0, nullable=False, server_default="0")
+    harder_wins = db.Column(db.Integer, default=0, nullable=False, server_default="0")
+    hardest_wins = db.Column(db.Integer, default=0, nullable=False, server_default="0")
+    current_win_streak = db.Column(
+        db.Integer, default=0, nullable=False, server_default="0"
+    )
+    max_win_streak = db.Column(
+        db.Integer, default=0, nullable=False, server_default="0"
+    )
+
+    night_owl = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+    lucky_seven = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+    double_moon = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+    geezer = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+    wimp = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+    early_bird = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+    lonely_heart = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+    photo_finish = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+    demolition = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+    speed_demon = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+    marathon = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+    eclipse = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+    heartbreaker = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     user = db.relationship("User", back_populates="stats")
 
     def to_dict(self):
@@ -63,6 +103,24 @@ class UserStats(db.Model):
                 if self.games_played > 0
                 else None
             ),
+            "hard_wins": self.hard_wins,
+            "harder_wins": self.harder_wins,
+            "hardest_wins": self.hardest_wins,
+            "current_win_streak": self.current_win_streak,
+            "max_win_streak": self.max_win_streak,
+            "night_owl": self.night_owl,
+            "lucky_seven": self.lucky_seven,
+            "double_moon": self.double_moon,
+            "geezer": self.geezer,
+            "wimp": self.wimp,
+            "early_bird": self.early_bird,
+            "lonely_heart": self.lonely_heart,
+            "photo_finish": self.photo_finish,
+            "demolition": self.demolition,
+            "speed_demon": self.speed_demon,
+            "marathon": self.marathon,
+            "eclipse": self.eclipse,
+            "heartbreaker": self.heartbreaker,
         }
 
 

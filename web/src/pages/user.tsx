@@ -1,7 +1,8 @@
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import { Button } from "@/components/Buttons";
 import { FormInput } from "@/components/FormInput";
@@ -13,10 +14,14 @@ import {
    ButtonGroup,
 } from "@/components/ui";
 import { DeleteAccountModal } from "@/components/DeleteAccountModal";
+import { AchievementBadge } from "@/components/AchievementBadge";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { getApiUrl } from "@/lib/api";
 import { fetchStats, type UserStatsResponse } from "@/lib/gameApi";
+import { computeAchievements } from "@/lib/achievements";
+import { useToast } from "@/context/ToastContext";
 import containers from "@/styles/containers.module.css";
+import achievementStyles from "@/styles/achievements.module.css";
 import deleteStyles from "@/components/DeleteAccountModal.module.css";
 
 export default function UserPage() {
@@ -45,6 +50,14 @@ function UserInfo() {
    }>({});
    const [loading, setLoading] = useState(false);
    const [showDeleteModal, setShowDeleteModal] = useState(false);
+   const [stats, setStats] = useState<UserStatsResponse | null>(null);
+
+   useEffect(() => {
+      if (!token) return;
+      fetchStats(token).then((res) => {
+         if (res.ok) setStats(res.data);
+      });
+   }, [token]);
 
    const handleSignIn = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -108,8 +121,9 @@ function UserInfo() {
             <div className="mb-4">
                Welcome <span className="bold">{user.name ?? user.email}</span>!
             </div>
-            <StatsPanel />
-            <ButtonGroup padding="loose">
+            <StatsPanel stats={stats} />
+            <AchievementsPanel stats={stats} userId={user.id} />
+            <ButtonGroup padding="default">
                <Link to="/options">
                   <Button name="Options" />
                </Link>
@@ -205,17 +219,7 @@ function UserInfo() {
    );
 }
 
-function StatsPanel() {
-   const { token } = useAuth();
-   const [stats, setStats] = useState<UserStatsResponse | null>(null);
-
-   useEffect(() => {
-      if (!token) return;
-      fetchStats(token).then((res) => {
-         if (res.ok) setStats(res.data);
-      });
-   }, [token]);
-
+function StatsPanel({ stats }: { stats: UserStatsResponse | null }) {
    if (!stats) return null;
 
    const fmt = (val: number | null | undefined): string =>
@@ -279,6 +283,66 @@ function StatsPanel() {
                   </span>
                </div>
             </div>
+         </div>
+      </div>
+   );
+}
+
+function AchievementsPanel({
+   stats,
+   userId,
+}: {
+   stats: UserStatsResponse | null;
+   userId: string;
+}) {
+   const { addToasts } = useToast();
+   const toastedRef = useRef(false);
+
+   if (!stats) return null;
+
+   const achievements = computeAchievements(stats);
+
+   // Backwards-compat: toast unseen achievements on first load
+   if (!toastedRef.current) {
+      toastedRef.current = true;
+      const storageKey = `hearts_seen_achievements_${userId}`;
+      const seen = new Set<string>(
+         JSON.parse(localStorage.getItem(storageKey) || "[]")
+      );
+
+      const unlocked = achievements.filter((a) => a.unlocked);
+      const unseen = unlocked.filter((a) => {
+         const key = a.tier ? `${a.def.id}_${a.tier}` : a.def.id;
+         return !seen.has(key);
+      });
+
+      if (unseen.length > 0) {
+         const toastItems = unseen.map((a) => ({
+            achievementId: a.tier ? `${a.def.id}_${a.tier}` : a.def.id,
+            name: a.def.secret
+               ? a.def.singleName ?? a.def.id
+               : a.def.tiers
+               ? a.def.tiers[a.tier!].name
+               : a.def.id,
+            icon: <FontAwesomeIcon icon={a.def.icon} />,
+            tier: a.tier,
+         }));
+         addToasts(toastItems);
+
+         const allSeen = unlocked.map((a) =>
+            a.tier ? `${a.def.id}_${a.tier}` : a.def.id
+         );
+         localStorage.setItem(storageKey, JSON.stringify(allSeen));
+      }
+   }
+
+   return (
+      <div className={achievementStyles.achievementsPanel}>
+         <p className={achievementStyles.achievementsTitle}>Achievements</p>
+         <div className={achievementStyles.achievementsGrid}>
+            {achievements.map((a) => (
+               <AchievementBadge key={a.def.id} achievement={a} />
+            ))}
          </div>
       </div>
    );

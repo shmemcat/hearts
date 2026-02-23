@@ -8,7 +8,7 @@ import json
 import random
 from typing import Any, Callable, Dict, List, Optional
 
-from hearts.game.card import Card, deck_52, shuffle_deck, deal_into_4_hands
+from hearts.game.card import Card, Suit, deck_52, shuffle_deck, deal_into_4_hands
 from hearts.game.rules import get_legal_plays, is_valid_pass
 from hearts.game.state import GameState, Phase, PassDirection
 from hearts.game.transitions import (
@@ -71,6 +71,7 @@ class GameRunner:
         self._rng = rng or random.Random()
         self._difficulty = difficulty
         self._human_moon_shots: int = 0
+        self._human_hearts_broken: int = 0
         self._last_play_events: List[Dict[str, Any]] = []
         self._last_round_ended: bool = False
 
@@ -165,6 +166,8 @@ class GameRunner:
         )
         if card not in legal:
             raise ValueError("Illegal play")
+        if card.suit == Suit.HEARTS and not self._state.hearts_broken:
+            self._human_hearts_broken += 1
         play_event = {"player_index": HUMAN_PLAYER, "card": card.to_code()}
         self._last_play_events = [play_event]
         self._last_round_ended = False
@@ -288,6 +291,10 @@ class GameRunner:
     def human_moon_shots(self) -> int:
         return self._human_moon_shots
 
+    @property
+    def human_hearts_broken(self) -> int:
+        return self._human_hearts_broken
+
     # ── Serialization ────────────────────────────────────────────────────
 
     def to_dict(self) -> Dict[str, Any]:
@@ -315,6 +322,7 @@ class GameRunner:
             "player_names": list(self._player_names),
             "difficulty": self._difficulty,
             "human_moon_shots": self._human_moon_shots,
+            "human_hearts_broken": self._human_hearts_broken,
             "rng_state": [
                 rng_state[0],
                 list(rng_state[1]),
@@ -363,6 +371,7 @@ class GameRunner:
             difficulty=difficulty,
         )
         runner._human_moon_shots = data.get("human_moon_shots", 0)
+        runner._human_hearts_broken = data.get("human_hearts_broken", 0)
         return runner
 
     @classmethod
@@ -417,4 +426,5 @@ class GameRunner:
             "game_over": s.game_over,
             "winner_index": s.winner_index,
             "human_moon_shots": self._human_moon_shots,
+            "human_hearts_broken": self._human_hearts_broken,
         }

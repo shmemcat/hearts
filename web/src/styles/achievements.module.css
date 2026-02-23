@@ -1,0 +1,268 @@
+/* ── Achievement Badge ──────────────────────────────────────────────── */
+
+.badge {
+   position: relative;
+   width: 40px;
+   height: 40px;
+   border-radius: 8px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   flex-shrink: 0;
+   cursor: default;
+}
+
+.badge_unlocked {
+   background-color: var(--lightpink);
+   border: 2px solid var(--hoverpink);
+   box-shadow: inset -3px -3px 0px var(--buttonboxshadow);
+}
+
+.badge_locked {
+   background: transparent;
+   border: 2px dashed var(--trickslotempty);
+}
+
+.badgeShine {
+   position: absolute;
+   top: 3px;
+   left: 3px;
+   transform: rotate(-25deg);
+   width: 8px;
+   height: 5px;
+   border-radius: 100%;
+   background-color: var(--buttonshine);
+   pointer-events: none;
+}
+
+.badgeIcon {
+   font-size: 16px;
+   line-height: 1;
+}
+
+.badgeIcon_bronze {
+   color: var(--achievement-bronze);
+}
+
+.badgeIcon_silver {
+   color: var(--achievement-silver);
+}
+
+.badgeIcon_gold {
+   color: var(--achievement-gold);
+}
+
+.badgeSecretQuestion {
+   font-family: "appFont";
+   font-size: 16px;
+   font-weight: 700;
+   color: var(--achievement-secret-text);
+   user-select: none;
+}
+
+/* ── Achievement Grid ──────────────────────────────────────────────── */
+
+.achievementsPanel {
+   margin-top: 16px;
+   width: fit-content;
+}
+
+.achievementsTitle {
+   font-family: "appFont";
+   font-size: 13px;
+   font-weight: 900;
+   letter-spacing: 5px;
+   text-transform: uppercase;
+   color: var(--header);
+   text-align: center;
+   margin: 0 0 16px;
+   margin-top: 8px;
+}
+
+.achievementsGrid {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 14px;
+   justify-content: center;
+   max-width: calc(7 * 56px + 6 * 14px);
+   margin: 0 auto;
+}
+
+.achievementItem {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 5px;
+   width: 56px;
+}
+
+.achievementLabel {
+   font-family: "appFont";
+   font-size: 10px;
+   font-weight: 700;
+   letter-spacing: 0.5px;
+   text-transform: uppercase;
+   color: var(--achievement-label);
+   text-align: center;
+   line-height: 1.2;
+   min-height: 22px;
+   display: flex;
+   align-items: flex-start;
+   justify-content: center;
+}
+
+.achievementLabel_locked {
+   color: var(--achievement-locked);
+}
+
+/* ── Tooltip content ───────────────────────────────────────────────── */
+
+.tooltipContent {
+   display: flex;
+   flex-direction: column;
+   gap: 2px;
+}
+
+.tooltipTier {
+   font-size: 10px;
+   font-weight: 900;
+   text-transform: uppercase;
+   letter-spacing: 2px;
+   opacity: 0.6;
+}
+
+.tooltipName {
+   font-size: 14px;
+   font-weight: 700;
+}
+
+.tooltipDesc {
+   font-size: 12px;
+   opacity: 0.7;
+   font-weight: 600;
+}
+
+.tooltipProgress {
+   font-size: 11px;
+   opacity: 0.5;
+   font-weight: 600;
+   margin-top: 2px;
+}
+
+/* ── Toast Stack ───────────────────────────────────────────────────── */
+
+.toastStack {
+   position: fixed;
+   bottom: 24px;
+   left: 50%;
+   transform: translateX(-20%);
+   display: flex;
+   flex-direction: column-reverse;
+   gap: 10px;
+   z-index: 10000;
+   pointer-events: none;
+}
+
+.toast {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   background-color: var(--yourturnbackground);
+   border: 2px solid var(--hoverpink);
+   border-radius: 12px;
+   padding: 10px 18px;
+   box-shadow: 0 4px 16px hsla(342, 36%, 44%, 0.15),
+      inset -2px -2px 0px var(--buttonboxshadow);
+   animation: toastSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+   pointer-events: auto;
+   white-space: nowrap;
+}
+
+.toastIcon {
+   font-size: 18px;
+   flex-shrink: 0;
+}
+
+.toastIcon_bronze {
+   color: var(--achievement-bronze);
+}
+
+.toastIcon_silver {
+   color: var(--achievement-silver);
+}
+
+.toastIcon_gold {
+   color: var(--achievement-gold);
+}
+
+.toastText {
+   display: flex;
+   flex-direction: column;
+   gap: 1px;
+}
+
+.toastLabel {
+   font-family: "appFont";
+   font-size: 10px;
+   font-weight: 900;
+   letter-spacing: 3px;
+   text-transform: uppercase;
+   color: var(--achievement-text);
+}
+
+.toastName {
+   font-family: "appFont";
+   font-size: 14px;
+   font-weight: 700;
+   letter-spacing: 1px;
+   color: var(--header);
+}
+
+.toast_exiting {
+   animation: toastSlideDown 0.35s cubic-bezier(0.5, 0, 0.7, 0.4) forwards;
+}
+
+@keyframes toastSlideUp {
+   from {
+      opacity: 0;
+      transform: translateY(16px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+
+@keyframes toastSlideDown {
+   from {
+      opacity: 1;
+      transform: translateY(0);
+   }
+   to {
+      opacity: 0;
+      transform: translateY(16px);
+   }
+}
+
+/* ── Mobile ────────────────────────────────────────────────────────── */
+
+@media only screen and (max-width: 768px) {
+   .achievementsPanel {
+      width: 280px;
+      margin-left: auto;
+      margin-right: auto;
+   }
+
+   .achievementsGrid {
+      gap: 10px;
+   }
+
+   .toast {
+      padding: 8px 14px;
+   }
+
+   .toastStack {
+      bottom: 16px;
+      max-width: 90vw;
+   }
+}

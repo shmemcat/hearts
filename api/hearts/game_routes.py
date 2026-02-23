@@ -197,19 +197,32 @@ def submit_play(game_id: str):
 
 @games_bp.route("/<game_id>/concede", methods=["POST"])
 def concede_game(game_id: str):
-    """Concede and delete the game. Records moon shots for the authenticated user."""
+    """Concede and delete the game. Records moon shots and wimp achievement for the authenticated user."""
     runner = _get_runner(game_id)
     if runner is None:
         return jsonify({"error": "Game not found"}), 404
 
+    newly_unlocked: list[str] = []
+    active_game = ActiveGame.query.filter_by(game_id=game_id).first()
+
     user = get_current_user()
-    if user and runner.human_moon_shots > 0:
+    if user:
         stats = UserStats.query.filter_by(user_id=user.id).first()
         if not stats:
             stats = UserStats(user_id=user.id, moon_shots=0)
             db.session.add(stats)
-        stats.moon_shots = (stats.moon_shots or 0) + runner.human_moon_shots
+
+        if runner.human_moon_shots > 0:
+            stats.moon_shots = (stats.moon_shots or 0) + runner.human_moon_shots
+
+        difficulty = active_game.difficulty if active_game else "easy"
+        if difficulty == "hardest" and not stats.wimp:
+            stats.wimp = True
+            newly_unlocked.append("wimp")
+
+        stats.current_win_streak = 0
+
         db.session.commit()
 
     _delete_game(game_id)
-    return jsonify({"status": "conceded"})
+    return jsonify({"status": "conceded", "newly_unlocked": newly_unlocked})

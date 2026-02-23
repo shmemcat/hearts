@@ -4,6 +4,9 @@ import buttons from "@/styles/buttons.module.css";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
+import { useToast } from "@/context/ToastContext";
+import { unlockAchievement } from "@/lib/gameApi";
+import { resolveUnlockId } from "@/lib/achievements";
 
 import { useNavigate } from "react-router-dom";
 import { motion, useAnimationControls } from "framer-motion";
@@ -185,10 +188,13 @@ const useIsTouch = () => {
 
 const SoundButton: React.FC = () => {
    const { muted, setMuted, volume, setVolume, play } = useSound();
+   const { token } = useAuth();
+   const { addToast } = useToast();
    const [animation, setAnimation] = React.useState(0);
    const [mounted, setMounted] = React.useState(false);
    const [sliderOpen, setSliderOpen] = React.useState(false);
    const wrapRef = React.useRef<HTMLDivElement>(null);
+   const geezerFiredRef = React.useRef(false);
    const isTouch = useIsTouch();
 
    React.useEffect(() => {
@@ -207,6 +213,25 @@ const SoundButton: React.FC = () => {
       return () => document.removeEventListener("pointerdown", handler);
    }, [isTouch, sliderOpen]);
 
+   const fireGeezer = React.useCallback(() => {
+      if (!token || geezerFiredRef.current) return;
+      geezerFiredRef.current = true;
+      unlockAchievement(token, "geezer").then((res) => {
+         if (!res.ok || res.newly_unlocked.length === 0) return;
+         for (const id of res.newly_unlocked) {
+            const info = resolveUnlockId(id);
+            if (info) {
+               addToast({
+                  achievementId: id,
+                  name: info.name,
+                  icon: <FontAwesomeIcon icon={info.def.icon} />,
+                  tier: info.tier,
+               });
+            }
+         }
+      });
+   }, [token, addToast]);
+
    if (!mounted) return <></>;
 
    const onClickHandler = () => {
@@ -218,6 +243,8 @@ const SoundButton: React.FC = () => {
          setMuted(!muted);
          if (willUnmute) {
             setTimeout(() => play("soundOn"), 50);
+         } else {
+            fireGeezer();
          }
       }
    };
@@ -227,6 +254,7 @@ const SoundButton: React.FC = () => {
       setVolume(v);
       if (v === 0 && !muted) {
          setMuted(true);
+         fireGeezer();
       } else if (v > 0 && muted) {
          setMuted(false);
       }

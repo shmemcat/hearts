@@ -30,6 +30,7 @@ export type GameState = {
    game_over: boolean;
    winner_index: number | null;
    human_moon_shots: number;
+   human_hearts_broken: number;
 };
 
 /** Response from POST /games/start */
