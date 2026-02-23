@@ -97,6 +97,7 @@ html {
    --achievement-gold: hsl(38, 75%, 48%);
    --achievement-locked: hsla(0, 0%, 18%, 0.4);
    --achievement-secret-text: hsla(0, 0%, 18%, 0.35);
+   --badgeboxshadow: var(--buttonboxshadow);
 }
 
 [data-theme="dark"] {
@@ -156,6 +157,7 @@ html {
    --achievement-gold: hsl(43, 70%, 55%);
    --achievement-locked: hsla(230, 21%, 61%, 0.6);
    --achievement-secret-text: hsla(230, 15%, 48%, 0.5);
+   --buttonboxshadow: hsla(342, 30%, 30%, 0.3);
 }
 
 body {
