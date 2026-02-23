@@ -158,8 +158,67 @@ class ActiveGame(db.Model):
     difficulty = db.Column(db.String(16), nullable=False, server_default="easy")
     state_json = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_multiplayer = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+    lobby_code = db.Column(db.String(10), nullable=True, index=True)
 
     user = db.relationship("User", backref=db.backref("active_game", uselist=False))
+
+
+DIFFICULTY_TO_CATEGORY = {
+    "easy": "easy",
+    "medium": "medium",
+    "hard": "my_mom",
+    "harder": "my_mom",
+    "hardest": "my_mom",
+}
+
+
+class DifficultyStats(db.Model):
+    __tablename__ = "difficulty_stats"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    category = db.Column(db.String(16), nullable=False)
+    games_played = db.Column(db.Integer, default=0, nullable=False)
+    games_won = db.Column(db.Integer, default=0, nullable=False)
+    moon_shots = db.Column(db.Integer, default=0, nullable=False)
+    best_score = db.Column(db.Integer, nullable=True)
+    worst_score = db.Column(db.Integer, nullable=True)
+    total_points = db.Column(db.Integer, default=0, nullable=False)
+    current_win_streak = db.Column(
+        db.Integer, default=0, nullable=False, server_default="0"
+    )
+    max_win_streak = db.Column(
+        db.Integer, default=0, nullable=False, server_default="0"
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id", "category", name="uq_difficulty_stats_user_category"
+        ),
+    )
+
+    user = db.relationship(
+        "User", backref=db.backref("difficulty_stats", lazy="dynamic")
+    )
+
+    def to_dict(self):
+        return {
+            "games_played": self.games_played,
+            "games_won": self.games_won,
+            "moon_shots": self.moon_shots,
+            "best_score": self.best_score,
+            "worst_score": self.worst_score,
+            "average_score": (
+                round(self.total_points / self.games_played, 1)
+                if self.games_played > 0
+                else None
+            ),
+            "current_win_streak": self.current_win_streak,
+            "max_win_streak": self.max_win_streak,
+        }
 
 
 class PasswordResetToken(db.Model):

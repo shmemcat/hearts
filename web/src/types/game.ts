@@ -31,6 +31,14 @@ export type GameState = {
    winner_index: number | null;
    human_moon_shots: number;
    human_hearts_broken: number;
+   /** Multiplayer-only: the player's hand (alias for human_hand) */
+   my_hand?: string[];
+   /** Multiplayer-only: this player's seat index (null for spectators) */
+   my_seat?: number | null;
+   /** Multiplayer-only: whether the pass has been submitted */
+   pass_submitted?: boolean;
+   /** Whether a round just ended (used by WS state events) */
+   round_just_ended?: boolean;
 };
 
 /** Response from POST /games/start */

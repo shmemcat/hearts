@@ -6,15 +6,18 @@ import { Button } from "@/components/Buttons";
 import { FormInput } from "@/components/FormInput";
 import { ActiveGameModal } from "@/components/game";
 import { LoginWarning } from "@/components/LoginWarning";
-import { Tooltip } from "@/components/Tooltip";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { checkActiveGame, concedeGame } from "@/lib/gameApi";
+import { getLobbyState } from "@/lib/lobbyApi";
 
 export default function JoinGamePage() {
    const navigate = useNavigate();
    const { token } = useAuth();
+   const [lobbyCode, setLobbyCode] = React.useState("");
+   const [submitting, setSubmitting] = React.useState(false);
+   const [error, setError] = React.useState<string | null>(null);
    const [activeGameId, setActiveGameId] = React.useState<string | null>(null);
    const [showActiveModal, setShowActiveModal] = React.useState(false);
 
@@ -35,6 +38,25 @@ export default function JoinGamePage() {
       setShowActiveModal(false);
    }
 
+   async function handleJoin() {
+      const code = lobbyCode.trim().toUpperCase();
+      if (!code) return;
+      setError(null);
+      setSubmitting(true);
+      try {
+         const result = await getLobbyState(code);
+         if (!result.ok) {
+            setError(result.error);
+            return;
+         }
+         navigate(`/game/lobby/${code}`);
+      } catch (e) {
+         setError(e instanceof Error ? e.message : "Failed to check lobby");
+      } finally {
+         setSubmitting(false);
+      }
+   }
+
    return (
       <>
          <Helmet>
@@ -48,26 +70,37 @@ export default function JoinGamePage() {
             </p>
             <br />
             <div className="flex items-center">
-               <form>
+               <form
+                  onSubmit={(e) => {
+                     e.preventDefault();
+                     handleJoin();
+                  }}
+               >
                   <FormInput
                      type="text"
                      name="lobby_code"
                      placeholder="Lobby Code"
                      fontWeight={600}
+                     value={lobbyCode}
+                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setLobbyCode(e.target.value)
+                     }
                   />
                </form>
             </div>
+            {error && (
+               <p className="mt-2 text-red-600 text-sm" role="alert">
+                  {error}
+               </p>
+            )}
             <LoginWarning />
             <ButtonGroup padding="tight" className="pt-2">
-               <Tooltip content="Coming soon!">
-                  <div className="inline-block">
-                     <Button
-                        name="Join!"
-                        disabled
-                        style={{ width: "150px", height: "50px" }}
-                     />
-                  </div>
-               </Tooltip>
+               <Button
+                  name={submitting ? "Joining…" : "Join!"}
+                  disabled={submitting || !lobbyCode.trim()}
+                  style={{ width: "150px", height: "50px" }}
+                  onClick={handleJoin}
+               />
                <Link to="/" onClick={() => triggerLogoFadeOut()}>
                   <Button
                      name="Home"

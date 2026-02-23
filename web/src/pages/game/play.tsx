@@ -61,26 +61,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import handStyles from "@/components/game/Hand.module.css";
 import styles from "@/styles/play.module.css";
 
-/**
- * Terminology:
- * - TRICK = four cards, one per player
- * - ROUND = all 13 tricks; after a round we pass, then start the next round
- */
-
-/** Reorder for table layout: API order 0,1,2,3 -> display order bottom(0), top(2), left(1), right(3). */
-function reorderSlotsForTableLayout<T>(arr: T[]): T[] {
-   if (arr.length < 4) return arr;
-   return [arr[0], arr[2], arr[1], arr[3]];
-}
-
-/** Derive compact badge label for mobile: "AI 1" → "A1", "Guest 1" → "G1", "shmemcat" → "S". */
-function getShortName(name: string): string {
-   const trimmed = name.trim();
-   const guestMatch = trimmed.match(/^Guest\s*(\d+)$/i);
-   if (guestMatch) return `G${guestMatch[1]}`;
-   if (trimmed === "You") return "Y";
-   return trimmed.charAt(0).toUpperCase();
-}
+import { reorderSlotsForTableLayout, getShortName } from "@/lib/playUtils";
 
 export default function PlayGamePage() {
    const [searchParams] = useSearchParams();

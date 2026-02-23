@@ -9,12 +9,12 @@ import {
 } from "@/components/CreateGameSelections";
 import { ActiveGameModal } from "@/components/game";
 import { LoginWarning } from "@/components/LoginWarning";
-import { Tooltip } from "@/components/Tooltip";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useHardLevel } from "@/context/HardLevelContext";
 import { startGame, checkActiveGame, concedeGame } from "@/lib/gameApi";
+import { createLobby } from "@/lib/lobbyApi";
 
 export default function CreateGamePage() {
    const navigate = useNavigate();
@@ -40,9 +40,31 @@ export default function CreateGamePage() {
    }, [token]);
 
    async function handleCreateGame() {
-      if (gameType !== "Versus AI") return;
       setError(null);
       setSubmitting(true);
+
+      if (gameType === "Online") {
+         try {
+            const hostName = user?.name || "Host";
+            const numAi = aiPlayersEnabled ? numAiPlayers : 0;
+            const result = await createLobby(hostName, numAi);
+            if (result.ok) {
+               localStorage.setItem(
+                  `hearts_lobby_token_${result.data.code}`,
+                  result.data.player_token
+               );
+               navigate(`/game/lobby/${result.data.code}`);
+            } else {
+               setError(result.error);
+            }
+         } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to create lobby");
+         } finally {
+            setSubmitting(false);
+         }
+         return;
+      }
+
       try {
          const result = await startGame(
             {
@@ -94,25 +116,12 @@ export default function CreateGamePage() {
                />
 
                <div className="pt-4 mt-4">
-                  {gameType !== "Versus AI" ? (
-                     <Tooltip content="Online games coming soon!">
-                        <span className="inline-block">
-                           <Button
-                              name={submitting ? "Starting…" : "Create Game!"}
-                              disabled
-                              style={{ height: "50px" }}
-                              onClick={handleCreateGame}
-                           />
-                        </span>
-                     </Tooltip>
-                  ) : (
-                     <Button
-                        name={submitting ? "Starting…" : "Create Game!"}
-                        disabled={submitting}
-                        style={{ height: "50px" }}
-                        onClick={handleCreateGame}
-                     />
-                  )}
+                  <Button
+                     name={submitting ? "Starting…" : "Create Game!"}
+                     disabled={submitting}
+                     style={{ height: "50px" }}
+                     onClick={handleCreateGame}
+                  />
                   {error != null && (
                      <p className="mt-2 text-red-600 text-sm" role="alert">
                         {error}

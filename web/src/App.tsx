@@ -21,6 +21,8 @@ import ResendVerification from "@/pages/resend-verification";
 import CreateGame from "@/pages/game/create";
 import JoinGame from "@/pages/game/join";
 import PlayGame from "@/pages/game/play";
+import LobbyPage from "@/pages/game/lobby";
+import MultiPlayPage from "@/pages/game/multi-play";
 import NotFound from "@/pages/404";
 
 export default function App() {
@@ -83,6 +85,14 @@ export default function App() {
                                        <Route
                                           path="/game/play"
                                           element={<PlayGame />}
+                                       />
+                                       <Route
+                                          path="/game/lobby/:code"
+                                          element={<LobbyPage />}
+                                       />
+                                       <Route
+                                          path="/game/multi-play"
+                                          element={<MultiPlayPage />}
                                        />
                                        <Route path="*" element={<NotFound />} />
                                     </Routes>

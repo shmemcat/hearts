@@ -1,0 +1,228 @@
+/* Lobby page layout */
+
+.lobbyContent {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 20px;
+   width: 100%;
+   max-width: 600px;
+}
+
+.lobbyInfo {
+   display: flex;
+   flex-direction: column;
+   gap: 10px;
+   width: 100%;
+   max-width: 420px;
+}
+
+.copyRow {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+}
+
+.copyRow label {
+   font-weight: 600;
+   font-size: 0.85rem;
+   min-width: 42px;
+   color: var(--header);
+}
+
+.copyInput {
+   flex: 1;
+   padding: 6px 10px;
+   border: 2px solid var(--darkpink);
+   border-radius: 8px;
+   background: var(--contentbox);
+   color: var(--header);
+   font-family: inherit;
+   font-size: 0.9rem;
+   font-weight: 600;
+   letter-spacing: 0.5px;
+}
+
+.copyInput:read-only {
+   cursor: default;
+}
+
+.copyButton {
+   border: none;
+   background: var(--darkpink);
+   color: white;
+   border-radius: 8px;
+   padding: 6px 10px;
+   cursor: pointer;
+   font-size: 0.85rem;
+   transition: opacity 0.15s;
+}
+
+.copyButton:hover {
+   opacity: 0.85;
+}
+
+.copyButton:active {
+   opacity: 0.7;
+}
+
+/* Seats grid */
+
+.seatsGrid {
+   display: grid;
+   grid-template-areas:
+      ".     top    ."
+      "left  center right"
+      ".     bottom .";
+   grid-template-columns: 1fr 1.4fr 1fr;
+   grid-template-rows: auto 1fr auto;
+   gap: 12px;
+   width: 100%;
+   max-width: 420px;
+   min-height: 280px;
+   align-items: center;
+   justify-items: center;
+}
+
+.seatTop {
+   grid-area: top;
+}
+
+.seatLeft {
+   grid-area: left;
+}
+
+.seatRight {
+   grid-area: right;
+}
+
+.seatBottom {
+   grid-area: bottom;
+}
+
+.seatCenter {
+   grid-area: center;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   gap: 12px;
+}
+
+.seat {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 4px;
+   padding: 12px 16px;
+   border-radius: 12px;
+   background: var(--contentbox);
+   border: 2px solid var(--darkpink);
+   min-width: 100px;
+   text-align: center;
+   transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.seat.isHost {
+   border-color: var(--gold, #daa520);
+   box-shadow: 0 0 8px rgba(218, 165, 32, 0.3);
+}
+
+.seat.isEmpty {
+   opacity: 0.6;
+   border-style: dashed;
+}
+
+.seatName {
+   font-weight: 600;
+   font-size: 0.95rem;
+   color: var(--header);
+}
+
+.seatLabel {
+   font-size: 0.75rem;
+   opacity: 0.7;
+   color: var(--header);
+}
+
+.crownIcon {
+   color: var(--gold, #daa520);
+   font-size: 0.7rem;
+   margin-left: 4px;
+}
+
+/* Animated "Waiting..." */
+.waitingDots::after {
+   content: "";
+   animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+   0% {
+      content: "";
+   }
+   25% {
+      content: ".";
+   }
+   50% {
+      content: "..";
+   }
+   75% {
+      content: "...";
+   }
+   100% {
+      content: "";
+   }
+}
+
+/* Status messages */
+.statusMessage {
+   text-align: center;
+   padding: 20px;
+   color: var(--header);
+}
+
+.statusMessage h2 {
+   margin-bottom: 8px;
+}
+
+/* Join form in center */
+.joinForm {
+   display: flex;
+   gap: 8px;
+   align-items: center;
+}
+
+.joinInput {
+   padding: 8px 12px;
+   border: 2px solid var(--darkpink);
+   border-radius: 8px;
+   background: var(--contentbox);
+   color: var(--header);
+   font-family: inherit;
+   font-size: 0.9rem;
+   font-weight: 600;
+   width: 160px;
+}
+
+.joinInput::placeholder {
+   opacity: 0.5;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+   .seatsGrid {
+      grid-template-columns: 1fr 1.2fr 1fr;
+      gap: 8px;
+      min-height: 220px;
+   }
+
+   .seat {
+      padding: 8px 10px;
+      min-width: 80px;
+   }
+
+   .lobbyInfo {
+      max-width: 300px;
+   }
+}

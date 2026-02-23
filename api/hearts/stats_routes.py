@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, g
 
 from hearts.extensions import db
-from hearts.models import ActiveGame, UserStats
+from hearts.models import ActiveGame, DifficultyStats, DIFFICULTY_TO_CATEGORY, UserStats
 from hearts.jwt_utils import require_jwt
 
 stats_bp = Blueprint("stats", __name__, url_prefix="/stats")
@@ -22,6 +22,15 @@ def _get_or_create_stats(user_id: int) -> UserStats:
         db.session.add(stats)
         db.session.flush()
     return stats
+
+
+def _get_or_create_difficulty_stats(user_id: int, category: str) -> DifficultyStats:
+    ds = DifficultyStats.query.filter_by(user_id=user_id, category=category).first()
+    if not ds:
+        ds = DifficultyStats(user_id=user_id, category=category)
+        db.session.add(ds)
+        db.session.flush()
+    return ds
 
 
 def _compute_newly_unlocked(
@@ -250,10 +259,41 @@ def record_game():
     if hearts_broken_count >= 5 and not stats.heartbreaker:
         stats.heartbreaker = True
 
+    # ── Per-difficulty stats ────────────────────────────────────────────
+    category = DIFFICULTY_TO_CATEGORY.get(difficulty, "easy")
+    ds = _get_or_create_difficulty_stats(g.current_user.id, category)
+    ds.games_played += 1
+    if won:
+        ds.games_won += 1
+    ds.moon_shots += moon_shot_count
+    ds.total_points += final_score
+    if ds.best_score is None or final_score < ds.best_score:
+        ds.best_score = final_score
+    if ds.worst_score is None or final_score > ds.worst_score:
+        ds.worst_score = final_score
+    if won:
+        ds.current_win_streak += 1
+        if ds.current_win_streak > ds.max_win_streak:
+            ds.max_win_streak = ds.current_win_streak
+    else:
+        ds.current_win_streak = 0
+
     newly_unlocked = _compute_newly_unlocked(old_snapshot, stats, won, final_score)
 
     db.session.commit()
     return jsonify({"stats": stats.to_dict(), "newly_unlocked": newly_unlocked}), 200
+
+
+@stats_bp.route("/by-category", methods=["GET"])
+@require_jwt
+def get_stats_by_category():
+    """Return per-difficulty stats for the authenticated user, keyed by category."""
+    rows = DifficultyStats.query.filter_by(user_id=g.current_user.id).all()
+    by_cat = {row.category: row.to_dict() for row in rows}
+    result = {
+        cat: by_cat.get(cat) for cat in ("easy", "medium", "my_mom", "multiplayer")
+    }
+    return jsonify(result), 200
 
 
 @stats_bp.route("/unlock", methods=["POST"])

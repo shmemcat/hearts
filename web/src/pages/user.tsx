@@ -17,7 +17,13 @@ import { DeleteAccountModal } from "@/components/DeleteAccountModal";
 import { AchievementBadge } from "@/components/AchievementBadge";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { getApiUrl } from "@/lib/api";
-import { fetchStats, type UserStatsResponse } from "@/lib/gameApi";
+import {
+   fetchStats,
+   fetchDifficultyStats,
+   type UserStatsResponse,
+   type CategoryStats,
+   type DifficultyStatsMap,
+} from "@/lib/gameApi";
 import { computeAchievements } from "@/lib/achievements";
 import { useToast } from "@/context/ToastContext";
 import containers from "@/styles/containers.module.css";
@@ -51,11 +57,15 @@ function UserInfo() {
    const [loading, setLoading] = useState(false);
    const [showDeleteModal, setShowDeleteModal] = useState(false);
    const [stats, setStats] = useState<UserStatsResponse | null>(null);
+   const [diffStats, setDiffStats] = useState<DifficultyStatsMap | null>(null);
 
    useEffect(() => {
       if (!token) return;
       fetchStats(token).then((res) => {
          if (res.ok) setStats(res.data);
+      });
+      fetchDifficultyStats(token).then((res) => {
+         if (res.ok) setDiffStats(res.data);
       });
    }, [token]);
 
@@ -121,7 +131,7 @@ function UserInfo() {
             <div className="mb-4">
                Welcome <span className="bold">{user.name ?? user.email}</span>!
             </div>
-            <StatsPanel stats={stats} />
+            <TabbedStatsPanel diffStats={diffStats} />
             <AchievementsPanel stats={stats} userId={user.id} />
             <ButtonGroup padding="default">
                <Link to="/options">
@@ -219,20 +229,79 @@ function UserInfo() {
    );
 }
 
-function StatsPanel({ stats }: { stats: UserStatsResponse | null }) {
-   if (!stats) return null;
+const STAT_TABS = [
+   { key: "easy", label: "Easy" },
+   { key: "medium", label: "Medium" },
+   { key: "my_mom", label: "My Mom" },
+   { key: "multiplayer", label: "Multiplayer" },
+] as const;
 
+type StatCategory = (typeof STAT_TABS)[number]["key"];
+
+function pickDefaultTab(diffStats: DifficultyStatsMap): StatCategory {
+   let best: StatCategory = "easy";
+   let bestCount = 0;
+   for (const { key } of STAT_TABS) {
+      const s = diffStats[key];
+      if (s && s.games_played > bestCount) {
+         bestCount = s.games_played;
+         best = key;
+      }
+   }
+   return best;
+}
+
+function TabbedStatsPanel({
+   diffStats,
+}: {
+   diffStats: DifficultyStatsMap | null;
+}) {
+   const [tab, setTab] = useState<StatCategory | null>(null);
+
+   useEffect(() => {
+      if (diffStats && tab === null) {
+         setTab(pickDefaultTab(diffStats));
+      }
+   }, [diffStats, tab]);
+
+   if (!diffStats) return null;
+
+   const activeTab = tab ?? "my_mom";
+   const activeData = diffStats[activeTab];
+
+   return (
+      <>
+         <div className={containers["stats-tabs"]}>
+            {STAT_TABS.map(({ key, label }) => (
+               <button
+                  key={key}
+                  className={`${containers["stats-tab"]}${
+                     activeTab === key
+                        ? ` ${containers["stats-tab-active"]}`
+                        : ""
+                  }`}
+                  onClick={() => setTab(key)}
+               >
+                  {label}
+               </button>
+            ))}
+         </div>
+         <StatsPanel stats={activeData} />
+      </>
+   );
+}
+
+function StatsPanel({ stats }: { stats: CategoryStats | null }) {
    const fmt = (val: number | null | undefined): string =>
       val != null ? String(val) : "--";
 
    const winRate =
-      stats.games_played > 0
+      stats && stats.games_played > 0
          ? `${Math.round((stats.games_won / stats.games_played) * 100)}%`
          : "--";
 
    return (
       <div className={containers["stats-card"]}>
-         <p className={containers["stats-card-title"]}>Your Stats</p>
          <div className={containers["stats-grid"]}>
             <div className={containers["stats-col"]}>
                <div className={containers["stats-row"]}>
@@ -240,13 +309,13 @@ function StatsPanel({ stats }: { stats: UserStatsResponse | null }) {
                      Games Played
                   </span>
                   <span className={containers["stats-value"]}>
-                     {fmt(stats.games_played)}
+                     {fmt(stats?.games_played)}
                   </span>
                </div>
                <div className={containers["stats-row"]}>
                   <span className={containers["stats-label"]}>Games Won</span>
                   <span className={containers["stats-value"]}>
-                     {fmt(stats.games_won)}
+                     {fmt(stats?.games_won)}
                   </span>
                </div>
                <div className={containers["stats-row"]}>
@@ -261,25 +330,25 @@ function StatsPanel({ stats }: { stats: UserStatsResponse | null }) {
                      Shot the Moon
                   </span>
                   <span className={containers["stats-value"]}>
-                     {fmt(stats.moon_shots)}
+                     {fmt(stats?.moon_shots)}
                   </span>
                </div>
                <div className={containers["stats-row"]}>
                   <span className={containers["stats-label"]}>Best Score</span>
                   <span className={containers["stats-value"]}>
-                     {fmt(stats.best_score)}
+                     {fmt(stats?.best_score)}
                   </span>
                </div>
                <div className={containers["stats-row"]}>
                   <span className={containers["stats-label"]}>Worst Score</span>
                   <span className={containers["stats-value"]}>
-                     {fmt(stats.worst_score)}
+                     {fmt(stats?.worst_score)}
                   </span>
                </div>
                <div className={containers["stats-row"]}>
                   <span className={containers["stats-label"]}>Avg Score</span>
                   <span className={containers["stats-value"]}>
-                     {fmt(stats.average_score)}
+                     {fmt(stats?.average_score)}
                   </span>
                </div>
             </div>

@@ -266,6 +266,45 @@ export async function fetchStats(
    return { ok: true, data: (data as { stats: UserStatsResponse }).stats };
 }
 
+// ── Per-difficulty stats ────────────────────────────────────────────
+
+export type CategoryStats = {
+   games_played: number;
+   games_won: number;
+   moon_shots: number;
+   best_score: number | null;
+   worst_score: number | null;
+   average_score: number | null;
+   current_win_streak: number;
+   max_win_streak: number;
+};
+
+export type DifficultyStatsMap = {
+   easy: CategoryStats | null;
+   medium: CategoryStats | null;
+   my_mom: CategoryStats | null;
+   multiplayer: CategoryStats | null;
+};
+
+export async function fetchDifficultyStats(
+   token: string
+): Promise<
+   { ok: true; data: DifficultyStatsMap } | { ok: false; error: string }
+> {
+   const res = await fetch(`${base()}/stats/by-category`, {
+      headers: { Authorization: `Bearer ${token}` },
+   });
+   const data = await parseJson<DifficultyStatsMap & GameApiError>(res);
+   if (!res.ok) {
+      return {
+         ok: false,
+         error:
+            (data as GameApiError).error ?? `Request failed (${res.status})`,
+      };
+   }
+   return { ok: true, data: data as DifficultyStatsMap };
+}
+
 export type RecordGameStatsResponse = {
    stats: UserStatsResponse;
    newly_unlocked: string[];
