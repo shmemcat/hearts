@@ -4,10 +4,11 @@ import colors from "@/styles/designTokens";
 export interface SparkleProps {
    style?: React.CSSProperties;
    className?: string;
+   fill?: string;
 }
 
 export const Sparkle: React.FC<SparkleProps> = (props) => {
-   const fillColor = colors.sparkle;
+   const fillColor = props.fill ?? colors.sparkle;
 
    return (
       <div style={props.style} className={props.className} aria-hidden>

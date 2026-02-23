@@ -24,7 +24,9 @@ export function AchievementBadge({ achievement }: Props) {
                }`}
             >
                {unlocked && <div className={styles.badgeShine} />}
-               {unlocked && <Sparkle className={styles.badgeSparkle} />}
+               {unlocked && (
+                  <Sparkle className={styles.badgeSparkle} fill="white" />
+               )}
                {unlocked ? (
                   <span
                      className={`${styles.badgeIcon} ${
