@@ -6,11 +6,14 @@ game_id only (no token). State is emitted per-player (each sees only their
 own hand). Play/trick events are broadcast to the entire room.
 """
 
+import logging
 import eventlet
 from typing import Any, Dict, Optional, Set, Tuple
 
 from flask import current_app, request
 from flask_socketio import emit, join_room
+
+logger = logging.getLogger(__name__)
 
 from hearts.extensions import db
 from hearts.game.card import Card
@@ -172,6 +175,9 @@ def create_multiplayer_game(
     runner = MultiplayerRunner.new_game(seats, difficulty=difficulty)
     _runners[game_id] = runner
     _save_to_db(game_id, runner, lobby_code=lobby_code)
+    logger.info(
+        "[multi] game created: game_id=%s, runners_count=%d", game_id, len(_runners)
+    )
 
     # If AI has the first turn after a no-pass round, auto-advance
     if runner.state.phase.value == "playing" and not runner._is_active_human(
@@ -199,44 +205,64 @@ def register_multiplayer_socket(socketio):
 
     @socketio.on("connect", namespace="/multi")
     def on_connect():
-        game_id = (request.args.get("game_id") or "").strip()
-        player_token = (request.args.get("player_token") or "").strip() or None
+        try:
+            game_id = (request.args.get("game_id") or "").strip()
+            player_token = (request.args.get("player_token") or "").strip() or None
 
-        if not game_id:
+            if not game_id:
+                logger.warning(
+                    "[multi] connect rejected: empty game_id, args=%s",
+                    dict(request.args),
+                )
+                return False
+
+            runner = _get_runner(game_id)
+            if runner is None:
+                logger.warning(
+                    "[multi] connect rejected: runner not found for game_id=%s, in_memory_keys=%s",
+                    game_id,
+                    list(_runners.keys())[:10],
+                )
+                return False
+
+            join_room(_room(game_id))
+
+            if player_token:
+                seat_idx = _find_seat_by_token(runner, player_token)
+                if seat_idx is not None:
+                    timer = _disconnect_timers.pop(player_token, None)
+                    if timer is not None:
+                        timer.cancel()
+
+                    _sid_to_game[request.sid] = {
+                        "game_id": game_id,
+                        "seat_index": seat_idx,
+                    }
+                    _token_to_sid[player_token] = request.sid
+
+                    user = get_current_user()
+                    if user:
+                        auth = _game_auth.setdefault(game_id, {})
+                        auth[seat_idx] = user.id
+
+                    logger.info(
+                        "[multi] player connected: game=%s seat=%d", game_id, seat_idx
+                    )
+                    emit(
+                        "state",
+                        runner.get_state_for_player(seat_idx),
+                        namespace="/multi",
+                    )
+                    return
+
+            _sid_to_game[request.sid] = {"game_id": game_id, "spectator": True}
+            specs = _spectator_sids.setdefault(game_id, set())
+            specs.add(request.sid)
+            logger.info("[multi] spectator connected: game=%s", game_id)
+            emit("state", runner.get_state_for_spectator(), namespace="/multi")
+        except Exception:
+            logger.exception("[multi] on_connect crashed")
             return False
-
-        runner = _get_runner(game_id)
-        if runner is None:
-            emit("error", {"message": "Game not found"}, namespace="/multi")
-            return False
-
-        join_room(_room(game_id))
-
-        if player_token:
-            seat_idx = _find_seat_by_token(runner, player_token)
-            if seat_idx is not None:
-                # Cancel any pending disconnect timer
-                timer = _disconnect_timers.pop(player_token, None)
-                if timer is not None:
-                    timer.cancel()
-
-                _sid_to_game[request.sid] = {"game_id": game_id, "seat_index": seat_idx}
-                _token_to_sid[player_token] = request.sid
-
-                # Track auth for stats
-                user = get_current_user()
-                if user:
-                    auth = _game_auth.setdefault(game_id, {})
-                    auth[seat_idx] = user.id
-
-                emit("state", runner.get_state_for_player(seat_idx), namespace="/multi")
-                return
-
-        # Spectator
-        _sid_to_game[request.sid] = {"game_id": game_id, "spectator": True}
-        specs = _spectator_sids.setdefault(game_id, set())
-        specs.add(request.sid)
-        emit("state", runner.get_state_for_spectator(), namespace="/multi")
 
     @socketio.on("request_state", namespace="/multi")
     def on_request_state():

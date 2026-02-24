@@ -30,11 +30,11 @@ export function connectMulti(
    const query: Record<string, string> = { game_id: gameId };
    if (playerToken) query.player_token = playerToken;
 
-   console.log("[multi-socket] connectMulti called", {
-      gameId,
-      hasToken: !!playerToken,
-      stateListenerCount: stateListeners.length,
-   });
+   console.log(
+      `[multi-socket] connectMulti gameId=${gameId} hasToken=${!!playerToken} listeners=${
+         stateListeners.length
+      }`
+   );
 
    socket = io("/multi", {
       path: "/socket.io",
@@ -44,10 +44,9 @@ export function connectMulti(
    });
 
    socket.on("connect", () => {
-      console.log("[multi-socket] connected", {
-         id: socket?.id,
-         stateListenerCount: stateListeners.length,
-      });
+      console.log(
+         `[multi-socket] connected id=${socket?.id} listeners=${stateListeners.length}`
+      );
    });
 
    socket.on("connect_error", (err) => {

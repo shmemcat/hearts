@@ -274,10 +274,9 @@ export default function MultiPlayPage() {
    // ── WebSocket connect / disconnect ─────────────────────────────────
    useEffect(() => {
       if (!gameId) return;
-      console.log("[multi-play] connect effect running", {
-         gameId,
-         hasToken: !!playerToken,
-      });
+      console.log(
+         `[multi-play] connect effect gameId=${gameId} hasToken=${!!playerToken}`
+      );
       connectMulti(gameId, playerToken);
 
       const retryTimer = setTimeout(() => {
