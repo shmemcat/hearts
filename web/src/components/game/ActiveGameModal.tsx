@@ -44,8 +44,8 @@ export const ActiveGameModal: React.FC<ActiveGameModalProps> = ({
                   <span className={styles.title}>Are you sure?</span>
                   <p className={styles.message}>{confirmMessage}</p>
                   <div className={styles.buttons}>
-                     <Button name="No" onClick={() => setConfirming(false)} />
                      <Button name="Yes" onClick={onConcede} />
+                     <Button name="No" onClick={() => setConfirming(false)} />
                   </div>
                </>
             )}

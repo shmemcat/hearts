@@ -61,7 +61,7 @@ A full-stack, real-time implementation of the classic Hearts card game with sing
 ## Architecture
 
 ```
-┌──────────────┐       WebSocket / REST        ┌──────────────┐
+┌──────────────┐       WebSocket / REST         ┌──────────────┐
 │              │  ◄──────────────────────────►  │              │
 │   React SPA  │         (Socket.IO)            │  Flask API   │
 │   (Vite)     │                                │  (Eventlet)  │
@@ -72,7 +72,7 @@ A full-stack, real-time implementation of the classic Hearts card game with sing
        │  serves static + proxies /api, /socket.io     │
        │                                               ▼
        │                                        ┌──────────────┐
-       │                                        │  PostgreSQL   │
+       │                                        │  PostgreSQL  │
        └────────────────────────────────────────┘              │
                                                 └──────────────┘
 ```
@@ -119,21 +119,21 @@ Additional multiplayer features:
 
 The root `.env` file is read by Docker Compose and configures Postgres, the Flask API, and mail settings. It is never committed (listed in `.gitignore`). The frontend uses a relative `/api` path for all API calls, so no frontend env vars are needed -- in development the Vite dev server proxies `/api` and `/socket.io` to the API container; in production Nginx does the same.
 
-| Variable | Used by | When | Required |
-| --- | --- | --- | --- |
-| `POSTGRES_USER` | db, api | Runtime | Yes |
-| `POSTGRES_PASSWORD` | db, api | Runtime | Yes |
-| `POSTGRES_DB` | db, api | Runtime | Yes |
-| `JWT_SECRET` | api | Runtime | Yes |
-| `CORS_ORIGINS` | api | Runtime | Yes (prod) |
-| `FRONTEND_URL` | api | Runtime | Yes (prod) |
-| `MAIL_SERVER` | api | Runtime | For email |
-| `MAIL_PORT` | api | Runtime | For email |
-| `MAIL_USE_TLS` | api | Runtime | For email |
-| `MAIL_USERNAME` | api | Runtime | For email |
-| `MAIL_PASSWORD` | api | Runtime | For email |
-| `MAIL_DEFAULT_SENDER` | api | Runtime | For email |
-| `FONTAWESOME_PACKAGE_TOKEN` | web | Build-time | Yes |
+| Variable                    | Used by | When       | Required   |
+| --------------------------- | ------- | ---------- | ---------- |
+| `POSTGRES_USER`             | db, api | Runtime    | Yes        |
+| `POSTGRES_PASSWORD`         | db, api | Runtime    | Yes        |
+| `POSTGRES_DB`               | db, api | Runtime    | Yes        |
+| `JWT_SECRET`                | api     | Runtime    | Yes        |
+| `CORS_ORIGINS`              | api     | Runtime    | Yes (prod) |
+| `FRONTEND_URL`              | api     | Runtime    | Yes (prod) |
+| `MAIL_SERVER`               | api     | Runtime    | For email  |
+| `MAIL_PORT`                 | api     | Runtime    | For email  |
+| `MAIL_USE_TLS`              | api     | Runtime    | For email  |
+| `MAIL_USERNAME`             | api     | Runtime    | For email  |
+| `MAIL_PASSWORD`             | api     | Runtime    | For email  |
+| `MAIL_DEFAULT_SENDER`       | api     | Runtime    | For email  |
+| `FONTAWESOME_PACKAGE_TOKEN` | web     | Build-time | Yes        |
 
 ### Development
 

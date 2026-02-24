@@ -37,8 +37,8 @@ export const ConcedeModal: React.FC<ConcedeModalProps> = ({
                      Are you sure you wish to concede?
                   </p>
                   <div className={styles.buttons}>
-                     <Button name="No" onClick={() => setStep(1)} />
                      <Button name="Yes" onClick={onConcede} />
+                     <Button name="No" onClick={() => setStep(1)} />
                   </div>
                </>
             )}

@@ -154,6 +154,7 @@ class MultiplayerRunner:
                 )
         self._state = apply_passes(self._state, passes)
         self._pending_passes.clear()
+        self._last_round_ended = False
 
     # ── Play phase ──────────────────────────────────────────────────────
 
@@ -225,6 +226,7 @@ class MultiplayerRunner:
         self._pending_passes.clear()
         if on_done:
             on_done({"round_just_ended": True})
+        self._last_round_ended = False
         return "stop"
 
     def _run_ai_until_human_or_done(

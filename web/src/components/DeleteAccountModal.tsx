@@ -43,8 +43,8 @@ export function DeleteAccountModal({
                      cannot be undone.
                   </p>
                   <div className={styles.buttons}>
-                     <Button name="No" onClick={onClose} />
                      <DangerButton label="Yes" onClick={() => setStep(2)} />
+                     <Button name="No" onClick={onClose} />
                   </div>
                </>
             ) : (

@@ -46,13 +46,13 @@ export const BotDifficultyModal: React.FC<BotDifficultyModalProps> = ({
             </div>
             <div className="flex gap-3">
                <Button
-                  name="Start!"
-                  onClick={() => onConfirm(difficulty.toLowerCase())}
+                  name="Cancel"
+                  onClick={onCancel}
                   style={{ width: "120px" }}
                />
                <Button
-                  name="Cancel"
-                  onClick={onCancel}
+                  name="Start!"
+                  onClick={() => onConfirm(difficulty.toLowerCase())}
                   style={{ width: "120px" }}
                />
             </div>

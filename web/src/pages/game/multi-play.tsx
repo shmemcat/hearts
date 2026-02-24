@@ -124,6 +124,7 @@ export default function MultiPlayPage() {
    const passExitDirRef = useRef<"left" | "right" | "up">("left");
    const passEnterDirRef = useRef<"left" | "right" | "above">("right");
    const passExitStartRef = useRef<number>(0);
+   const roundEndStateRef = useRef<GameState | null>(null);
 
    // ── Play queue (animation) ────────────────────────────────────────
    const applyPendingState = useCallback(() => {
@@ -133,6 +134,7 @@ export default function MultiPlayPage() {
       pendingStateRef.current = null;
 
       if (pending.round_just_ended) {
+         roundEndStateRef.current = pending;
          const deltas = pending.players.map(
             (p: { score: number }, i: number) =>
                p.score - prevScoresRef.current[i]
@@ -367,10 +369,11 @@ export default function MultiPlayPage() {
    const handleContinueRoundRef = useRef<() => void>(() => {});
 
    useEffect(() => {
-      if (!roundBanner || !state) return;
+      if (!roundBanner) return;
       const t = setTimeout(() => {
          setRoundBanner(null);
-         if (state.phase === "passing" && state.pass_direction === "none") {
+         const s = stateRef.current;
+         if (s?.phase === "passing" && s.pass_direction === "none") {
             setNoPassHold(true);
             setTimeout(() => setNoPassHold(false), NO_PASS_HOLD_MS);
          } else {
@@ -379,7 +382,7 @@ export default function MultiPlayPage() {
          }
       }, ROUND_BANNER_MS);
       return () => clearTimeout(t);
-   }, [roundBanner, state?.phase, state?.pass_direction, state]);
+   }, [roundBanner]);
 
    // ── Track hearts per player from trick results ──────────────────
    useEffect(() => {
@@ -418,16 +421,19 @@ export default function MultiPlayPage() {
       setRoundSummary(null);
       setShootTheMoon(null);
       moonOverlayActiveRef.current = false;
-      const pending = pendingStateRef.current;
-      if (pending) {
-         pendingStateRef.current = null;
-         setState(pending);
-         prevScoresRef.current = pending.players.map(
+      const nextState = roundEndStateRef.current ?? pendingStateRef.current;
+      roundEndStateRef.current = null;
+      pendingStateRef.current = null;
+      if (nextState) {
+         setState(nextState);
+         prevScoresRef.current = nextState.players.map(
             (p: { score: number }) => p.score
          );
-         setPassSubmitted(pending.pass_submitted ?? false);
+         setPassSubmitted(nextState.pass_submitted ?? false);
       }
-      setRoundBanner({ round: state?.round ? state.round + 1 : 1 });
+      const nextRound =
+         nextState?.round ?? (state?.round ? state.round + 1 : 1);
+      setRoundBanner({ round: nextRound });
       setHeartsPerPlayer([0, 0, 0, 0]);
       setHeartsVisuallyBroken(false);
       setPassSelection(new Set());
