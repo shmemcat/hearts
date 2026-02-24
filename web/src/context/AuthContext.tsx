@@ -119,15 +119,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password: string
    ): Promise<{ error?: string }> => {
       const trimmedUsername = username.trim();
-      const res = await fetch(`${getApiUrl()}/login`, {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ username: trimmedUsername, password }),
-      });
+      let res: Response;
+      try {
+         res = await fetch(`${getApiUrl()}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: trimmedUsername, password }),
+         });
+      } catch {
+         return {
+            error: "Unable to reach the server. Please check your connection and try again.",
+         };
+      }
       const data = await res.json().catch(() => ({}));
       if (res.status === 403 && data.code === "EMAIL_NOT_VERIFIED") {
          return {
             error: "Check your email to verify your account before signing in.",
+         };
+      }
+      if (res.status >= 500) {
+         return {
+            error:
+               (data.error as string) ||
+               "Something went wrong on our end. Please try again later.",
          };
       }
       if (!res.ok) {

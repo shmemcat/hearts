@@ -8,6 +8,7 @@ import { Button } from "@/components/Buttons";
 import { BotDifficultyModal } from "@/components/game/BotDifficultyModal";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
 import { getLobbyState } from "@/lib/lobbyApi";
 import {
    connectLobby,
@@ -32,6 +33,7 @@ const LOBBY_TOKEN_KEY = (code: string) => `hearts_lobby_token_${code}`;
 export default function LobbyPage() {
    const { code } = useParams<{ code: string }>();
    const navigate = useNavigate();
+   const { user } = useAuth();
    const upperCode = (code ?? "").toUpperCase();
 
    const [lobby, setLobby] = useState<LobbyState | null>(null);
@@ -47,8 +49,15 @@ export default function LobbyPage() {
    const myTokenRef = useRef(myToken);
    myTokenRef.current = myToken;
 
-   // Join form state (for visitors)
-   const [joinName, setJoinName] = useState("");
+   // Join form state — pre-fill with username if logged in
+   const [joinName, setJoinName] = useState(user?.name ?? "");
+   const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
+
+   useEffect(() => {
+      if (user?.name && !nameManuallyEdited) {
+         setJoinName(user.name);
+      }
+   }, [user?.name, nameManuallyEdited]);
 
    // Bot difficulty modal
    const [showDiffModal, setShowDiffModal] = useState(false);
@@ -436,9 +445,10 @@ export default function LobbyPage() {
                                        type="text"
                                        placeholder="Your name"
                                        value={joinName}
-                                       onChange={(e) =>
-                                          setJoinName(e.target.value)
-                                       }
+                                       onChange={(e) => {
+                                          setJoinName(e.target.value);
+                                          setNameManuallyEdited(true);
+                                       }}
                                        onKeyDown={(e) => {
                                           if (e.key === "Enter") handleJoin();
                                        }}

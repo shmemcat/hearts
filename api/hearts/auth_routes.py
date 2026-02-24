@@ -107,7 +107,14 @@ def login():
     if not username or not password:
         return jsonify({"error": "Username and password required"}), 401
 
-    user = User.query.filter_by(username=username).first()
+    try:
+        user = User.query.filter_by(username=username).first()
+    except Exception:
+        return (
+            jsonify({"error": "Unable to reach the server. Please try again later."}),
+            503,
+        )
+
     if not user or not verify_password(password, user.password_hash):
         return jsonify({"error": "Invalid username or password"}), 401
 
