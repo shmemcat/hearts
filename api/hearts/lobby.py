@@ -181,6 +181,19 @@ def migrate_host(code: str) -> Optional[str]:
     return None
 
 
+def close_lobby(code: str, host_token: str) -> bool:
+    """Close a lobby (host only). Returns True if closed, False otherwise."""
+    lobby = _lobbies.get(code)
+    if lobby is None:
+        return False
+    if lobby.host_token != host_token:
+        return False
+    if lobby.status != "waiting":
+        return False
+    _lobbies.pop(code, None)
+    return True
+
+
 def start_game(code: str, difficulty: str) -> str:
     """Validate start conditions and mark lobby as playing. Returns a game_id.
 

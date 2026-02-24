@@ -16,6 +16,7 @@ from hearts.lobby import (
     get_lobby,
     join_lobby,
     leave_lobby,
+    close_lobby,
     migrate_host,
     start_game,
     cancel_disconnect_timer,
@@ -187,6 +188,26 @@ def register_lobby_socket(socketio):
             _broadcast_lobby_update(lobby)
 
         _sid_to_lobby[request.sid] = (code, None)
+
+    @socketio.on("close_lobby", namespace="/lobby")
+    def on_close_lobby():
+        info = _sid_to_lobby.get(request.sid)
+        if info is None:
+            return
+        code, player_token = info
+        if player_token is None:
+            emit("error", {"message": "You are not in this lobby"}, namespace="/lobby")
+            return
+
+        if not close_lobby(code, player_token):
+            emit(
+                "error",
+                {"message": "Only the host can close the lobby"},
+                namespace="/lobby",
+            )
+            return
+
+        socketio.emit("lobby_closed", {}, room=f"lobby:{code}", namespace="/lobby")
 
     @socketio.on("start_game", namespace="/lobby")
     def on_start_game(data):

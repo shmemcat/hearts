@@ -16,6 +16,7 @@ import {
    sendJoin,
    sendLeave,
    sendStartGame,
+   sendCloseLobby,
    onLobbyUpdate,
    onJoinAck,
    onGameStarted,
@@ -187,6 +188,11 @@ export default function LobbyPage() {
       localStorage.removeItem(LOBBY_TOKEN_KEY(upperCode));
       setMyToken(null);
       setMySeat(null);
+   }, [upperCode]);
+
+   const handleCloseLobby = useCallback(() => {
+      sendCloseLobby();
+      localStorage.removeItem(LOBBY_TOKEN_KEY(upperCode));
    }, [upperCode]);
 
    const handleStartGame = useCallback(() => {
@@ -470,23 +476,54 @@ export default function LobbyPage() {
                            <Button
                               name="Start Game"
                               onClick={handleStartGame}
-                              style={{ width: "130px", height: "48px" }}
-                           />
+                              style={{
+                                 height: "52px",
+                                 width: "100px",
+                                 lineHeight: "1.2",
+                                 display: "flex",
+                                 flexDirection: "column",
+                                 alignItems: "center",
+                                 justifyContent: "center",
+                              }}
+                           >
+                              <span>Start</span>
+                              <span>Game</span>
+                           </Button>
                         )}
+
+                        {/* Non-host seated player: leave button */}
+                        {!isVisitor &&
+                           !isHost &&
+                           lobby?.status === "waiting" && (
+                              <Button
+                                 name="Leave Lobby"
+                                 onClick={handleLeave}
+                                 style={{
+                                    height: "52px",
+                                    width: "100px",
+                                    lineHeight: "1.2",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                 }}
+                              >
+                                 <span>Leave</span>
+                                 <span>Lobby</span>
+                              </Button>
+                           )}
                      </div>
                   </div>
                )}
 
-               {/* Non-host seated player: leave button */}
-               {!isVisitor && !isHost && lobby?.status === "waiting" && (
-                  <Button
-                     name="Leave Lobby"
-                     onClick={handleLeave}
-                     style={{ width: "160px" }}
-                  />
-               )}
-
                <ButtonGroup className="pt-0">
+                  {isHost && lobby?.status === "waiting" && (
+                     <Button
+                        name="Close Lobby"
+                        onClick={handleCloseLobby}
+                        style={{ width: "160px" }}
+                     />
+                  )}
                   <Link to="/" onClick={() => triggerLogoFadeOut()}>
                      <Button name="Home" style={{ width: "120px" }} />
                   </Link>

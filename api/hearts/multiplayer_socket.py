@@ -9,7 +9,7 @@ own hand). Play/trick events are broadcast to the entire room.
 import eventlet
 from typing import Any, Dict, Optional, Set, Tuple
 
-from flask import request
+from flask import current_app, request
 from flask_socketio import emit, join_room
 
 from hearts.extensions import db
@@ -238,6 +238,22 @@ def register_multiplayer_socket(socketio):
         specs.add(request.sid)
         emit("state", runner.get_state_for_spectator(), namespace="/multi")
 
+    @socketio.on("request_state", namespace="/multi")
+    def on_request_state():
+        info = _sid_to_game.get(request.sid)
+        if not info:
+            return
+        game_id = info["game_id"]
+        runner = _get_runner(game_id)
+        if runner is None:
+            return
+        if info.get("spectator"):
+            emit("state", runner.get_state_for_spectator(), namespace="/multi")
+        else:
+            seat = info.get("seat_index")
+            if seat is not None:
+                emit("state", runner.get_state_for_player(seat), namespace="/multi")
+
     @socketio.on("disconnect", namespace="/multi")
     def on_disconnect():
         info = _sid_to_game.pop(request.sid, None)
@@ -269,69 +285,76 @@ def register_multiplayer_socket(socketio):
         if token and _token_to_sid.get(token) == request.sid:
             _token_to_sid.pop(token, None)
 
+        app = current_app._get_current_object()
+
         def _on_reconnect_timeout():
-            _disconnect_timers.pop(token, None)
-            r = _get_runner(game_id)
-            if r is None:
-                return
-            s = r.seats[seat_idx]
-            if not s.is_human or s.conceded:
-                return
-            # Check they haven't reconnected
-            if token in _token_to_sid:
-                return
+            with app.app_context():
+                _disconnect_timers.pop(token, None)
+                r = _get_runner(game_id)
+                if r is None:
+                    return
+                s = r.seats[seat_idx]
+                if not s.is_human or s.conceded:
+                    return
+                if token in _token_to_sid:
+                    return
 
-            result = r.concede_player(seat_idx)
-            socketio.emit(
-                "player_conceded",
-                {"seat_index": seat_idx, "name": r.seats[seat_idx].name},
-                room=_room(game_id),
-                namespace="/multi",
-            )
-            if result == "terminated":
+                result = r.concede_player(seat_idx)
                 socketio.emit(
-                    "game_terminated", {}, room=_room(game_id), namespace="/multi"
+                    "player_conceded",
+                    {"seat_index": seat_idx, "name": r.seats[seat_idx].name},
+                    room=_room(game_id),
+                    namespace="/multi",
                 )
-                _on_game_complete(game_id, r, socketio)
-            else:
-                _emit_state_to_all(game_id, r, socketio)
-                _save_to_db(game_id, r)
+                if result == "terminated":
+                    socketio.emit(
+                        "game_terminated",
+                        {},
+                        room=_room(game_id),
+                        namespace="/multi",
+                    )
+                    _on_game_complete(game_id, r, socketio)
+                else:
+                    _emit_state_to_all(game_id, r, socketio)
+                    _save_to_db(game_id, r)
 
-                # If it was this player's turn, run AI
-                if r.state.phase.value == "playing" and not r.state.game_over:
-                    if not r._is_active_human(r.state.whose_turn):
+                    if r.state.phase.value == "playing" and not r.state.game_over:
+                        if not r._is_active_human(r.state.whose_turn):
 
-                        def on_play(ev):
-                            socketio.emit(
-                                "play", ev, room=_room(game_id), namespace="/multi"
-                            )
-
-                        def on_trick_complete():
-                            socketio.emit(
-                                "trick_complete",
-                                {},
-                                room=_room(game_id),
-                                namespace="/multi",
-                            )
-
-                        def on_done(d):
-                            _emit_state_to_all(game_id, r, socketio)
-                            if r.state.game_over:
+                            def on_play(ev):
                                 socketio.emit(
-                                    "game_over",
-                                    r.get_state_for_spectator(),
+                                    "play",
+                                    ev,
                                     room=_room(game_id),
                                     namespace="/multi",
                                 )
-                                _on_game_complete(game_id, r, socketio)
-                            else:
-                                _save_to_db(game_id, r)
 
-                        r.advance_to_human_turn(
-                            on_play=on_play,
-                            on_trick_complete=on_trick_complete,
-                            on_done=on_done,
-                        )
+                            def on_trick_complete():
+                                socketio.emit(
+                                    "trick_complete",
+                                    {},
+                                    room=_room(game_id),
+                                    namespace="/multi",
+                                )
+
+                            def on_done(d):
+                                _emit_state_to_all(game_id, r, socketio)
+                                if r.state.game_over:
+                                    socketio.emit(
+                                        "game_over",
+                                        r.get_state_for_spectator(),
+                                        room=_room(game_id),
+                                        namespace="/multi",
+                                    )
+                                    _on_game_complete(game_id, r, socketio)
+                                else:
+                                    _save_to_db(game_id, r)
+
+                            r.advance_to_human_turn(
+                                on_play=on_play,
+                                on_trick_complete=on_trick_complete,
+                                on_done=on_done,
+                            )
 
         if token:
             timer = eventlet.spawn_after(

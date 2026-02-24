@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 
 import { Button } from "@/components/Buttons";
 import styles from "./ActiveGameModal.module.css";
@@ -6,7 +7,7 @@ import styles from "./ActiveGameModal.module.css";
 export interface ActiveGameModalProps {
    onContinue: () => void;
    onConcede: () => void;
-   title?: string;
+   title?: ReactNode;
    message?: string;
    continueLabel?: string;
    concedeLabel?: string;

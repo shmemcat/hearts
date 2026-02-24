@@ -154,9 +154,15 @@ export default function JoinGamePage() {
          {showMultiModal && multiSession && !showActiveModal && (
             <ActiveGameModal
                title={
-                  multiSession.type === "lobby"
-                     ? "Lobby In Progress"
-                     : "Multiplayer Game In Progress"
+                  multiSession.type === "lobby" ? (
+                     "Lobby In Progress"
+                  ) : (
+                     <>
+                        Multiplayer Game
+                        <br />
+                        In Progress
+                     </>
+                  )
                }
                message={
                   multiSession.type === "lobby"

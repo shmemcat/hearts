@@ -70,6 +70,10 @@ export function sendStartGame(difficulty: string): void {
    if (socket?.connected) socket.emit("start_game", { difficulty });
 }
 
+export function sendCloseLobby(): void {
+   if (socket?.connected) socket.emit("close_lobby");
+}
+
 function makeSubscriber<T>(listeners: T[]) {
    return (cb: T): (() => void) => {
       listeners.push(cb);
