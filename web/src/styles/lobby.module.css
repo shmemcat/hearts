@@ -49,21 +49,25 @@
 
 .copyButton {
    border: none;
-   background: var(--darkpink);
-   color: white;
+   background-color: var(--lightpink);
+   color: var(--buttontext);
    border-radius: 8px;
    padding: 6px 10px;
    cursor: pointer;
    font-size: 0.85rem;
-   transition: opacity 0.15s;
+   font-weight: 900;
+   box-shadow: inset -2px -2px 0px var(--buttonboxshadow);
+   transition: background-color 0.15s;
 }
 
 .copyButton:hover {
-   opacity: 0.85;
+   background-color: var(--hoverpink);
+   box-shadow: inset -2px -2px 0px var(--buttonboxshadowhover);
 }
 
 .copyButton:active {
-   opacity: 0.7;
+   background-color: var(--hoverpink);
+   box-shadow: inset 2px 2px 0px var(--buttonboxshadowhover);
 }
 
 /* Seats grid */
@@ -151,9 +155,20 @@
    margin-left: 4px;
 }
 
-/* Animated "Waiting..." */
+/* Animated "Waiting..." — invisible placeholder reserves full width to prevent layout shift */
+.waitingDots {
+   position: relative;
+}
+
+.waitingDots::before {
+   content: "...";
+   visibility: hidden;
+}
+
 .waitingDots::after {
    content: "";
+   position: absolute;
+   left: 0;
    animation: dots 1.5s steps(4, end) infinite;
 }
 
@@ -189,6 +204,7 @@
 /* Join form in center */
 .joinForm {
    display: flex;
+   flex-direction: column;
    gap: 8px;
    align-items: center;
 }

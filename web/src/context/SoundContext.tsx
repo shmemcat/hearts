@@ -90,7 +90,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       readBool(SOUND_MUTED_KEY, false)
    );
    const [volume, setVolumeState] = useState(() =>
-      readNum(SOUND_VOLUME_KEY, 0.25)
+      readNum(SOUND_VOLUME_KEY, 0.15)
    );
    const [musicMuted, setMusicMutedState] = useState(() =>
       readBool(MUSIC_MUTED_KEY, false)

@@ -14,15 +14,14 @@ export type CreateLobbyResponse = {
 };
 
 export async function createLobby(
-   hostName: string,
-   numAi: number = 0
+   hostName: string
 ): Promise<
    { ok: true; data: CreateLobbyResponse } | { ok: false; error: string }
 > {
    const res = await fetch(`${base()}/lobbies/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ host_name: hostName, num_ai: numAi }),
+      body: JSON.stringify({ host_name: hostName }),
    });
    const data = await res.json().catch(() => ({}));
    if (!res.ok) {
@@ -46,4 +45,18 @@ export async function getLobbyState(
       };
    }
    return { ok: true, data: data as LobbyState };
+}
+
+export async function checkMultiplayerGameActive(
+   gameId: string
+): Promise<boolean> {
+   try {
+      const res = await fetch(
+         `${base()}/lobbies/game/${encodeURIComponent(gameId)}/active`
+      );
+      const data = await res.json().catch(() => ({}));
+      return data.active === true;
+   } catch {
+      return false;
+   }
 }

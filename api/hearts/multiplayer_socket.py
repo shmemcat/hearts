@@ -137,6 +137,13 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
             stats.worst_score = player_score
 
     db.session.commit()
+
+    active = ActiveGame.query.filter_by(game_id=game_id).first()
+    if active and active.lobby_code:
+        lobby = get_lobby(active.lobby_code)
+        if lobby:
+            lobby.status = "finished"
+
     _delete_game(game_id)
     _game_auth.pop(game_id, None)
 
@@ -309,7 +316,16 @@ def register_multiplayer_socket(socketio):
 
                         def on_done(d):
                             _emit_state_to_all(game_id, r, socketio)
-                            _save_to_db(game_id, r)
+                            if r.state.game_over:
+                                socketio.emit(
+                                    "game_over",
+                                    r.get_state_for_spectator(),
+                                    room=_room(game_id),
+                                    namespace="/multi",
+                                )
+                                _on_game_complete(game_id, r, socketio)
+                            else:
+                                _save_to_db(game_id, r)
 
                         r.advance_to_human_turn(
                             on_play=on_play,
@@ -450,20 +466,20 @@ def register_multiplayer_socket(socketio):
         info = _sid_to_game.get(request.sid)
         if not info or info.get("spectator"):
             emit("error", {"message": "Not a player"}, namespace="/multi")
-            return
+            return {"status": "error"}
 
         game_id = info["game_id"]
         seat_idx = info["seat_index"]
         runner = _get_runner(game_id)
         if runner is None:
             emit("error", {"message": "Game not found"}, namespace="/multi")
-            return
+            return {"status": "error"}
 
         try:
             result = runner.concede_player(seat_idx)
         except ValueError as e:
             emit("error", {"message": str(e)}, namespace="/multi")
-            return
+            return {"status": "error"}
 
         socketio.emit(
             "player_conceded",
@@ -522,3 +538,5 @@ def register_multiplayer_socket(socketio):
                     on_trick_complete=on_trick_complete,
                     on_done=on_done,
                 )
+
+        return {"status": result}

@@ -108,26 +108,6 @@
    gap: 20px;
 }
 
-/* Online: AI players section (toggle + dropdown) */
-.create-online-ai-section {
-   padding-top: 24px;
-}
-
-.create-online-ai-inner {
-   font-family: "appFont";
-   color: var(--header);
-   letter-spacing: 2pt;
-   text-transform: uppercase;
-   font-weight: 600;
-   background-color: var(--mediumpink);
-   padding: 20px 28px;
-   border-radius: 20px;
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   gap: 18px;
-}
-
 .create-toggle-row {
    display: flex;
    align-items: center;

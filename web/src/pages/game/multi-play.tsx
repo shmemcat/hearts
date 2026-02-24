@@ -88,6 +88,7 @@ export default function MultiPlayPage() {
    const [heartsPerPlayer, setHeartsPerPlayer] = useState<number[]>([
       0, 0, 0, 0,
    ]);
+   const [heartsVisuallyBroken, setHeartsVisuallyBroken] = useState(false);
    const [noPassHold, setNoPassHold] = useState(false);
    const [roundBanner, setRoundBanner] = useState<{ round: number } | null>(
       null
@@ -110,10 +111,19 @@ export default function MultiPlayPage() {
    const lastHumanCardRef = useRef<string | null>(null);
    const stateRef = useRef(state);
    stateRef.current = state;
+   const mySeatRef = useRef(mySeat);
+   mySeatRef.current = mySeat;
+   const loadingRef = useRef(loading);
+   loadingRef.current = loading;
    const prevScoresRef = useRef<number[]>([0, 0, 0, 0]);
    const moonOverlayActiveRef = useRef(false);
    const midRoundMoonShownRef = useRef(false);
    const moonAdjustmentRef = useRef<number[]>([0, 0, 0, 0]);
+   const passedCardsRef = useRef<Set<string> | null>(null);
+   const prePassHandRef = useRef<string[] | null>(null);
+   const passExitDirRef = useRef<"left" | "right" | "up">("left");
+   const passEnterDirRef = useRef<"left" | "right" | "above">("right");
+   const passExitStartRef = useRef<number>(0);
 
    // ── Play queue (animation) ────────────────────────────────────────
    const applyPendingState = useCallback(() => {
@@ -167,6 +177,64 @@ export default function MultiPlayPage() {
          return;
       }
 
+      // If we just submitted a pass and the new state has our post-pass hand,
+      // run the pass enter animation before applying state.
+      const passedSet = passedCardsRef.current;
+      const oldHand = prePassHandRef.current;
+      const newHand = pending.my_hand ?? pending.human_hand ?? [];
+
+      if (passedSet && oldHand && newHand.length > 0) {
+         passedCardsRef.current = null;
+         prePassHandRef.current = null;
+
+         const remainingHand = oldHand.filter((c) => !passedSet.has(c));
+         const remainingSet = new Set(remainingHand);
+         const received = newHand.filter((c: string) => !remainingSet.has(c));
+         const receivedSet = new Set(received);
+
+         // Apply state immediately so trick area / turn indicators stay current.
+         // The Hand component uses passTransition.displayHand during animation,
+         // so the visual pass animation still works independently of game state.
+         setState(pending);
+         prevScoresRef.current = pending.players.map(
+            (p: { score: number }) => p.score
+         );
+         setPassSubmitted(pending.pass_submitted ?? false);
+         if (pending.phase === "passing") {
+            resetRef.current();
+         }
+
+         const elapsed = Date.now() - passExitStartRef.current;
+         const exitRemaining = Math.max(0, PASS_EXIT_MS - elapsed);
+
+         const runGapAndEnter = () => {
+            setPassTransition({
+               phase: "gap",
+               displayHand: remainingHand,
+            });
+
+            setTimeout(() => {
+               setPassTransition({
+                  phase: "entering",
+                  displayHand: newHand,
+                  enteringCodes: receivedSet,
+                  enterDir: passEnterDirRef.current,
+               });
+
+               setTimeout(() => {
+                  setPassTransition(null);
+               }, 1600);
+            }, 500);
+         };
+
+         if (exitRemaining > 0) {
+            setTimeout(runGapAndEnter, exitRemaining);
+         } else {
+            runGapAndEnter();
+         }
+         return;
+      }
+
       setState(pending);
       prevScoresRef.current = pending.players.map(
          (p: { score: number }) => p.score
@@ -209,8 +277,10 @@ export default function MultiPlayPage() {
 
    // ── WebSocket subscriptions ────────────────────────────────────────
    useEffect(() => {
+      if (!gameId) return;
+
       const unsubState = onMultiState((data: GameState) => {
-         if (loading) {
+         if (loadingRef.current) {
             setLoading(false);
             setState(data);
             prevScoresRef.current = data.players.map(
@@ -241,11 +311,12 @@ export default function MultiPlayPage() {
       });
 
       const unsubPlay = onMultiPlay((ev: PlayEvent) => {
-         if (
-            mySeat !== null &&
-            ev.player_index === mySeat &&
-            ev.card === lastHumanCardRef.current
-         ) {
+         const seat = mySeatRef.current;
+         const isOwnEcho =
+            seat !== null &&
+            ev.player_index === seat &&
+            ev.card === lastHumanCardRef.current;
+         if (isOwnEcho) {
             lastHumanCardRef.current = null;
             return;
          }
@@ -266,14 +337,14 @@ export default function MultiPlayPage() {
 
       const unsubTerminated = onMultiGameTerminated(() => {
          setTerminated(true);
+         localStorage.removeItem(MP_TOKEN_KEY(gameId));
+         localStorage.removeItem(MP_SEAT_KEY(gameId));
       });
 
       const unsubGameOver = onMultiGameOver((data: GameState) => {
          setState(data);
-         if (gameId) {
-            localStorage.removeItem(MP_TOKEN_KEY(gameId));
-            localStorage.removeItem(MP_SEAT_KEY(gameId));
-         }
+         localStorage.removeItem(MP_TOKEN_KEY(gameId));
+         localStorage.removeItem(MP_SEAT_KEY(gameId));
       });
 
       const unsubError = onMultiError((msg: string) => {
@@ -290,7 +361,7 @@ export default function MultiPlayPage() {
          unsubGameOver();
          unsubError();
       };
-   }, [gameId, mySeat, loading, enqueue, isActive, setSlots]);
+   }, [gameId, enqueue, isActive, setSlots]);
 
    // ── Round banner + dealing animation ──────────────────────────────
    const handleContinueRoundRef = useRef<() => void>(() => {});
@@ -321,6 +392,14 @@ export default function MultiPlayPage() {
       }
    }, [trickResult]);
 
+   // ── Track when hearts are visually broken ──────────────────────
+   useEffect(() => {
+      const hasHeart = displaySlots.some(
+         (s) => s && s.card.toLowerCase().endsWith("h")
+      );
+      if (hasHeart) setHeartsVisuallyBroken(true);
+   }, [displaySlots]);
+
    // ── Sound effects for trick sweep and heart deltas ─────────────
    const playSoundRef = useRef(playSound);
    playSoundRef.current = playSound;
@@ -349,6 +428,8 @@ export default function MultiPlayPage() {
          setPassSubmitted(pending.pass_submitted ?? false);
       }
       setRoundBanner({ round: state?.round ? state.round + 1 : 1 });
+      setHeartsPerPlayer([0, 0, 0, 0]);
+      setHeartsVisuallyBroken(false);
       setPassSelection(new Set());
       setPassSubmitted(false);
       resetRef.current();
@@ -357,10 +438,39 @@ export default function MultiPlayPage() {
    // ── Pass handler ──────────────────────────────────────────────────
    const handleConfirmPass = useCallback(() => {
       if (passSelection.size !== 3 || isSpectator || conceded) return;
+      const currentState = stateRef.current;
+      if (!currentState) return;
+
+      const passDir = currentState.pass_direction;
+      const exitDir: "left" | "right" | "up" =
+         passDir === "left" ? "left" : passDir === "right" ? "right" : "up";
+      const enterDir: "left" | "right" | "above" =
+         passDir === "left" ? "right" : passDir === "right" ? "left" : "above";
+
+      const oldHand = [
+         ...(currentState.my_hand ?? currentState.human_hand ?? []),
+      ];
+      const passedSet = new Set(passSelection);
       const cards = Array.from(passSelection);
+
+      passedCardsRef.current = passedSet;
+      prePassHandRef.current = oldHand;
+      passExitDirRef.current = exitDir;
+      passEnterDirRef.current = enterDir;
+
+      setPassSelection(new Set());
+
+      passExitStartRef.current = Date.now();
+
+      setPassTransition({
+         phase: "exiting",
+         displayHand: oldHand,
+         exitingCodes: passedSet,
+         exitDir,
+      });
+
       sendMultiPass(cards);
       setPassSubmitted(true);
-      setPassSelection(new Set());
    }, [passSelection, isSpectator, conceded]);
 
    // ── Card click handler ────────────────────────────────────────────
@@ -409,10 +519,18 @@ export default function MultiPlayPage() {
 
    // ── Concede handler ───────────────────────────────────────────────
    const handleConcede = useCallback(() => {
-      sendMultiConcede();
       setConcedeModalOpen(false);
       setConceded(true);
-   }, []);
+      sendMultiConcede((ack) => {
+         if (ack?.status === "terminated") {
+            setTerminated(true);
+         }
+         if (gameId) {
+            localStorage.removeItem(MP_TOKEN_KEY(gameId));
+            localStorage.removeItem(MP_SEAT_KEY(gameId));
+         }
+      });
+   }, [gameId]);
 
    // ── Early returns ─────────────────────────────────────────────────
    if (!gameId) {
@@ -593,7 +711,17 @@ export default function MultiPlayPage() {
       [...rawPlayers],
       effectiveMySeat
    );
-   const orderedSlots = reorderSlotsForTableLayout([...slots], effectiveMySeat);
+   // Trick TABLE_SLOT_ORDER expects [bottom, left, top, right].
+   // A simple rotation by mySeat produces that order directly, unlike
+   // reorderSlotsForTableLayout which swaps left/top for GameSeat indexing.
+   const trickSlots: typeof slots = [
+      slots[(0 + effectiveMySeat) % 4],
+      slots[(1 + effectiveMySeat) % 4],
+      slots[(2 + effectiveMySeat) % 4],
+      slots[(3 + effectiveMySeat) % 4],
+   ];
+   const mappedCollectTarget =
+      collectTarget != null ? (collectTarget - effectiveMySeat + 4) % 4 : null;
    const orderedIndices = reorderSlotsForTableLayout(
       [0, 1, 2, 3],
       effectiveMySeat
@@ -714,78 +842,175 @@ export default function MultiPlayPage() {
                                     heartsPerPlayer[orderedIndices[3]] ?? 0,
                               },
                            ]}
-                           trickSlots={orderedSlots}
-                           collectTarget={collectTarget}
+                           trickSlots={trickSlots}
+                           collectTarget={mappedCollectTarget}
+                           playerNames={reorderSlotsForTableLayout(
+                              (state?.players ?? []).map((p) => p.name),
+                              effectiveMySeat
+                           )}
+                           centerIcon={
+                              !roundSummary && state.phase === "playing" ? (
+                                 <HeartIcon
+                                    size={40}
+                                    color={
+                                       heartsVisuallyBroken
+                                          ? "hsl(0, 65%, 50%)"
+                                          : "var(--darkpink)"
+                                    }
+                                    style={{
+                                       transition: "color 0.5s ease",
+                                    }}
+                                 />
+                              ) : undefined
+                           }
                         />
                      ) : (
                         <div className={styles.gameTable}>
-                           <div className={styles.seatTop}>
-                              <GameSeat
-                                 name={orderedPlayers[1]?.name ?? "—"}
-                                 score={seatScore(orderedIndices[1])}
-                                 isCurrentTurn={seatIsCurrentTurn(
-                                    orderedIndices[1]
-                                 )}
-                                 position="top"
-                                 showHearts={!!showHeartsOnSeats}
-                                 heartCount={
-                                    heartsPerPlayer[orderedIndices[1]] ?? 0
-                                 }
-                              />
-                           </div>
-                           <div className={styles.seatLeft}>
-                              <GameSeat
-                                 name={orderedPlayers[2]?.name ?? "—"}
-                                 score={seatScore(orderedIndices[2])}
-                                 isCurrentTurn={seatIsCurrentTurn(
-                                    orderedIndices[2]
-                                 )}
-                                 position="left"
-                                 showHearts={!!showHeartsOnSeats}
-                                 heartCount={
-                                    heartsPerPlayer[orderedIndices[2]] ?? 0
-                                 }
-                              />
-                           </div>
-                           <div className={styles.trickArea}>
+                           {/* Top (across from me) */}
+                           <GameSeat
+                              name={orderedPlayers[1]?.name ?? "—"}
+                              shortName={getShortName(
+                                 orderedPlayers[1]?.name ?? "—"
+                              )}
+                              seatIndex={orderedIndices[1]}
+                              score={seatScore(orderedIndices[1])}
+                              isCurrentTurn={seatIsCurrentTurn(
+                                 orderedIndices[1]
+                              )}
+                              position="top"
+                              showHearts={!!showHeartsOnSeats}
+                              heartCount={
+                                 heartsPerPlayer[orderedIndices[1]] ?? 0
+                              }
+                           />
+                           {/* Left */}
+                           <GameSeat
+                              name={orderedPlayers[2]?.name ?? "—"}
+                              shortName={getShortName(
+                                 orderedPlayers[2]?.name ?? "—"
+                              )}
+                              seatIndex={orderedIndices[2]}
+                              score={seatScore(orderedIndices[2])}
+                              isCurrentTurn={seatIsCurrentTurn(
+                                 orderedIndices[2]
+                              )}
+                              position="left"
+                              showHearts={!!showHeartsOnSeats}
+                              heartCount={
+                                 heartsPerPlayer[orderedIndices[2]] ?? 0
+                              }
+                           />
+                           {/* Center: trick */}
+                           <div className={styles.tableCenter}>
                               <Trick
-                                 slots={orderedSlots}
-                                 collectTarget={collectTarget}
-                              />
-                           </div>
-                           <div className={styles.seatRight}>
-                              <GameSeat
-                                 name={orderedPlayers[3]?.name ?? "—"}
-                                 score={seatScore(orderedIndices[3])}
-                                 isCurrentTurn={seatIsCurrentTurn(
-                                    orderedIndices[3]
+                                 layout="table"
+                                 slots={trickSlots}
+                                 collectTarget={mappedCollectTarget}
+                                 playerNames={reorderSlotsForTableLayout(
+                                    (state?.players ?? []).map((p) => p.name),
+                                    effectiveMySeat
                                  )}
-                                 position="right"
-                                 showHearts={!!showHeartsOnSeats}
-                                 heartCount={
-                                    heartsPerPlayer[orderedIndices[3]] ?? 0
+                                 centerIcon={
+                                    !roundSummary &&
+                                    state.phase === "playing" ? (
+                                       <HeartIcon
+                                          size={40}
+                                          color={
+                                             heartsVisuallyBroken
+                                                ? "hsl(0, 65%, 50%)"
+                                                : "var(--darkpink)"
+                                          }
+                                          style={{
+                                             transition: "color 0.5s ease",
+                                          }}
+                                       />
+                                    ) : undefined
                                  }
                               />
                            </div>
-                           <div className={styles.seatBottom}>
-                              <GameSeat
-                                 name={
-                                    orderedPlayers[0]?.name ??
+                           {/* Right */}
+                           <GameSeat
+                              name={orderedPlayers[3]?.name ?? "—"}
+                              shortName={getShortName(
+                                 orderedPlayers[3]?.name ?? "—"
+                              )}
+                              seatIndex={orderedIndices[3]}
+                              score={seatScore(orderedIndices[3])}
+                              isCurrentTurn={seatIsCurrentTurn(
+                                 orderedIndices[3]
+                              )}
+                              position="right"
+                              showHearts={!!showHeartsOnSeats}
+                              heartCount={
+                                 heartsPerPlayer[orderedIndices[3]] ?? 0
+                              }
+                           />
+                           {/* Bottom (me) */}
+                           <GameSeat
+                              name={
+                                 orderedPlayers[0]?.name ??
+                                 (isSpectator ? "Host" : "You")
+                              }
+                              shortName={getShortName(
+                                 orderedPlayers[0]?.name ??
                                     (isSpectator ? "Host" : "You")
-                                 }
-                                 score={seatScore(orderedIndices[0])}
-                                 isCurrentTurn={seatIsCurrentTurn(
-                                    orderedIndices[0]
-                                 )}
-                                 position="bottom"
-                                 showHearts={!!showHeartsOnSeats}
-                                 heartCount={
-                                    heartsPerPlayer[orderedIndices[0]] ?? 0
-                                 }
-                              />
-                           </div>
+                              )}
+                              seatIndex={orderedIndices[0]}
+                              score={seatScore(orderedIndices[0])}
+                              isCurrentTurn={seatIsCurrentTurn(
+                                 orderedIndices[0]
+                              )}
+                              position="bottom"
+                              showHearts={!!showHeartsOnSeats}
+                              heartCount={
+                                 heartsPerPlayer[orderedIndices[0]] ?? 0
+                              }
+                           />
                         </div>
                      )}
+
+                     {/* ── Centered pass button in table ──────────── */}
+                     {showPassUI && (
+                        <div className={styles.passCenter}>
+                           <Button
+                              name="Submit Pass"
+                              disabled={passSelection.size !== 3}
+                              onClick={handleConfirmPass}
+                              style={{
+                                 height: "52px",
+                                 width: "110px",
+                                 lineHeight: "1.2",
+                                 display: "flex",
+                                 flexDirection: "column",
+                                 alignItems: "center",
+                                 justifyContent: "center",
+                              }}
+                           >
+                              <span>pass</span>
+                              <span>{state?.pass_direction ?? ""}</span>
+                           </Button>
+                        </div>
+                     )}
+
+                     {/* Waiting for other players */}
+                     {state?.phase === "passing" &&
+                        passSubmitted &&
+                        !passTransition &&
+                        !isSpectator &&
+                        !conceded && (
+                           <div className={styles.passCenter}>
+                              <p
+                                 className="text-sm opacity-70"
+                                 style={{
+                                    background: "var(--bg)",
+                                    padding: "8px 16px",
+                                    borderRadius: "8px",
+                                 }}
+                              >
+                                 Waiting for other players...
+                              </p>
+                           </div>
+                        )}
                   </div>
 
                   <div className={styles.phaseHint}>
@@ -793,38 +1018,40 @@ export default function MultiPlayPage() {
                   </div>
 
                   {/* Hand */}
-                  {!isSpectator && !conceded && myHand.length > 0 && (
-                     <div
-                        className={`${handStyles.handWrapper} ${
-                           dealingHand ? handStyles.dealingHand : ""
-                        }`}
-                     >
-                        <Hand
-                           cards={
-                              passTransition
-                                 ? passTransition.displayHand
-                                 : myHand
-                           }
-                           legalCodes={
-                              showPassUI
-                                 ? undefined
-                                 : state?.phase === "playing" &&
-                                   state.whose_turn === mySeat
-                                 ? new Set(legalPlays)
-                                 : new Set<string>()
-                           }
-                           selectedCodes={
-                              showPassUI ? passSelection : undefined
-                           }
-                           selectionMode={showPassUI}
-                           onCardClick={handleCardClick}
-                           exitingCodes={passTransition?.exitingCodes}
-                           exitDirection={passTransition?.exitDir}
-                           enteringCodes={passTransition?.enteringCodes}
-                           enterDirection={passTransition?.enterDir}
-                        />
-                     </div>
-                  )}
+                  {!isSpectator &&
+                     !conceded &&
+                     (myHand.length > 0 || passTransition) && (
+                        <div
+                           className={`${handStyles.handWrapper} ${
+                              dealingHand ? handStyles.dealingHand : ""
+                           }`}
+                        >
+                           <Hand
+                              cards={
+                                 passTransition
+                                    ? passTransition.displayHand
+                                    : myHand
+                              }
+                              legalCodes={
+                                 showPassUI
+                                    ? undefined
+                                    : state?.phase === "playing" &&
+                                      state.whose_turn === mySeat
+                                    ? new Set(legalPlays)
+                                    : new Set<string>()
+                              }
+                              selectedCodes={
+                                 showPassUI ? passSelection : undefined
+                              }
+                              selectionMode={showPassUI}
+                              onCardClick={handleCardClick}
+                              exitingCodes={passTransition?.exitingCodes}
+                              exitDirection={passTransition?.exitDir}
+                              enteringCodes={passTransition?.enteringCodes}
+                              enterDirection={passTransition?.enterDir}
+                           />
+                        </div>
+                     )}
 
                   {/* Spectator hand placeholder */}
                   {(isSpectator || conceded) && (
@@ -839,30 +1066,6 @@ export default function MultiPlayPage() {
                         </p>
                      </div>
                   )}
-
-                  {/* Pass confirm button */}
-                  {showPassUI && (
-                     <div className={styles.passButton}>
-                        <Button
-                           name={`Pass ${state?.pass_direction ?? ""}`}
-                           onClick={handleConfirmPass}
-                           disabled={passSelection.size !== 3}
-                           style={{ width: "200px", height: "48px" }}
-                        />
-                     </div>
-                  )}
-
-                  {/* Pass submitted waiting indicator */}
-                  {state?.phase === "passing" &&
-                     passSubmitted &&
-                     !isSpectator &&
-                     !conceded && (
-                        <div className={styles.passButton}>
-                           <p className="text-sm opacity-70">
-                              Waiting for other players...
-                           </p>
-                        </div>
-                     )}
                </div>
             )}
          </PageLayout>

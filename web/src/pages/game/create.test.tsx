@@ -9,7 +9,6 @@ const mockFetch = vi.fn();
 beforeEach(() => {
    mockFetch.mockReset();
    vi.stubGlobal("fetch", mockFetch);
-   // Default: resolve any fetch call (e.g. checkActiveGame when no token)
    mockFetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ game_id: null }),
@@ -26,14 +25,14 @@ describe("CreateGamePage", () => {
       await waitFor(() => {
          expect(screen.getByText("Game Type")).toBeInTheDocument();
       });
-      expect(screen.getByLabelText("Versus AI")).toBeInTheDocument();
+      expect(screen.getByLabelText("Versus Bots")).toBeInTheDocument();
       expect(screen.getByLabelText("Online")).toBeInTheDocument();
    });
 
-   it("shows difficulty options by default (Versus AI)", async () => {
+   it("shows difficulty options by default (Versus Bots)", async () => {
       renderWithProviders(<CreateGamePage />, { route: "/game/create" });
       await waitFor(() => {
-         expect(screen.getByText("AI Difficulty")).toBeInTheDocument();
+         expect(screen.getByText("Bot Difficulty")).toBeInTheDocument();
       });
       expect(screen.getByLabelText("Easy")).toBeInTheDocument();
       expect(screen.getByLabelText("Medium")).toBeInTheDocument();
@@ -49,7 +48,7 @@ describe("CreateGamePage", () => {
       });
    });
 
-   it("Create Game button is enabled for Versus AI", async () => {
+   it("Create Game button is enabled for Versus Bots", async () => {
       renderWithProviders(<CreateGamePage />, { route: "/game/create" });
       await waitFor(() => {
          const btn = screen.getByRole("button", { name: "Create Game!" });
@@ -57,7 +56,7 @@ describe("CreateGamePage", () => {
       });
    });
 
-   it("switches to Online mode and disables create button", async () => {
+   it("switches to Online mode and shows backfill info", async () => {
       const user = userEvent.setup();
       renderWithProviders(<CreateGamePage />, { route: "/game/create" });
       await waitFor(() => {
@@ -65,12 +64,13 @@ describe("CreateGamePage", () => {
       });
       await user.click(screen.getByLabelText("Online"));
       await waitFor(() => {
-         expect(screen.getByText("AI Players")).toBeInTheDocument();
+         expect(
+            screen.getByText(/Empty seats are filled by bots/)
+         ).toBeInTheDocument();
       });
    });
 
    it("shows error when game creation fails", async () => {
-      // Default mock handles checkActiveGame, then override for startGame
       mockFetch.mockResolvedValue({
          ok: true,
          json: () => Promise.resolve({ game_id: null }),
@@ -84,7 +84,6 @@ describe("CreateGamePage", () => {
          ).toBeInTheDocument();
       });
 
-      // Now set up the startGame response to fail
       mockFetch.mockResolvedValueOnce({
          ok: false,
          status: 500,

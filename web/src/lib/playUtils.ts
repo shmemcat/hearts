@@ -26,7 +26,7 @@ export function reorderSlotsForTableLayout<T>(
 
 /**
  * Derive compact badge label for mobile:
- * "AI 1" → "A1", "Bot 1" → "B1", "Guest 1" → "G1", "shmemcat" → "S", "You" → "Y".
+ * "Bot 1" → "B1", "Guest 1" → "G1", "shmemcat" → "S", "You" → "Y".
  */
 export function getShortName(name: string): string {
    const trimmed = name.trim();

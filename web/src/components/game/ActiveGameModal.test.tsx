@@ -51,4 +51,48 @@ describe("ActiveGameModal", () => {
       await user.click(screen.getByRole("button", { name: "Yes" }));
       expect(onConcede).toHaveBeenCalled();
    });
+
+   it("renders custom title and message", () => {
+      render(
+         <ActiveGameModal
+            onContinue={vi.fn()}
+            onConcede={vi.fn()}
+            title="Lobby Active"
+            message="You are in an active lobby."
+         />
+      );
+      expect(screen.getByText("Lobby Active")).toBeInTheDocument();
+      expect(
+         screen.getByText("You are in an active lobby.")
+      ).toBeInTheDocument();
+   });
+
+   it("renders custom button labels", () => {
+      render(
+         <ActiveGameModal
+            onContinue={vi.fn()}
+            onConcede={vi.fn()}
+            continueLabel="Rejoin"
+            concedeLabel="Leave"
+         />
+      );
+      expect(
+         screen.getByRole("button", { name: "Rejoin" })
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Leave" })).toBeInTheDocument();
+   });
+
+   it("renders custom confirm message", async () => {
+      const user = userEvent.setup();
+      render(
+         <ActiveGameModal
+            onContinue={vi.fn()}
+            onConcede={vi.fn()}
+            concedeLabel="Leave"
+            confirmMessage="You will lose your seat."
+         />
+      );
+      await user.click(screen.getByRole("button", { name: "Leave" }));
+      expect(screen.getByText("You will lose your seat.")).toBeInTheDocument();
+   });
 });

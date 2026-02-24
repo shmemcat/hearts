@@ -2,15 +2,15 @@ import React from "react";
 import { Button } from "@/components/Buttons";
 import styles from "@/styles/play.module.css";
 
-interface AiDifficultyModalProps {
-   aiCount: number;
+interface BotDifficultyModalProps {
+   botCount: number;
    defaultDifficulty?: string;
    onConfirm: (difficulty: string) => void;
    onCancel: () => void;
 }
 
-export const AiDifficultyModal: React.FC<AiDifficultyModalProps> = ({
-   aiCount,
+export const BotDifficultyModal: React.FC<BotDifficultyModalProps> = ({
+   botCount,
    defaultDifficulty = "Easy",
    onConfirm,
    onCancel,
@@ -26,8 +26,8 @@ export const AiDifficultyModal: React.FC<AiDifficultyModalProps> = ({
          <div className={styles.concededModal}>
             <p className={styles.concededTitle}>Start Game</p>
             <p className="text-sm mt-1 mb-3 opacity-80">
-               {aiCount} {aiCount === 1 ? "seat" : "seats"} will be filled with
-               AI
+               {botCount} {botCount === 1 ? "seat" : "seats"} will be filled
+               with bots
             </p>
             <div className="flex flex-col gap-2 mb-4">
                {["Easy", "Medium", "Hard"].map((level) => (
@@ -35,7 +35,7 @@ export const AiDifficultyModal: React.FC<AiDifficultyModalProps> = ({
                      <input
                         type="radio"
                         value={level}
-                        name="ai-difficulty"
+                        name="bot-difficulty"
                         className="radio mr-[5px]"
                         checked={difficulty === level}
                         onChange={onChangeValue}

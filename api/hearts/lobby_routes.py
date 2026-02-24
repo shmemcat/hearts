@@ -6,6 +6,7 @@ from flask import Blueprint, request, jsonify, current_app
 
 from hearts.extensions import limiter
 from hearts.lobby import create_lobby, get_lobby
+from hearts.models import ActiveGame
 
 lobby_bp = Blueprint("lobbies", __name__, url_prefix="/lobbies")
 
@@ -49,3 +50,10 @@ def get_lobby_state(code: str):
     if lobby is None:
         return jsonify({"error": "Lobby not found"}), 404
     return jsonify(lobby.to_dict())
+
+
+@lobby_bp.route("/game/<game_id>/active", methods=["GET"])
+def check_game_active(game_id: str):
+    """Return whether a multiplayer game is still active."""
+    active = ActiveGame.query.filter_by(game_id=game_id, is_multiplayer=True).first()
+    return jsonify({"active": active is not None})

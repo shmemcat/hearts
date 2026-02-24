@@ -16,10 +16,10 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe("SoundContext", () => {
-   it("defaults to not muted, volume 0.25", () => {
+   it("defaults to not muted, volume 0.15", () => {
       const { result } = renderHook(() => useSound(), { wrapper });
       expect(result.current.muted).toBe(false);
-      expect(result.current.volume).toBe(0.25);
+      expect(result.current.volume).toBe(0.15);
    });
 
    it("hydrates muted from localStorage", async () => {

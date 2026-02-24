@@ -3,10 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import React from "react";
 
 import { Button } from "@/components/Buttons";
-import {
-   CreateGameSelections,
-   type NumAiPlayers,
-} from "@/components/CreateGameSelections";
+import { CreateGameSelections } from "@/components/CreateGameSelections";
 import { ActiveGameModal } from "@/components/game";
 import { LoginWarning } from "@/components/LoginWarning";
 import { triggerLogoFadeOut } from "@/components/Navbar";
@@ -14,20 +11,30 @@ import { PageLayout, ButtonGroup } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useHardLevel } from "@/context/HardLevelContext";
 import { startGame, checkActiveGame, concedeGame } from "@/lib/gameApi";
-import { createLobby } from "@/lib/lobbyApi";
+import {
+   createLobby,
+   getLobbyState,
+   checkMultiplayerGameActive,
+} from "@/lib/lobbyApi";
+import {
+   findActiveMultiplayerSession,
+   clearMultiplayerSession,
+   type ActiveMultiplayerSession,
+} from "@/lib/multiplayerSession";
 
 export default function CreateGamePage() {
    const navigate = useNavigate();
    const { user, token } = useAuth();
    const { hardLevel, hasChanged: hardLevelChanged } = useHardLevel();
-   const [gameType, setGameType] = React.useState("Versus AI");
+   const [gameType, setGameType] = React.useState("Versus Bots");
    const [difficulty, setDifficulty] = React.useState("Easy");
-   const [aiPlayersEnabled, setAiPlayersEnabled] = React.useState(false);
-   const [numAiPlayers, setNumAiPlayers] = React.useState<NumAiPlayers>(1);
    const [submitting, setSubmitting] = React.useState(false);
    const [error, setError] = React.useState<string | null>(null);
    const [activeGameId, setActiveGameId] = React.useState<string | null>(null);
    const [showActiveModal, setShowActiveModal] = React.useState(false);
+   const [multiSession, setMultiSession] =
+      React.useState<ActiveMultiplayerSession | null>(null);
+   const [showMultiModal, setShowMultiModal] = React.useState(false);
 
    React.useEffect(() => {
       if (!token) return;
@@ -39,6 +46,30 @@ export default function CreateGamePage() {
       });
    }, [token]);
 
+   React.useEffect(() => {
+      const session = findActiveMultiplayerSession();
+      if (!session) return;
+      if (session.type === "lobby") {
+         getLobbyState(session.code).then((res) => {
+            if (res.ok && res.data.status !== "finished") {
+               setMultiSession(session);
+               setShowMultiModal(true);
+            } else {
+               clearMultiplayerSession(session);
+            }
+         });
+      } else {
+         checkMultiplayerGameActive(session.gameId).then((active) => {
+            if (active) {
+               setMultiSession(session);
+               setShowMultiModal(true);
+            } else {
+               clearMultiplayerSession(session);
+            }
+         });
+      }
+   }, []);
+
    async function handleCreateGame() {
       setError(null);
       setSubmitting(true);
@@ -46,8 +77,7 @@ export default function CreateGamePage() {
       if (gameType === "Online") {
          try {
             const hostName = user?.name || "Host";
-            const numAi = aiPlayersEnabled ? numAiPlayers : 0;
-            const result = await createLobby(hostName, numAi);
+            const result = await createLobby(hostName);
             if (result.ok) {
                localStorage.setItem(
                   `hearts_lobby_token_${result.data.code}`,
@@ -108,10 +138,6 @@ export default function CreateGamePage() {
                   onGameTypeChange={setGameType}
                   difficulty={difficulty}
                   onDifficultyChange={setDifficulty}
-                  aiPlayersEnabled={aiPlayersEnabled}
-                  onAiPlayersEnabledChange={setAiPlayersEnabled}
-                  numAiPlayers={numAiPlayers}
-                  onNumAiPlayersChange={setNumAiPlayers}
                   showHardTooltip={!!user && !hardLevelChanged}
                />
 
@@ -144,6 +170,43 @@ export default function CreateGamePage() {
                   )
                }
                onConcede={handleConcedeActive}
+            />
+         )}
+         {showMultiModal && multiSession && !showActiveModal && (
+            <ActiveGameModal
+               title={
+                  multiSession.type === "lobby"
+                     ? "Lobby In Progress"
+                     : "Multiplayer Game In Progress"
+               }
+               message={
+                  multiSession.type === "lobby"
+                     ? "You have an active lobby. Rejoin?"
+                     : "You have a multiplayer game in progress. Rejoin?"
+               }
+               continueLabel="Rejoin"
+               concedeLabel="Leave"
+               confirmMessage={
+                  multiSession.type === "lobby"
+                     ? "Are you sure you want to leave the lobby?"
+                     : "Are you sure you want to leave the game? Your seat will be taken over by a bot."
+               }
+               onContinue={() => {
+                  if (multiSession.type === "lobby") {
+                     navigate(`/game/lobby/${multiSession.code}`);
+                  } else {
+                     navigate(
+                        `/game/multi-play?game_id=${encodeURIComponent(
+                           multiSession.gameId
+                        )}`
+                     );
+                  }
+               }}
+               onConcede={() => {
+                  clearMultiplayerSession(multiSession);
+                  setMultiSession(null);
+                  setShowMultiModal(false);
+               }}
             />
          )}
       </>

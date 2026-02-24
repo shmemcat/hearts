@@ -6,31 +6,30 @@ import { CreateGameSelections } from "./CreateGameSelections";
 describe("CreateGameSelections", () => {
    it("renders game type radio buttons", () => {
       render(<CreateGameSelections />);
-      expect(screen.getByLabelText("Versus AI")).toBeInTheDocument();
+      expect(screen.getByLabelText("Versus Bots")).toBeInTheDocument();
       expect(screen.getByLabelText("Online")).toBeInTheDocument();
    });
 
-   it("defaults to Versus AI in uncontrolled mode", () => {
+   it("defaults to Versus Bots in uncontrolled mode", () => {
       render(<CreateGameSelections />);
-      expect(screen.getByLabelText("Versus AI")).toBeChecked();
+      expect(screen.getByLabelText("Versus Bots")).toBeChecked();
       expect(screen.getByLabelText("Online")).not.toBeChecked();
    });
 
-   it("shows difficulty options when Versus AI is selected", () => {
+   it("shows difficulty options when Versus Bots is selected", () => {
       render(<CreateGameSelections />);
-      expect(screen.getByText("AI Difficulty")).toBeInTheDocument();
+      expect(screen.getByText("Bot Difficulty")).toBeInTheDocument();
       expect(screen.getByLabelText("Easy")).toBeInTheDocument();
       expect(screen.getByLabelText("Medium")).toBeInTheDocument();
       expect(screen.getByLabelText("My Mom")).toBeInTheDocument();
    });
 
-   it("shows online AI options when Online is selected", async () => {
+   it("shows backfill info when Online is selected", async () => {
       const user = userEvent.setup();
       render(<CreateGameSelections />);
       await user.click(screen.getByLabelText("Online"));
-      expect(screen.getByText("AI Players")).toBeInTheDocument();
       expect(
-         screen.getByRole("checkbox", { name: "Include AI players" })
+         screen.getByText(/Empty seats are filled by bots/)
       ).toBeInTheDocument();
    });
 
@@ -39,7 +38,7 @@ describe("CreateGameSelections", () => {
       const onChange = vi.fn();
       render(
          <CreateGameSelections
-            gameType="Versus AI"
+            gameType="Versus Bots"
             onGameTypeChange={onChange}
          />
       );
@@ -52,7 +51,7 @@ describe("CreateGameSelections", () => {
       const onChange = vi.fn();
       render(
          <CreateGameSelections
-            gameType="Versus AI"
+            gameType="Versus Bots"
             onGameTypeChange={() => {}}
             difficulty="Easy"
             onDifficultyChange={onChange}
@@ -67,78 +66,11 @@ describe("CreateGameSelections", () => {
       expect(screen.getByLabelText("Easy")).toBeChecked();
    });
 
-   it("toggles AI players in online mode", async () => {
-      const user = userEvent.setup();
-      const onAiChange = vi.fn();
-      render(
-         <CreateGameSelections
-            gameType="Online"
-            onGameTypeChange={() => {}}
-            aiPlayersEnabled={false}
-            onAiPlayersEnabledChange={onAiChange}
-            numAiPlayers={1}
-            onNumAiPlayersChange={() => {}}
-         />
-      );
-      await user.click(
-         screen.getByRole("checkbox", { name: "Include AI players" })
-      );
-      expect(onAiChange).toHaveBeenCalledWith(true);
-   });
-
-   it("disables number selector when AI not enabled", () => {
-      render(
-         <CreateGameSelections
-            gameType="Online"
-            onGameTypeChange={() => {}}
-            aiPlayersEnabled={false}
-            onAiPlayersEnabledChange={() => {}}
-            numAiPlayers={1}
-            onNumAiPlayersChange={() => {}}
-         />
-      );
-      expect(
-         screen.getByRole("combobox", { name: "Number of AI players" })
-      ).toBeDisabled();
-   });
-
-   it("enables number selector when AI is enabled", () => {
-      render(
-         <CreateGameSelections
-            gameType="Online"
-            onGameTypeChange={() => {}}
-            aiPlayersEnabled={true}
-            onAiPlayersEnabledChange={() => {}}
-            numAiPlayers={1}
-            onNumAiPlayersChange={() => {}}
-         />
-      );
-      expect(
-         screen.getByRole("combobox", { name: "Number of AI players" })
-      ).not.toBeDisabled();
-   });
-
-   it("shows difficulty when AI players are enabled in online mode", () => {
-      render(
-         <CreateGameSelections
-            gameType="Online"
-            onGameTypeChange={() => {}}
-            aiPlayersEnabled={true}
-            onAiPlayersEnabledChange={() => {}}
-            numAiPlayers={1}
-            onNumAiPlayersChange={() => {}}
-            difficulty="Easy"
-            onDifficultyChange={() => {}}
-         />
-      );
-      expect(screen.getByText("AI Difficulty")).toBeInTheDocument();
-   });
-
    it("shows tooltip on My Mom when showHardTooltip is true", async () => {
       const user = userEvent.setup();
       render(
          <CreateGameSelections
-            gameType="Versus AI"
+            gameType="Versus Bots"
             onGameTypeChange={() => {}}
             difficulty="Easy"
             onDifficultyChange={() => {}}
@@ -156,7 +88,7 @@ describe("CreateGameSelections", () => {
    it("does not show tooltip on My Mom when showHardTooltip is false", () => {
       render(
          <CreateGameSelections
-            gameType="Versus AI"
+            gameType="Versus Bots"
             onGameTypeChange={() => {}}
             difficulty="Easy"
             onDifficultyChange={() => {}}

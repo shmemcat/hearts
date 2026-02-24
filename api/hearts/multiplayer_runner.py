@@ -287,7 +287,7 @@ class MultiplayerRunner:
         if not seat.is_human or seat.conceded:
             raise ValueError("Seat is not an active human")
         seat.conceded = True
-        seat.name = f"{seat.name} (AI)"
+        seat.name = f"{seat.name} (Bot)"
 
         # Remove any pending pass from this player (AI will generate it)
         self._pending_passes.pop(seat_index, None)

@@ -181,15 +181,13 @@ describe("advanceGame", () => {
 
 describe("concedeGame", () => {
    it("returns ok on success", async () => {
-      mockFetch.mockReturnValueOnce(
-         jsonResponse(null, 200).then((r) => ({ ...r, ok: true }))
-      );
+      mockFetch.mockReturnValueOnce(jsonResponse({ newly_unlocked: [] }));
       const result = await concedeGame("g1");
-      expect(result).toEqual({ ok: true });
+      expect(result).toEqual({ ok: true, newly_unlocked: [] });
    });
 
    it("sends auth header when token provided", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse(null));
+      mockFetch.mockReturnValueOnce(jsonResponse({ newly_unlocked: [] }));
       await concedeGame("g1", "tok");
       expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe(
          "Bearer tok"
@@ -252,24 +250,35 @@ describe("fetchStats", () => {
 
 describe("recordGameStats", () => {
    it("returns updated stats on success", async () => {
-      const stats = { games_played: 11, games_won: 4 };
-      mockFetch.mockReturnValueOnce(jsonResponse({ stats }));
+      const responseBody = {
+         stats: { games_played: 11, games_won: 4 },
+         newly_unlocked: ["first_win"],
+      };
+      mockFetch.mockReturnValueOnce(jsonResponse(responseBody));
       const result = await recordGameStats("tok", {
          game_id: "g1",
          final_score: 42,
          won: true,
          moon_shots: 1,
+         round_count: 5,
+         all_scores: [42, 50, 60, 70],
+         hearts_broken_count: 3,
       });
-      expect(result).toEqual({ ok: true, data: stats });
+      expect(result).toEqual({ ok: true, data: responseBody });
    });
 
    it("sends POST with auth and body", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ stats: {} }));
+      mockFetch.mockReturnValueOnce(
+         jsonResponse({ stats: {}, newly_unlocked: [] })
+      );
       await recordGameStats("tok", {
          game_id: "g1",
          final_score: 42,
          won: true,
          moon_shots: 0,
+         round_count: 4,
+         all_scores: [42, 50, 60, 70],
+         hearts_broken_count: 2,
       });
       const [, opts] = mockFetch.mock.calls[0];
       expect(opts.method).toBe("POST");
@@ -279,6 +288,9 @@ describe("recordGameStats", () => {
          final_score: 42,
          won: true,
          moon_shots: 0,
+         round_count: 4,
+         all_scores: [42, 50, 60, 70],
+         hearts_broken_count: 2,
       });
    });
 });

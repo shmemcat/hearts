@@ -88,8 +88,12 @@ export function sendPass(cards: string[]): void {
    if (socket?.connected) socket.emit("pass", { cards });
 }
 
-export function sendConcede(): void {
-   if (socket?.connected) socket.emit("concede");
+export function sendConcede(cb?: (data: { status: string }) => void): void {
+   if (socket?.connected) {
+      socket.emit("concede", cb);
+   } else if (cb) {
+      cb({ status: "error" });
+   }
 }
 
 function makeSubscriber<T>(listeners: T[]) {

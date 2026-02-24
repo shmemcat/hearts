@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrown, faCopy, faCheck } from "@fortawesome/pro-solid-svg-icons";
 
 import { Button } from "@/components/Buttons";
-import { AiDifficultyModal } from "@/components/game/AiDifficultyModal";
+import { BotDifficultyModal } from "@/components/game/BotDifficultyModal";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { getLobbyState } from "@/lib/lobbyApi";
@@ -50,7 +50,7 @@ export default function LobbyPage() {
    // Join form state (for visitors)
    const [joinName, setJoinName] = useState("");
 
-   // AI difficulty modal
+   // Bot difficulty modal
    const [showDiffModal, setShowDiffModal] = useState(false);
 
    // Copy-to-clipboard feedback
@@ -145,11 +145,13 @@ export default function LobbyPage() {
                );
             }
          }
+         localStorage.removeItem(LOBBY_TOKEN_KEY(upperCode));
          navigate(`/game/multi-play?game_id=${encodeURIComponent(gameId)}`);
       });
 
       const unsubClosed = onLobbyClosed(() => {
          setClosed(true);
+         localStorage.removeItem(LOBBY_TOKEN_KEY(upperCode));
       });
 
       const unsubError = onError((msg) => {
@@ -349,7 +351,7 @@ export default function LobbyPage() {
             </span>
             <span className={styles.seatLabel}>
                {seat.status === "ai"
-                  ? "AI"
+                  ? "Bot"
                   : seat.status === "human"
                   ? "Player"
                   : "Open"}
@@ -470,7 +472,7 @@ export default function LobbyPage() {
                   <Button
                      name="Leave Lobby"
                      onClick={handleLeave}
-                     style={{ width: "140px" }}
+                     style={{ width: "160px" }}
                   />
                )}
 
@@ -483,8 +485,8 @@ export default function LobbyPage() {
          </PageLayout>
 
          {showDiffModal && (
-            <AiDifficultyModal
-               aiCount={aiCount}
+            <BotDifficultyModal
+               botCount={aiCount}
                onConfirm={handleConfirmStart}
                onCancel={() => setShowDiffModal(false)}
             />

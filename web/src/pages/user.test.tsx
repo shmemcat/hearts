@@ -187,6 +187,20 @@ describe("UserPage - Authenticated", () => {
                      average_score: 45,
                   },
                }),
+         })
+         .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+               Promise.resolve({
+                  my_mom: {
+                     games_played: 10,
+                     games_won: 3,
+                     moon_shots: 1,
+                     best_score: 12,
+                     worst_score: 85,
+                     average_score: 45,
+                  },
+               }),
          });
    }
 
@@ -240,7 +254,7 @@ describe("UserPage - Authenticated", () => {
       setAuthToken();
       renderWithProviders(<UserPage />, { route: "/user" });
       await waitFor(() => {
-         expect(screen.getByText("Your Stats")).toBeInTheDocument();
+         expect(screen.getByText("My Mom")).toBeInTheDocument();
       });
       expect(screen.getByText("10")).toBeInTheDocument();
       expect(screen.getByText("3")).toBeInTheDocument();

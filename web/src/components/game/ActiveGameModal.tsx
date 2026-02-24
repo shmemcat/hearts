@@ -6,11 +6,21 @@ import styles from "./ActiveGameModal.module.css";
 export interface ActiveGameModalProps {
    onContinue: () => void;
    onConcede: () => void;
+   title?: string;
+   message?: string;
+   continueLabel?: string;
+   concedeLabel?: string;
+   confirmMessage?: string;
 }
 
 export const ActiveGameModal: React.FC<ActiveGameModalProps> = ({
    onContinue,
    onConcede,
+   title = "Game In Progress",
+   message = "You have a game active. Do you wish to continue playing?",
+   continueLabel = "Continue",
+   concedeLabel = "Concede",
+   confirmMessage = "Are you sure you wish to concede?",
 }) => {
    const [confirming, setConfirming] = useState(false);
 
@@ -19,14 +29,12 @@ export const ActiveGameModal: React.FC<ActiveGameModalProps> = ({
          <div className={styles.modal}>
             {!confirming ? (
                <>
-                  <span className={styles.title}>Game In Progress</span>
-                  <p className={styles.message}>
-                     You have a game active. Do you wish to continue playing?
-                  </p>
+                  <span className={styles.title}>{title}</span>
+                  <p className={styles.message}>{message}</p>
                   <div className={styles.buttons}>
-                     <Button name="Continue" onClick={onContinue} />
+                     <Button name={continueLabel} onClick={onContinue} />
                      <Button
-                        name="Concede"
+                        name={concedeLabel}
                         onClick={() => setConfirming(true)}
                      />
                   </div>
@@ -34,9 +42,7 @@ export const ActiveGameModal: React.FC<ActiveGameModalProps> = ({
             ) : (
                <>
                   <span className={styles.title}>Are you sure?</span>
-                  <p className={styles.message}>
-                     Are you sure you wish to concede?
-                  </p>
+                  <p className={styles.message}>{confirmMessage}</p>
                   <div className={styles.buttons}>
                      <Button name="No" onClick={() => setConfirming(false)} />
                      <Button name="Yes" onClick={onConcede} />

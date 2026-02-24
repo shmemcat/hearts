@@ -32,13 +32,12 @@ export default function About() {
                      </span>
                   </span>
                   . I&apos;m a software engineer developing this web application
-                  in React and Python. You can play Hearts locally with AI, and
-                  eventually, you&apos;ll be able to play online with friends.
-                  This has been a fun project to work on; it&apos;s been a
-                  decade and a half since I&apos;ve been immersed in web
-                  development (as you can imagine, a lot&apos;s changed since
-                  then) so learning an array of new technologies has been an
-                  exceptionally fun challenge. Check out my{" "}
+                  in React and Python. You can play Hearts locally with bots, or
+                  online with friends. This has been a fun project to work on;
+                  it&apos;s been a decade and a half since I&apos;ve been
+                  immersed in web development (as you can imagine, a lot&apos;s
+                  changed since then) so learning an array of new technologies
+                  has been an exceptionally fun challenge. Check out my{" "}
                   <StyledLink
                      href="https://github.com/shmemcat/hearts"
                      target="_blank"

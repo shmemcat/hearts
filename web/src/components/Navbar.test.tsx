@@ -76,7 +76,7 @@ describe("Navbar", () => {
       renderWithProviders(<Navbar />, { route: "/about" });
       await waitFor(() => {
          expect(
-            screen.getByRole("button", { name: "Toggle sound on or off" })
+            screen.getByRole("button", { name: "Sound and music settings" })
          ).toBeInTheDocument();
       });
    });
