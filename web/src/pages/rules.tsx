@@ -10,6 +10,7 @@ import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout } from "@/components/ui";
 import { Card } from "@/components/game/Card";
 import { CONFETTI_COOLDOWN_MS } from "@/lib/constants";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 function CardGroup({
    codes,
@@ -49,16 +50,21 @@ const SHOOT_THE_MOON_CODES = [
 ];
 
 function ShootTheMoonFan() {
+   const isMobile = useIsMobile();
    const count = SHOOT_THE_MOON_CODES.length;
    const centerIndex = (count - 1) / 2;
-   const degPerCard = 1.5;
-   const arcFactor = 0.5;
-   const overlap = -25;
+   const degPerCard = isMobile ? 2 : 1.5;
+   const arcFactor = isMobile ? 0.3 : 0.5;
+   const overlap = isMobile ? -14 : -28;
+   const cardSize = isMobile ? ("small" as const) : ("medium" as const);
 
    return (
       <div
          className="flex items-end justify-center my-4 pointer-events-none select-none"
-         style={{ paddingBottom: 18, minHeight: 130 }}
+         style={{
+            paddingBottom: isMobile ? 8 : 18,
+            minHeight: isMobile ? 68 : 130,
+         }}
       >
          {SHOOT_THE_MOON_CODES.map((code, i) => {
             const distance = i - centerIndex;
@@ -73,7 +79,7 @@ function ShootTheMoonFan() {
                      transformOrigin: "center bottom",
                   }}
                >
-                  <Card code={code} size="medium" />
+                  <Card code={code} size={cardSize} />
                </div>
             );
          })}
@@ -248,7 +254,7 @@ function Scoring() {
                </span>
             </div>
          </div>
-         <span className="block mb-4">
+         <span className="block mb-6">
             The aggregate total of all scores for each hand must be a multiple
             of 26. The game is played to 100 points. When a player takes all 13
             hearts and the queen of spades in one hand, instead of losing 26

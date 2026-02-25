@@ -18,8 +18,8 @@ export interface CardProps {
    selected?: boolean;
    disabled?: boolean;
    onClick?: () => void;
-   /** Card size: normal (hand), medium (table trick), large (mobile trick) */
-   size?: "normal" | "medium" | "large";
+   /** Card size: small (mini fan), normal (hand), medium (table trick), large (mobile trick) */
+   size?: "small" | "normal" | "medium" | "large";
    className?: string;
    /** Override the global card style for preview purposes. */
    styleOverride?: CardStyle;
@@ -53,7 +53,9 @@ export const Card: React.FC<CardProps> = ({
          className={[
             styles.card,
             isImage ? styles.cardImage : "",
-            size === "medium"
+            size === "small"
+               ? styles.cardSmall
+               : size === "medium"
                ? styles.cardMedium
                : size === "large"
                ? styles.cardLarge
