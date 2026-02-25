@@ -427,4 +427,5 @@ class GameRunner:
             "winner_index": s.winner_index,
             "human_moon_shots": self._human_moon_shots,
             "human_hearts_broken": self._human_hearts_broken,
+            "difficulty": self._difficulty,
         }

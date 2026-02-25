@@ -10,7 +10,11 @@ let socket: Socket | null = null;
 type StateCb = (state: GameState) => void;
 type PlayCb = (event: PlayEvent) => void;
 type VoidCb = () => void;
-type PlayerConcededCb = (data: { seat_index: number; name: string }) => void;
+type PlayerConcededCb = (data: {
+   seat_index: number;
+   name: string;
+   reason?: string;
+}) => void;
 type ErrorCb = (message: string) => void;
 
 const stateListeners: StateCb[] = [];
@@ -21,6 +25,7 @@ const playerConcededListeners: PlayerConcededCb[] = [];
 const gameTerminatedListeners: VoidCb[] = [];
 const gameOverListeners: StateCb[] = [];
 const errorListeners: ErrorCb[] = [];
+const idleWarningListeners: VoidCb[] = [];
 
 export function connectMulti(
    gameId: string,
@@ -52,10 +57,13 @@ export function connectMulti(
    });
    socket.on(
       "player_conceded",
-      (data: { seat_index: number; name: string }) => {
+      (data: { seat_index: number; name: string; reason?: string }) => {
          playerConcededListeners.forEach((cb) => cb(data));
       }
    );
+   socket.on("idle_warning", () => {
+      idleWarningListeners.forEach((cb) => cb());
+   });
    socket.on("game_terminated", () => {
       gameTerminatedListeners.forEach((cb) => cb());
    });
@@ -116,6 +124,7 @@ export const onPlay = makeSubscriber(playListeners);
 export const onTrickComplete = makeSubscriber(trickCompleteListeners);
 export const onPassReceived = makeSubscriber(passReceivedListeners);
 export const onPlayerConceded = makeSubscriber(playerConcededListeners);
+export const onIdleWarning = makeSubscriber(idleWarningListeners);
 export const onGameTerminated = makeSubscriber(gameTerminatedListeners);
 export const onGameOver = makeSubscriber(gameOverListeners);
 export const onError = makeSubscriber(errorListeners);

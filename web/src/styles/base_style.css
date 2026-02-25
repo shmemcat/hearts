@@ -98,6 +98,7 @@ html {
    --achievement-locked: hsla(0, 0%, 18%, 0.4);
    --achievement-secret-text: hsla(0, 0%, 18%, 0.35);
    --badgeboxshadow: var(--buttonboxshadow);
+   --color-warning: hsl(32, 95%, 44%);
 }
 
 [data-theme="dark"] {

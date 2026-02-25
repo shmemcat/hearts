@@ -30,14 +30,14 @@
    margin-right: 6px;
    opacity: 0.5;
 }
-.playInfoPhase {
+.playInfoDifficulty {
    text-transform: uppercase;
    font-weight: 600;
    opacity: 0.55;
    font-size: 0.75rem;
    letter-spacing: 1px;
 }
-.playInfoPhase::before {
+.playInfoDifficulty::before {
    content: "·";
    margin-right: 6px;
    opacity: 0.5;

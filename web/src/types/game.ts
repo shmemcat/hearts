@@ -31,6 +31,7 @@ export type GameState = {
    winner_index: number | null;
    human_moon_shots: number;
    human_hearts_broken: number;
+   difficulty?: string;
    /** Multiplayer-only: the player's hand (alias for human_hand) */
    my_hand?: string[];
    /** Multiplayer-only: this player's seat index (null for spectators) */

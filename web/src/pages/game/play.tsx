@@ -1030,7 +1030,7 @@ export default function PlayGamePage() {
                         <InfoPill
                            round={state.round}
                            passDirection={state.pass_direction}
-                           phase={state.phase}
+                           difficulty={state.difficulty}
                         />
                         {!state.game_over && !conceded && (
                            <ConcedeButton
@@ -1046,7 +1046,7 @@ export default function PlayGamePage() {
                      <InfoModal
                         round={state.round}
                         passDirection={state.pass_direction}
-                        phase={state.phase}
+                        difficulty={state.difficulty}
                         players={state.players}
                         onClose={() => setInfoModalOpen(false)}
                         onConcede={() => setConcedeModalOpen(true)}

@@ -35,6 +35,7 @@ import {
    onTrickComplete as onMultiTrickComplete,
    onPassReceived as onMultiPassReceived,
    onPlayerConceded as onMultiPlayerConceded,
+   onIdleWarning as onMultiIdleWarning,
    onGameTerminated as onMultiGameTerminated,
    onGameOver as onMultiGameOver,
    onError as onMultiError,
@@ -75,6 +76,8 @@ export default function MultiPlayPage() {
    const [infoModalOpen, setInfoModalOpen] = useState(false);
    const [concedeModalOpen, setConcedeModalOpen] = useState(false);
    const [conceded, setConceded] = useState(false);
+   const [idleKicked, setIdleKicked] = useState(false);
+   const [idleWarning, setIdleWarning] = useState(false);
    const [terminated, setTerminated] = useState(false);
    const [passSelection, setPassSelection] = useState<Set<string>>(new Set());
    const [passSubmitted, setPassSubmitted] = useState(false);
@@ -243,6 +246,7 @@ export default function MultiPlayPage() {
          (p: { score: number }) => p.score
       );
       setPassSubmitted(pending.pass_submitted ?? false);
+      setIdleWarning(false);
       if (pending.phase === "passing") {
          resetRef.current();
       }
@@ -344,8 +348,25 @@ export default function MultiPlayPage() {
          setPassSubmitted(true);
       });
 
-      const unsubConceded = onMultiPlayerConceded(() => {
-         // State update will come via next state emission
+      const unsubConceded = onMultiPlayerConceded((data) => {
+         const seat = mySeatRef.current;
+         if (
+            seat !== null &&
+            data.seat_index === seat &&
+            data.reason === "idle"
+         ) {
+            setConceded(true);
+            setIdleKicked(true);
+            setIdleWarning(false);
+            // Don't remove localStorage here -- playerToken is a dependency
+            // of the connect effect, so changing it would trigger a socket
+            // reconnect and drop the game_terminated event that follows.
+            // The game_terminated handler handles localStorage cleanup.
+         }
+      });
+
+      const unsubIdleWarning = onMultiIdleWarning(() => {
+         setIdleWarning(true);
       });
 
       const unsubTerminated = onMultiGameTerminated(() => {
@@ -370,6 +391,7 @@ export default function MultiPlayPage() {
          unsubTrick();
          unsubPassReceived();
          unsubConceded();
+         unsubIdleWarning();
          unsubTerminated();
          unsubGameOver();
          unsubError();
@@ -488,6 +510,7 @@ export default function MultiPlayPage() {
 
       sendMultiPass(cards);
       setPassSubmitted(true);
+      setIdleWarning(false);
    }, [passSelection, isSpectator, conceded]);
 
    // ── Card click handler ────────────────────────────────────────────
@@ -530,6 +553,7 @@ export default function MultiPlayPage() {
          );
 
          sendMultiPlay(code);
+         setIdleWarning(false);
       },
       [state, isSpectator, conceded, passSubmitted, mySeat, showImmediately]
    );
@@ -755,6 +779,12 @@ export default function MultiPlayPage() {
             hideTitleBlock
             className={PLAY_PAGE_LAYOUT_CLASS}
          >
+            {idleWarning && (
+               <div className={styles.idleWarningBanner}>
+                  You&apos;ll be removed for inactivity in 1 minute. Make a move
+                  to stay in the game.
+               </div>
+            )}
             {state && (
                <div className={styles.playContent}>
                   {!roundSummary && !isMobile && (
@@ -762,7 +792,7 @@ export default function MultiPlayPage() {
                         <InfoPill
                            round={state.round}
                            passDirection={state.pass_direction}
-                           phase={state.phase}
+                           difficulty={state.difficulty}
                         />
                         {!state.game_over && !conceded && !isSpectator && (
                            <ConcedeButton
@@ -778,7 +808,7 @@ export default function MultiPlayPage() {
                      <InfoModal
                         round={state.round}
                         passDirection={state.pass_direction}
-                        phase={state.phase}
+                        difficulty={state.difficulty}
                         players={state.players}
                         onClose={() => setInfoModalOpen(false)}
                         onConcede={() => setConcedeModalOpen(true)}
@@ -1077,7 +1107,9 @@ export default function MultiPlayPage() {
                            className="text-sm opacity-60"
                            style={{ padding: "20px 0" }}
                         >
-                           {conceded
+                           {idleKicked
+                              ? "You were removed for inactivity."
+                              : conceded
                               ? "You are spectating after conceding."
                               : "Spectating — enjoy the show!"}
                         </p>

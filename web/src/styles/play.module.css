@@ -316,6 +316,23 @@
    pointer-events: auto;
 }
 
+/* ── Idle warning banner ────────────────────────────────────── */
+.idleWarningBanner {
+   position: fixed;
+   top: 0;
+   left: 0;
+   right: 0;
+   z-index: 100;
+   background: var(--color-warning);
+   color: #fff;
+   text-align: center;
+   padding: 10px 16px;
+   font-size: 0.95rem;
+   font-weight: 600;
+   letter-spacing: 0.01em;
+   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
 /* ── Mobile overrides (independent of game table layout) ───── */
 @media only screen and (max-width: 768px) {
    .playContent {

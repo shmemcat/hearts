@@ -3,13 +3,21 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChartSimple } from "@fortawesome/pro-solid-svg-icons";
 
 import { Button } from "@/components/Buttons";
-import type { GamePhase, PassDirection } from "@/types/game";
+import type { PassDirection } from "@/types/game";
 import styles from "./InfoModal.module.css";
+
+const DIFFICULTY_LABELS: Record<string, string> = {
+   easy: "Easy",
+   medium: "Medium",
+   hard: "Hard",
+   harder: "Harder",
+   hardest: "Hardest",
+};
 
 export interface InfoModalProps {
    round: number;
    passDirection: PassDirection;
-   phase: GamePhase;
+   difficulty?: string;
    players: { name: string; score: number }[];
    onClose: () => void;
    onConcede?: () => void;
@@ -19,12 +27,16 @@ export interface InfoModalProps {
 export const InfoModal: React.FC<InfoModalProps> = ({
    round,
    passDirection,
-   phase,
+   difficulty,
    players,
    onClose,
    onConcede,
    gameOver,
 }) => {
+   const difficultyLabel = difficulty
+      ? DIFFICULTY_LABELS[difficulty] ?? difficulty
+      : null;
+
    return (
       <div className={styles.backdrop} onClick={onClose}>
          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -36,6 +48,12 @@ export const InfoModal: React.FC<InfoModalProps> = ({
                      ? "No pass"
                      : `Pass ${passDirection}`}
                </span>
+               {difficultyLabel && (
+                  <>
+                     <span className={styles.rowSep}>·</span>
+                     <span className={styles.rowLabel}>{difficultyLabel}</span>
+                  </>
+               )}
             </div>
 
             <div className={styles.divider} />

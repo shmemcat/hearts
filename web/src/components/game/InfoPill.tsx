@@ -1,26 +1,40 @@
 import React from "react";
 
-import type { GamePhase, PassDirection } from "@/types/game";
+import type { PassDirection } from "@/types/game";
 import styles from "./InfoPill.module.css";
+
+const DIFFICULTY_LABELS: Record<string, string> = {
+   easy: "Easy",
+   medium: "Medium",
+   hard: "Hard",
+   harder: "Harder",
+   hardest: "Hardest",
+};
 
 export interface InfoPillProps {
    round: number;
    passDirection: PassDirection;
-   phase: GamePhase;
+   difficulty?: string;
 }
 
 export const InfoPill: React.FC<InfoPillProps> = ({
    round,
    passDirection,
-   phase,
+   difficulty,
 }) => {
+   const difficultyLabel = difficulty
+      ? DIFFICULTY_LABELS[difficulty] ?? difficulty
+      : null;
+
    return (
       <div className={styles.playInfoPill}>
          <span className={styles.playInfoRound}>Round {round}</span>
          <span className={styles.playInfoDetail}>
             {passDirection === "none" ? "No pass" : `Pass ${passDirection}`}
          </span>
-         <span className={styles.playInfoPhase}>{phase}</span>
+         {difficultyLabel && (
+            <span className={styles.playInfoDifficulty}>{difficultyLabel}</span>
+         )}
       </div>
    );
 };

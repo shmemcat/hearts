@@ -23,6 +23,8 @@ from hearts.multiplayer_runner import MultiplayerRunner, SeatConfig
 from hearts.jwt_utils import get_current_user
 
 _RECONNECT_TIMEOUT_SECONDS = 120
+_IDLE_TIMEOUT_SECONDS = 600
+_IDLE_WARNING_SECONDS = 540
 
 # game_id -> MultiplayerRunner
 _runners: Dict[str, MultiplayerRunner] = {}
@@ -41,6 +43,12 @@ _disconnect_timers: Dict[str, Any] = {}
 
 # game_id -> {seat_index -> jwt_user_id} — tracked at connect time
 _game_auth: Dict[str, Dict[int, int]] = {}
+
+# game_id -> {seat_index -> eventlet.GreenThread} for idle kick timers
+_idle_timers: Dict[str, Dict[int, Any]] = {}
+
+# game_id -> {seat_index -> eventlet.GreenThread} for idle warning timers
+_idle_warning_timers: Dict[str, Dict[int, Any]] = {}
 
 
 def _get_runner(game_id: str) -> Optional[MultiplayerRunner]:
@@ -90,6 +98,198 @@ def _find_seat_by_token(runner: MultiplayerRunner, token: str) -> Optional[int]:
     return None
 
 
+def _cancel_idle_timer(game_id: str, seat_idx: int) -> None:
+    """Cancel both warning and kick timers for a single seat."""
+    warn_timers = _idle_warning_timers.get(game_id)
+    if warn_timers:
+        t = warn_timers.pop(seat_idx, None)
+        if t is not None:
+            t.cancel()
+    kick_timers = _idle_timers.get(game_id)
+    if kick_timers:
+        t = kick_timers.pop(seat_idx, None)
+        if t is not None:
+            t.cancel()
+
+
+def _cancel_all_idle_timers(game_id: str) -> None:
+    """Cancel all idle timers for a game."""
+    for store in (_idle_warning_timers, _idle_timers):
+        timers = store.pop(game_id, None)
+        if timers:
+            for t in timers.values():
+                t.cancel()
+
+
+def _start_idle_timer(game_id: str, seat_idx: int, socketio, app) -> None:
+    """Start the 9-min warning + 10-min kick timers for one seat."""
+    _cancel_idle_timer(game_id, seat_idx)
+
+    runner = _get_runner(game_id)
+    if runner is None:
+        return
+    seat = runner.seats[seat_idx]
+    if not seat.is_human or seat.conceded:
+        return
+
+    token = seat.player_token
+
+    def _on_idle_warning():
+        try:
+            with app.app_context():
+                if not token:
+                    return
+                sid = _token_to_sid.get(token)
+                if sid:
+                    socketio.emit("idle_warning", {}, to=sid, namespace="/multi")
+        except Exception:
+            logger.exception(
+                "Error in idle warning callback: game=%s seat=%d",
+                game_id,
+                seat_idx,
+            )
+
+    def _on_idle_timeout():
+        try:
+            with app.app_context():
+                _idle_timers.get(game_id, {}).pop(seat_idx, None)
+                _idle_warning_timers.get(game_id, {}).pop(seat_idx, None)
+                r = _get_runner(game_id)
+                if r is None:
+                    return
+                s = r.seats[seat_idx]
+                if not s.is_human or s.conceded:
+                    return
+
+                result = r.concede_player(seat_idx)
+                socketio.emit(
+                    "player_conceded",
+                    {
+                        "seat_index": seat_idx,
+                        "name": r.seats[seat_idx].name,
+                        "reason": "idle",
+                    },
+                    room=_room(game_id),
+                    namespace="/multi",
+                )
+
+                # Move the idle player to spectator if still connected
+                if token:
+                    sid = _token_to_sid.pop(token, None)
+                    if sid:
+                        _sid_to_game[sid] = {
+                            "game_id": game_id,
+                            "spectator": True,
+                        }
+                        specs = _spectator_sids.setdefault(game_id, set())
+                        specs.add(sid)
+
+                if result == "terminated":
+                    socketio.emit(
+                        "game_terminated",
+                        {},
+                        room=_room(game_id),
+                        namespace="/multi",
+                    )
+                    _cancel_all_idle_timers(game_id)
+                    _on_game_complete(game_id, r, socketio)
+                else:
+                    _emit_state_to_all(game_id, r, socketio)
+                    _save_to_db(game_id, r)
+
+                    if r.state.phase.value == "playing" and not r.state.game_over:
+                        if not r._is_active_human(r.state.whose_turn):
+
+                            def on_play(ev):
+                                socketio.emit(
+                                    "play",
+                                    ev,
+                                    room=_room(game_id),
+                                    namespace="/multi",
+                                )
+
+                            def on_trick_complete():
+                                socketio.emit(
+                                    "trick_complete",
+                                    {},
+                                    room=_room(game_id),
+                                    namespace="/multi",
+                                )
+
+                            def on_done(d):
+                                _emit_state_to_all(game_id, r, socketio)
+                                if r.state.game_over:
+                                    socketio.emit(
+                                        "game_over",
+                                        r.get_state_for_spectator(),
+                                        room=_room(game_id),
+                                        namespace="/multi",
+                                    )
+                                    _cancel_all_idle_timers(game_id)
+                                    _on_game_complete(game_id, r, socketio)
+                                else:
+                                    _save_to_db(game_id, r)
+                                    _start_idle_timers_for_actionable_seats(
+                                        game_id, r, socketio, app
+                                    )
+
+                            r.advance_to_human_turn(
+                                on_play=on_play,
+                                on_trick_complete=on_trick_complete,
+                                on_done=on_done,
+                            )
+                        else:
+                            _start_idle_timers_for_actionable_seats(
+                                game_id, r, socketio, app
+                            )
+                    else:
+                        _start_idle_timers_for_actionable_seats(
+                            game_id, r, socketio, app
+                        )
+        except Exception:
+            logger.exception(
+                "Error in idle timeout callback: game=%s seat=%d",
+                game_id,
+                seat_idx,
+            )
+
+    warn_store = _idle_warning_timers.setdefault(game_id, {})
+    warn_store[seat_idx] = eventlet.spawn_after(_IDLE_WARNING_SECONDS, _on_idle_warning)
+
+    kick_store = _idle_timers.setdefault(game_id, {})
+    kick_store[seat_idx] = eventlet.spawn_after(_IDLE_TIMEOUT_SECONDS, _on_idle_timeout)
+
+
+def _start_idle_timers_for_actionable_seats(
+    game_id: str, runner: MultiplayerRunner, socketio, app
+) -> None:
+    """Start idle timers only for human seats that currently need to act."""
+    if runner.state.game_over:
+        _cancel_all_idle_timers(game_id)
+        return
+
+    phase = runner.state.phase.value
+
+    if phase == "passing":
+        for i in range(4):
+            if runner._is_active_human(i) and i not in runner._pending_passes:
+                existing = _idle_timers.get(game_id, {}).get(i)
+                if existing is None:
+                    _start_idle_timer(game_id, i, socketio, app)
+            else:
+                _cancel_idle_timer(game_id, i)
+
+    elif phase == "playing":
+        whose_turn = runner.state.whose_turn
+        for i in range(4):
+            if i == whose_turn and runner._is_active_human(i):
+                existing = _idle_timers.get(game_id, {}).get(i)
+                if existing is None:
+                    _start_idle_timer(game_id, i, socketio, app)
+            else:
+                _cancel_idle_timer(game_id, i)
+
+
 def _emit_state_to_all(game_id: str, runner: MultiplayerRunner, socketio) -> None:
     """Send personalized state to each connected player and public state to spectators."""
     for token, sid in list(_token_to_sid.items()):
@@ -114,6 +314,7 @@ def _emit_state_to_all(game_id: str, runner: MultiplayerRunner, socketio) -> Non
 
 def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None:
     """Record stats for authenticated players and clean up."""
+    _cancel_all_idle_timers(game_id)
     auth_map = _game_auth.get(game_id, {})
     scores = runner.state.scores
     min_score = min(scores)
@@ -176,6 +377,8 @@ def create_multiplayer_game(
     _runners[game_id] = runner
     _save_to_db(game_id, runner, lobby_code=lobby_code)
 
+    app = current_app._get_current_object()
+
     # If AI has the first turn after a no-pass round, auto-advance
     if runner.state.phase.value == "playing" and not runner._is_active_human(
         runner.state.whose_turn
@@ -190,10 +393,13 @@ def create_multiplayer_game(
         def on_done(info):
             _emit_state_to_all(game_id, runner, socketio)
             _save_to_db(game_id, runner)
+            _start_idle_timers_for_actionable_seats(game_id, runner, socketio, app)
 
         runner.advance_to_human_turn(
             on_play=on_play, on_trick_complete=on_trick_complete, on_done=on_done
         )
+    else:
+        _start_idle_timers_for_actionable_seats(game_id, runner, socketio, app)
 
     return runner
 
@@ -232,6 +438,13 @@ def register_multiplayer_socket(socketio):
                     if user:
                         auth = _game_auth.setdefault(game_id, {})
                         auth[seat_idx] = user.id
+
+                    # Restart idle timer if this seat has an actionable move
+                    if runner._is_active_human(seat_idx):
+                        app = current_app._get_current_object()
+                        _start_idle_timers_for_actionable_seats(
+                            game_id, runner, socketio, app
+                        )
 
                     emit(
                         "state",
@@ -291,6 +504,9 @@ def register_multiplayer_socket(socketio):
 
         token = seat.player_token
 
+        # Cancel idle timer -- disconnect timer takes over
+        _cancel_idle_timer(game_id, seat_idx)
+
         # Clean up token -> sid mapping
         if token and _token_to_sid.get(token) == request.sid:
             _token_to_sid.pop(token, None)
@@ -312,7 +528,11 @@ def register_multiplayer_socket(socketio):
                 result = r.concede_player(seat_idx)
                 socketio.emit(
                     "player_conceded",
-                    {"seat_index": seat_idx, "name": r.seats[seat_idx].name},
+                    {
+                        "seat_index": seat_idx,
+                        "name": r.seats[seat_idx].name,
+                        "reason": "disconnected",
+                    },
                     room=_room(game_id),
                     namespace="/multi",
                 )
@@ -323,6 +543,7 @@ def register_multiplayer_socket(socketio):
                         room=_room(game_id),
                         namespace="/multi",
                     )
+                    _cancel_all_idle_timers(game_id)
                     _on_game_complete(game_id, r, socketio)
                 else:
                     _emit_state_to_all(game_id, r, socketio)
@@ -356,15 +577,27 @@ def register_multiplayer_socket(socketio):
                                         room=_room(game_id),
                                         namespace="/multi",
                                     )
+                                    _cancel_all_idle_timers(game_id)
                                     _on_game_complete(game_id, r, socketio)
                                 else:
                                     _save_to_db(game_id, r)
+                                    _start_idle_timers_for_actionable_seats(
+                                        game_id, r, socketio, app
+                                    )
 
                             r.advance_to_human_turn(
                                 on_play=on_play,
                                 on_trick_complete=on_trick_complete,
                                 on_done=on_done,
                             )
+                        else:
+                            _start_idle_timers_for_actionable_seats(
+                                game_id, r, socketio, app
+                            )
+                    else:
+                        _start_idle_timers_for_actionable_seats(
+                            game_id, r, socketio, app
+                        )
 
         if token:
             timer = eventlet.spawn_after(
@@ -407,6 +640,9 @@ def register_multiplayer_socket(socketio):
             emit("error", {"message": str(e)}, namespace="/multi")
             return
 
+        _cancel_idle_timer(game_id, seat_idx)
+        app = current_app._get_current_object()
+
         if result == "waiting":
             emit("pass_received", {"seat_index": seat_idx}, namespace="/multi")
             _save_to_db(game_id, runner)
@@ -432,12 +668,17 @@ def register_multiplayer_socket(socketio):
                 def on_done(d):
                     _emit_state_to_all(game_id, runner, socketio)
                     _save_to_db(game_id, runner)
+                    _start_idle_timers_for_actionable_seats(
+                        game_id, runner, socketio, app
+                    )
 
                 runner.advance_to_human_turn(
                     on_play=on_play,
                     on_trick_complete=on_trick_complete,
                     on_done=on_done,
                 )
+            else:
+                _start_idle_timers_for_actionable_seats(game_id, runner, socketio, app)
 
     @socketio.on("play", namespace="/multi")
     def on_play_message(data):
@@ -464,6 +705,9 @@ def register_multiplayer_socket(socketio):
             emit("error", {"message": str(e)}, namespace="/multi")
             return
 
+        _cancel_idle_timer(game_id, seat_idx)
+        app = current_app._get_current_object()
+
         def on_play(ev):
             socketio.emit("play", ev, room=_room(game_id), namespace="/multi")
 
@@ -479,9 +723,11 @@ def register_multiplayer_socket(socketio):
                     room=_room(game_id),
                     namespace="/multi",
                 )
+                _cancel_all_idle_timers(game_id)
                 _on_game_complete(game_id, runner, socketio)
             else:
                 _save_to_db(game_id, runner)
+                _start_idle_timers_for_actionable_seats(game_id, runner, socketio, app)
 
         try:
             runner.submit_play(
@@ -508,6 +754,8 @@ def register_multiplayer_socket(socketio):
             emit("error", {"message": "Game not found"}, namespace="/multi")
             return {"status": "error"}
 
+        _cancel_idle_timer(game_id, seat_idx)
+
         try:
             result = runner.concede_player(seat_idx)
         except ValueError as e:
@@ -516,7 +764,11 @@ def register_multiplayer_socket(socketio):
 
         socketio.emit(
             "player_conceded",
-            {"seat_index": seat_idx, "name": runner.seats[seat_idx].name},
+            {
+                "seat_index": seat_idx,
+                "name": runner.seats[seat_idx].name,
+                "reason": "conceded",
+            },
             room=_room(game_id),
             namespace="/multi",
         )
@@ -533,8 +785,10 @@ def register_multiplayer_socket(socketio):
             socketio.emit(
                 "game_terminated", {}, room=_room(game_id), namespace="/multi"
             )
+            _cancel_all_idle_timers(game_id)
             _on_game_complete(game_id, runner, socketio)
         else:
+            app = current_app._get_current_object()
             _emit_state_to_all(game_id, runner, socketio)
             _save_to_db(game_id, runner)
 
@@ -562,14 +816,20 @@ def register_multiplayer_socket(socketio):
                             room=_room(game_id),
                             namespace="/multi",
                         )
+                        _cancel_all_idle_timers(game_id)
                         _on_game_complete(game_id, runner, socketio)
                     else:
                         _save_to_db(game_id, runner)
+                        _start_idle_timers_for_actionable_seats(
+                            game_id, runner, socketio, app
+                        )
 
                 runner.advance_to_human_turn(
                     on_play=on_play,
                     on_trick_complete=on_trick_complete,
                     on_done=on_done,
                 )
+            else:
+                _start_idle_timers_for_actionable_seats(game_id, runner, socketio, app)
 
         return {"status": result}

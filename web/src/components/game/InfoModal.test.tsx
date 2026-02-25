@@ -16,7 +16,7 @@ describe("InfoModal", () => {
          <InfoModal
             round={3}
             passDirection="left"
-            phase="playing"
+            difficulty="easy"
             players={players}
             onClose={vi.fn()}
          />
@@ -29,7 +29,7 @@ describe("InfoModal", () => {
          <InfoModal
             round={1}
             passDirection="right"
-            phase="playing"
+            difficulty="medium"
             players={players}
             onClose={vi.fn()}
          />
@@ -42,7 +42,7 @@ describe("InfoModal", () => {
          <InfoModal
             round={4}
             passDirection="none"
-            phase="playing"
+            difficulty="easy"
             players={players}
             onClose={vi.fn()}
          />
@@ -50,12 +50,39 @@ describe("InfoModal", () => {
       expect(screen.getByText("No pass")).toBeInTheDocument();
    });
 
+   it("displays difficulty label", () => {
+      render(
+         <InfoModal
+            round={1}
+            passDirection="left"
+            difficulty="harder"
+            players={players}
+            onClose={vi.fn()}
+         />
+      );
+      expect(screen.getByText("Harder")).toBeInTheDocument();
+   });
+
+   it("hides difficulty when not provided", () => {
+      render(
+         <InfoModal
+            round={1}
+            passDirection="left"
+            players={players}
+            onClose={vi.fn()}
+         />
+      );
+      expect(screen.queryByText("Easy")).not.toBeInTheDocument();
+      expect(screen.queryByText("Medium")).not.toBeInTheDocument();
+      expect(screen.queryByText("Hard")).not.toBeInTheDocument();
+   });
+
    it("sorts players by score (ascending)", () => {
       render(
          <InfoModal
             round={1}
             passDirection="left"
-            phase="playing"
+            difficulty="easy"
             players={players}
             onClose={vi.fn()}
          />
@@ -74,7 +101,7 @@ describe("InfoModal", () => {
          <InfoModal
             round={1}
             passDirection="left"
-            phase="playing"
+            difficulty="easy"
             players={players}
             onClose={onClose}
          />
@@ -88,7 +115,7 @@ describe("InfoModal", () => {
          <InfoModal
             round={1}
             passDirection="left"
-            phase="playing"
+            difficulty="easy"
             players={players}
             onClose={vi.fn()}
             onConcede={vi.fn()}
@@ -104,7 +131,7 @@ describe("InfoModal", () => {
          <InfoModal
             round={1}
             passDirection="left"
-            phase="playing"
+            difficulty="easy"
             players={players}
             onClose={vi.fn()}
             onConcede={vi.fn()}
@@ -121,7 +148,7 @@ describe("InfoModal", () => {
          <InfoModal
             round={1}
             passDirection="left"
-            phase="playing"
+            difficulty="easy"
             players={players}
             onClose={vi.fn()}
          />
