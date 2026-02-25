@@ -274,22 +274,15 @@ export default function MultiPlayPage() {
    // ── WebSocket connect / disconnect ─────────────────────────────────
    useEffect(() => {
       if (!gameId) return;
-      console.log(
-         `[multi-play] connect effect gameId=${gameId} hasToken=${!!playerToken}`
-      );
       connectMulti(gameId, playerToken);
 
       const retryTimer = setTimeout(() => {
          if (loadingRef.current) {
-            console.warn(
-               "[multi-play] still loading after 3s, requesting state"
-            );
             sendMultiRequestState();
          }
       }, 3000);
 
       return () => {
-         console.log("[multi-play] connect effect cleanup");
          clearTimeout(retryTimer);
          disconnectMulti();
       };
@@ -298,14 +291,8 @@ export default function MultiPlayPage() {
    // ── WebSocket subscriptions ────────────────────────────────────────
    useEffect(() => {
       if (!gameId) return;
-      console.log("[multi-play] subscription effect running");
 
       const unsubState = onMultiState((data: GameState) => {
-         console.log("[multi-play] onMultiState callback", {
-            isLoading: loadingRef.current,
-            phase: data?.phase,
-            round: data?.round,
-         });
          if (loadingRef.current) {
             setLoading(false);
             setState(data);

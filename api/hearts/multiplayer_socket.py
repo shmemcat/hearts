@@ -175,9 +175,6 @@ def create_multiplayer_game(
     runner = MultiplayerRunner.new_game(seats, difficulty=difficulty)
     _runners[game_id] = runner
     _save_to_db(game_id, runner, lobby_code=lobby_code)
-    logger.info(
-        "[multi] game created: game_id=%s, runners_count=%d", game_id, len(_runners)
-    )
 
     # If AI has the first turn after a no-pass round, auto-advance
     if runner.state.phase.value == "playing" and not runner._is_active_human(
@@ -210,19 +207,10 @@ def register_multiplayer_socket(socketio):
             player_token = (request.args.get("player_token") or "").strip() or None
 
             if not game_id:
-                logger.warning(
-                    "[multi] connect rejected: empty game_id, args=%s",
-                    dict(request.args),
-                )
                 return False
 
             runner = _get_runner(game_id)
             if runner is None:
-                logger.warning(
-                    "[multi] connect rejected: runner not found for game_id=%s, in_memory_keys=%s",
-                    game_id,
-                    list(_runners.keys())[:10],
-                )
                 return False
 
             join_room(_room(game_id))
@@ -245,9 +233,6 @@ def register_multiplayer_socket(socketio):
                         auth = _game_auth.setdefault(game_id, {})
                         auth[seat_idx] = user.id
 
-                    logger.info(
-                        "[multi] player connected: game=%s seat=%d", game_id, seat_idx
-                    )
                     emit(
                         "state",
                         runner.get_state_for_player(seat_idx),
@@ -258,10 +243,9 @@ def register_multiplayer_socket(socketio):
             _sid_to_game[request.sid] = {"game_id": game_id, "spectator": True}
             specs = _spectator_sids.setdefault(game_id, set())
             specs.add(request.sid)
-            logger.info("[multi] spectator connected: game=%s", game_id)
             emit("state", runner.get_state_for_spectator(), namespace="/multi")
         except Exception:
-            logger.exception("[multi] on_connect crashed")
+            logger.exception("on_connect error")
             return False
 
     @socketio.on("request_state", namespace="/multi")

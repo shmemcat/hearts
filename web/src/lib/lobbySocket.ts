@@ -27,6 +27,7 @@ export function connectLobby(code: string, playerToken?: string): void {
    socket = io("/lobby", {
       path: "/socket.io",
       query,
+      forceNew: true,
       transports: ["websocket", "polling"],
       autoConnect: true,
    });

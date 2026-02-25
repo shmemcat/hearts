@@ -30,40 +30,15 @@ export function connectMulti(
    const query: Record<string, string> = { game_id: gameId };
    if (playerToken) query.player_token = playerToken;
 
-   console.log(
-      `[multi-socket] connectMulti gameId=${gameId} hasToken=${!!playerToken} listeners=${
-         stateListeners.length
-      }`
-   );
-
    socket = io("/multi", {
       path: "/socket.io",
       query,
+      forceNew: true,
       transports: ["websocket", "polling"],
       autoConnect: true,
    });
 
-   socket.on("connect", () => {
-      console.log(
-         `[multi-socket] connected id=${socket?.id} listeners=${stateListeners.length}`
-      );
-   });
-
-   socket.on("connect_error", (err) => {
-      console.error("[multi-socket] connect_error", err?.message ?? err);
-   });
-
-   socket.on("disconnect", (reason) => {
-      console.warn("[multi-socket] disconnected", reason);
-   });
-
    socket.on("state", (data: GameState) => {
-      console.log("[multi-socket] state received", {
-         phase: data?.phase,
-         round: data?.round,
-         hasHand: (data?.my_hand?.length ?? 0) > 0,
-         listenerCount: stateListeners.length,
-      });
       stateListeners.forEach((cb) => cb(data));
    });
    socket.on("play", (data: PlayEvent) => {
@@ -90,7 +65,6 @@ export function connectMulti(
    socket.on("error", (data: { message?: string }) => {
       const msg =
          typeof data?.message === "string" ? data.message : "Multiplayer error";
-      console.error("[multi-socket] error event", msg);
       errorListeners.forEach((cb) => cb(msg));
    });
 }
@@ -108,9 +82,6 @@ export function isConnected(): boolean {
 }
 
 export function sendRequestState(): void {
-   console.log("[multi-socket] sendRequestState", {
-      connected: socket?.connected ?? false,
-   });
    if (socket?.connected) socket.emit("request_state");
 }
 
