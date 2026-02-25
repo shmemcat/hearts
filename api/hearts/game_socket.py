@@ -48,6 +48,7 @@ def register_game_socket(socketio):
             emit("error", {"message": "Game not found"}, namespace="/game")
             return False
         _sid_to_game_id[request.sid] = game_id
+        emit("state", runner.get_state_for_frontend(), namespace="/game")
 
     @socketio.on("disconnect", namespace="/game")
     def on_disconnect():

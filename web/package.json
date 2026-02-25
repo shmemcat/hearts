@@ -13,10 +13,10 @@
       "test:coverage": "vitest run --coverage"
    },
    "dependencies": {
-      "@fortawesome/fontawesome-pro": "^6.2.1",
-      "@fortawesome/fontawesome-svg-core": "^6.2.1",
-      "@fortawesome/pro-regular-svg-icons": "^6.2.1",
-      "@fortawesome/pro-solid-svg-icons": "^6.2.1",
+      "@fortawesome/fontawesome-pro": "^7.2.0",
+      "@fortawesome/fontawesome-svg-core": "^7.2.0",
+      "@fortawesome/pro-regular-svg-icons": "^7.2.0",
+      "@fortawesome/pro-solid-svg-icons": "^7.2.0",
       "@fortawesome/react-fontawesome": "^3.2.0",
       "@radix-ui/react-tooltip": "^1.2.8",
       "@types/howler": "^2.2.12",

@@ -26,5 +26,8 @@ COPY migrations ./migrations
 
 EXPOSE 5000
 
+HEALTHCHECK --interval=5s --timeout=3s --start-period=30s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"
+
 ENTRYPOINT ["./entrypoint.sh"]
 CMD ["gunicorn", "-c", "gunicorn_conf.py", "hearts:app"]

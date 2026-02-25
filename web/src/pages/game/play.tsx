@@ -40,8 +40,10 @@ import {
    connect as connectGameSocket,
    disconnect as disconnectGameSocket,
    isConnected as isGameSocketConnected,
+   onDisconnect as onGameSocketDisconnect,
    onError as onGameSocketError,
    onPlay as onGameSocketPlay,
+   onReconnect as onGameSocketReconnect,
    onState as onGameSocketState,
    onTrickComplete as onGameSocketTrickComplete,
    sendAdvance as sendGameSocketAdvance,
@@ -109,6 +111,7 @@ export default function PlayGamePage() {
       0, 0, 0, 0,
    ]);
    const [noPassHold, setNoPassHold] = useState(false);
+   const [reconnecting, setReconnecting] = useState(false);
    const [roundBanner, setRoundBanner] = useState<{
       round: number;
    } | null>(null);
@@ -299,11 +302,21 @@ export default function PlayGamePage() {
          playInFlightRef.current = false;
       });
 
+      const unsubDisconnect = onGameSocketDisconnect(() => {
+         setReconnecting(true);
+      });
+
+      const unsubReconnect = onGameSocketReconnect(() => {
+         setReconnecting(false);
+      });
+
       return () => {
          unsubPlay();
          unsubTrick();
          unsubState();
          unsubError();
+         unsubDisconnect();
+         unsubReconnect();
       };
    }, [enqueue, isActive]);
 
@@ -1005,6 +1018,11 @@ export default function PlayGamePage() {
             hideTitleBlock
             className={PLAY_PAGE_LAYOUT_CLASS}
          >
+            {reconnecting && (
+               <div className={styles.reconnectBanner}>
+                  Reconnecting to server&hellip;
+               </div>
+            )}
             {state && (
                <div className={styles.playContent}>
                   {!roundSummary && !isMobile && (

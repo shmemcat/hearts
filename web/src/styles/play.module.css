@@ -1,5 +1,32 @@
 /* Play page layout */
 
+/* ── Reconnecting banner ────────────────────────────────── */
+.reconnectBanner {
+   position: fixed;
+   top: 0;
+   left: 0;
+   right: 0;
+   z-index: 200;
+   padding: 8px 16px;
+   text-align: center;
+   font-size: 0.9rem;
+   font-weight: 600;
+   color: #fff;
+   background: hsl(30, 90%, 50%);
+   animation: reconnectSlideDown 0.25s ease-out;
+}
+
+@keyframes reconnectSlideDown {
+   from {
+      opacity: 0;
+      transform: translateY(-100%);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+
 /* Unified hint line between game table and hand; always in the DOM to prevent layout shift */
 .phaseHint {
    font-size: 0.9rem;

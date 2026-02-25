@@ -15,11 +15,14 @@ type PlayCb = (ev: PlayEvent) => void;
 type TrickCompleteCb = () => void;
 type StateCb = (state: GameSocketState) => void;
 type ErrorCb = (message: string) => void;
+type VoidCb = () => void;
 
 const playListeners: PlayCb[] = [];
 const trickCompleteListeners: TrickCompleteCb[] = [];
 const stateListeners: StateCb[] = [];
 const errorListeners: ErrorCb[] = [];
+const disconnectListeners: VoidCb[] = [];
+const reconnectListeners: VoidCb[] = [];
 
 export function connect(gameId: string): void {
    if (currentGameId === gameId && socket?.connected) return;
@@ -45,10 +48,17 @@ export function connect(gameId: string): void {
          typeof data?.message === "string" ? data.message : "WebSocket error";
       errorListeners.forEach((cb) => cb(msg));
    });
+   socket.on("disconnect", () => {
+      disconnectListeners.forEach((cb) => cb());
+   });
+   socket.io.on("reconnect", () => {
+      reconnectListeners.forEach((cb) => cb());
+   });
 }
 
 export function disconnect(): void {
    if (socket) {
+      socket.io.removeAllListeners();
       socket.removeAllListeners();
       if (socket.connected) {
          socket.disconnect();
@@ -99,5 +109,21 @@ export function onError(cb: ErrorCb): () => void {
    return () => {
       const i = errorListeners.indexOf(cb);
       if (i !== -1) errorListeners.splice(i, 1);
+   };
+}
+
+export function onDisconnect(cb: VoidCb): () => void {
+   disconnectListeners.push(cb);
+   return () => {
+      const i = disconnectListeners.indexOf(cb);
+      if (i !== -1) disconnectListeners.splice(i, 1);
+   };
+}
+
+export function onReconnect(cb: VoidCb): () => void {
+   reconnectListeners.push(cb);
+   return () => {
+      const i = reconnectListeners.indexOf(cb);
+      if (i !== -1) reconnectListeners.splice(i, 1);
    };
 }

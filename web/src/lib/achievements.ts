@@ -7,7 +7,7 @@ import {
    faBullseye,
    faShieldHeart,
    faHeart,
-   faBat,
+   faOwl,
    faDice,
    faWandMagicSparkles,
    faFire,
@@ -145,7 +145,7 @@ const SECRET_ACHIEVEMENTS: AchievementDef[] = [
    {
       id: "night_owl",
       secret: true,
-      icon: faBat,
+      icon: faOwl,
       tiers: null,
       singleName: "Night Owl",
       singleDescription: "Start a game after midnight",
