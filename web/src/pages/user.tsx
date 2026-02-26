@@ -134,12 +134,6 @@ function UserInfo() {
             <TabbedStatsPanel diffStats={diffStats} />
             <AchievementsPanel stats={stats} userId={user.id} />
             <ButtonGroup padding="default">
-               <Link to="/profile">
-                  <Button name="Profile" />
-               </Link>
-               <Link to="/options">
-                  <Button name="Options" />
-               </Link>
                <Button name="Sign Out" onClick={() => logout()} />
                <Link to="/" onClick={() => triggerLogoFadeOut()}>
                   <Button name="Home" />
@@ -233,10 +227,20 @@ function UserInfo() {
 }
 
 const STAT_TABS = [
-   { key: "easy", label: "Easy" },
-   { key: "medium", label: "Medium" },
-   { key: "my_mom", label: "My Mom" },
-   { key: "multiplayer", label: "Multiplayer" },
+   { key: "easy", label: "Easy", mobileLabel: null },
+   { key: "medium", label: "Medium", mobileLabel: null },
+   { key: "my_mom", label: "My Mom", mobileLabel: null },
+   {
+      key: "multiplayer",
+      label: "Multiplayer",
+      mobileLabel: (
+         <>
+            Multi-
+            <br />
+            player
+         </>
+      ),
+   },
 ] as const;
 
 type StatCategory = (typeof STAT_TABS)[number]["key"];
@@ -275,7 +279,7 @@ function TabbedStatsPanel({
    return (
       <>
          <div className={containers["stats-tabs"]}>
-            {STAT_TABS.map(({ key, label }) => (
+            {STAT_TABS.map(({ key, label, mobileLabel }) => (
                <button
                   key={key}
                   className={`${containers["stats-tab"]}${
@@ -285,7 +289,18 @@ function TabbedStatsPanel({
                   }`}
                   onClick={() => setTab(key)}
                >
-                  {label}
+                  {mobileLabel ? (
+                     <>
+                        <span className={containers["desktop-only"]}>
+                           {label}
+                        </span>
+                        <span className={containers["mobile-only"]}>
+                           {mobileLabel}
+                        </span>
+                     </>
+                  ) : (
+                     label
+                  )}
                </button>
             ))}
          </div>

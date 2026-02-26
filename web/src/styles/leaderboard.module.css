@@ -91,18 +91,7 @@
    padding: 20px 0;
 }
 
-.mobileOnly {
-   display: none;
-}
-
 @media only screen and (max-width: 768px) {
-   .desktopOnly {
-      display: none;
-   }
-
-   .mobileOnly {
-      display: inline;
-   }
    .columns {
       flex-direction: column;
       gap: 24px;

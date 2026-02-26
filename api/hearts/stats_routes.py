@@ -216,6 +216,9 @@ def record_game():
         started_dt = active_game.created_at
         is_valentines = started_dt.month == 2 and started_dt.day == 14
 
+    if active_game:
+        db.session.delete(active_game)
+
     opponent_scores = [s for s in all_scores if s != final_score] if all_scores else []
     if len(opponent_scores) == len(all_scores) and all_scores:
         opponent_scores = all_scores[1:]

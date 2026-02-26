@@ -74,6 +74,15 @@ def _delete_game(game_id: str) -> None:
     db.session.commit()
 
 
+def _evict_from_cache(game_id: str) -> None:
+    """Remove a game from the in-memory cache only.
+
+    The DB row is kept so that record_game can still read the difficulty
+    after the game-over response is sent to the client.
+    """
+    _store.pop(game_id, None)
+
+
 @games_bp.route("/start", methods=["POST"])
 def start_game():
     """Create a new game. Body optional: { "player_name": "You", "seed": <int>, "difficulty": "easy" }.
@@ -171,7 +180,7 @@ def advance_game(game_id: str):
     payload["intermediate_plays"] = runner.get_last_play_events()
     payload["round_just_ended"] = runner.get_last_round_ended()
     if runner.state.game_over:
-        _delete_game(game_id)
+        _evict_from_cache(game_id)
     else:
         _save_to_db(game_id, runner)
     return jsonify(payload)
@@ -199,7 +208,7 @@ def submit_play(game_id: str):
     payload["intermediate_plays"] = runner.get_last_play_events()
     payload["round_just_ended"] = runner.get_last_round_ended()
     if runner.state.game_over:
-        _delete_game(game_id)
+        _evict_from_cache(game_id)
     else:
         _save_to_db(game_id, runner)
     return jsonify(payload)

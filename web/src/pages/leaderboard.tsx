@@ -126,8 +126,10 @@ export default function LeaderboardPage() {
                   >
                      {mobileLabel ? (
                         <>
-                           <span className={styles.desktopOnly}>{label}</span>
-                           <span className={styles.mobileOnly}>
+                           <span className={containers["desktop-only"]}>
+                              {label}
+                           </span>
+                           <span className={containers["mobile-only"]}>
                               {mobileLabel}
                            </span>
                         </>

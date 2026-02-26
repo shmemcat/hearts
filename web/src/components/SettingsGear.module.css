@@ -1,0 +1,123 @@
+.wrap {
+   position: relative;
+   display: flex;
+   align-items: center;
+}
+
+.gearBtn {
+   width: 26px;
+   height: 26px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   border: 1px solid var(--infopillborder);
+   border-radius: 14px;
+   background: var(--infopillbg);
+   color: var(--infopilltext);
+   font-size: 0.85rem;
+   cursor: pointer;
+   backdrop-filter: blur(6px);
+   -webkit-backdrop-filter: blur(6px);
+   transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gearBtn:hover {
+   transform: scale(1.1);
+   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.drop {
+   position: absolute;
+   top: 100%;
+   right: 0;
+   transform: scale(0.92);
+   transform-origin: top right;
+   padding-top: 6px;
+   opacity: 0;
+   pointer-events: none;
+   transition: opacity 0.18s ease, transform 0.18s ease;
+   z-index: 50;
+}
+
+.wrap[data-modal-open="true"] .drop {
+   opacity: 1;
+   pointer-events: auto;
+   transform: scale(1);
+}
+
+.inner {
+   background: var(--mediumpink);
+   border-radius: 8px;
+   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+   padding: 6px;
+   display: flex;
+   flex-direction: column;
+   gap: 2px;
+   min-width: 130px;
+}
+
+.menuItem {
+   font-family: "appFont";
+   font-size: 12px;
+   font-weight: 700;
+   letter-spacing: 3px;
+   text-transform: uppercase;
+   color: var(--header);
+   text-decoration: none;
+   padding: 8px 16px;
+   border-radius: 10px;
+   transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+   white-space: nowrap;
+}
+
+.menuItem:hover {
+   color: var(--hoverpink);
+   background-color: var(--lightpink);
+}
+
+/* Overlay layer that sits outside AnimatePresence so the gear persists */
+.overlay {
+   position: absolute;
+   top: -16px;
+   left: 0;
+   right: 0;
+   pointer-events: none;
+   z-index: 2;
+}
+
+.overlayMirror {
+   width: 1030px;
+   margin: 0 auto;
+   position: relative;
+   margin-top: 20px;
+}
+
+.overlayGear {
+   position: absolute;
+   top: 72px;
+   right: 48px;
+   pointer-events: auto;
+}
+
+@media only screen and (min-width: 769px) and (max-width: 1085px) {
+   .overlayMirror {
+      width: 95vw;
+   }
+}
+
+@media only screen and (max-width: 768px) {
+   .overlay {
+      top: 8px;
+      right: 20px;
+   }
+
+   .overlayMirror {
+      width: 95vw;
+      margin-top: 0;
+   }
+
+   .overlayGear {
+      top: 50px;
+      right: 28px;
+   }
+}
