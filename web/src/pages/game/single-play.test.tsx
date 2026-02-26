@@ -1,7 +1,7 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, beforeEach, afterEach } from "vitest";
-import PlayGamePage from "./play";
+import PlayGamePage from "./single-play";
 import { renderWithProviders, createMockGameState } from "@/test/helpers";
 import type { PlayResponse } from "@/types/game";
 
@@ -14,6 +14,8 @@ vi.mock("@/lib/gameSocket", () => ({
    onTrickComplete: vi.fn(() => vi.fn()),
    onState: vi.fn(() => vi.fn()),
    onError: vi.fn(() => vi.fn()),
+   onDisconnect: vi.fn(() => vi.fn()),
+   onReconnect: vi.fn(() => vi.fn()),
    sendAdvance: vi.fn(),
    sendPlay: vi.fn(),
 }));
@@ -63,7 +65,7 @@ function makePlayingState() {
 async function renderAndWaitForPlayableHand() {
    const user = userEvent.setup();
    renderWithProviders(<PlayGamePage />, {
-      route: `/game/play?game_id=${GAME_ID}`,
+      route: `/game/single-play?game_id=${GAME_ID}`,
    });
    await screen.findByText("Your turn", {}, { timeout: 5000 });
    return user;

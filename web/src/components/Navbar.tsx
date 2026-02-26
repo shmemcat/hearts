@@ -35,6 +35,8 @@ interface IconAnimationProps {
 const FADE_IN_ROUTES = new Set([
    "/user",
    "/profile",
+   "/play",
+   "/leaderboard",
    "/game/create",
    "/game/join",
    "/about",

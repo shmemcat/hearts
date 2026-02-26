@@ -243,6 +243,8 @@ export type UserStatsResponse = {
    marathon: boolean;
    eclipse: boolean;
    heartbreaker: boolean;
+   monthly_star: boolean;
+   hall_of_fame: boolean;
 };
 
 export async function fetchStats(
@@ -372,4 +374,37 @@ export async function unlockAchievement(
       ok: true,
       newly_unlocked: (data as { newly_unlocked: string[] }).newly_unlocked,
    };
+}
+
+// ── Leaderboard ────────────────────────────────────────────────────────
+
+export type LeaderboardEntry = {
+   rank: number;
+   username: string;
+   profile_icon: string;
+   games_won: number;
+};
+
+export type LeaderboardResponse = {
+   monthly: LeaderboardEntry[];
+   all_time: LeaderboardEntry[];
+};
+
+export async function fetchLeaderboard(
+   category: string
+): Promise<
+   { ok: true; data: LeaderboardResponse } | { ok: false; error: string }
+> {
+   const res = await fetch(
+      `${base()}/leaderboard?category=${encodeURIComponent(category)}`
+   );
+   const data = await parseJson<LeaderboardResponse & GameApiError>(res);
+   if (!res.ok) {
+      return {
+         ok: false,
+         error:
+            (data as GameApiError).error ?? `Request failed (${res.status})`,
+      };
+   }
+   return { ok: true, data: data as LeaderboardResponse };
 }

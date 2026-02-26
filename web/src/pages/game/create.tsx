@@ -4,23 +4,14 @@ import React from "react";
 
 import { Button } from "@/components/Buttons";
 import { CreateGameSelections } from "@/components/CreateGameSelections";
-import { ActiveGameModal } from "@/components/game";
 import { LoginWarning } from "@/components/LoginWarning";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useHardLevel } from "@/context/HardLevelContext";
-import { startGame, checkActiveGame, concedeGame } from "@/lib/gameApi";
-import {
-   createLobby,
-   getLobbyState,
-   checkMultiplayerGameActive,
-} from "@/lib/lobbyApi";
-import {
-   findActiveMultiplayerSession,
-   clearMultiplayerSession,
-   type ActiveMultiplayerSession,
-} from "@/lib/multiplayerSession";
+import { useActiveGameModals } from "@/hooks/useActiveGameModals";
+import { startGame } from "@/lib/gameApi";
+import { createLobby } from "@/lib/lobbyApi";
 
 export default function CreateGamePage() {
    const navigate = useNavigate();
@@ -30,45 +21,7 @@ export default function CreateGamePage() {
    const [difficulty, setDifficulty] = React.useState("Easy");
    const [submitting, setSubmitting] = React.useState(false);
    const [error, setError] = React.useState<string | null>(null);
-   const [activeGameId, setActiveGameId] = React.useState<string | null>(null);
-   const [showActiveModal, setShowActiveModal] = React.useState(false);
-   const [multiSession, setMultiSession] =
-      React.useState<ActiveMultiplayerSession | null>(null);
-   const [showMultiModal, setShowMultiModal] = React.useState(false);
-
-   React.useEffect(() => {
-      if (!token) return;
-      checkActiveGame(token).then((res) => {
-         if (res.ok && res.game_id) {
-            setActiveGameId(res.game_id);
-            setShowActiveModal(true);
-         }
-      });
-   }, [token]);
-
-   React.useEffect(() => {
-      const session = findActiveMultiplayerSession();
-      if (!session) return;
-      if (session.type === "lobby") {
-         getLobbyState(session.code).then((res) => {
-            if (res.ok && res.data.status !== "finished") {
-               setMultiSession(session);
-               setShowMultiModal(true);
-            } else {
-               clearMultiplayerSession(session);
-            }
-         });
-      } else {
-         checkMultiplayerGameActive(session.gameId).then((active) => {
-            if (active) {
-               setMultiSession(session);
-               setShowMultiModal(true);
-            } else {
-               clearMultiplayerSession(session);
-            }
-         });
-      }
-   }, []);
+   const activeGameModals = useActiveGameModals();
 
    async function handleCreateGame() {
       setError(null);
@@ -108,7 +61,7 @@ export default function CreateGamePage() {
          );
          if (result.ok) {
             const gameId = result.data.game_id;
-            navigate(`/game/play?game_id=${encodeURIComponent(gameId)}`);
+            navigate(`/game/single-play?game_id=${encodeURIComponent(gameId)}`);
          } else {
             setError(result.error);
          }
@@ -117,13 +70,6 @@ export default function CreateGamePage() {
       } finally {
          setSubmitting(false);
       }
-   }
-
-   async function handleConcedeActive() {
-      if (!activeGameId) return;
-      await concedeGame(activeGameId, token);
-      setActiveGameId(null);
-      setShowActiveModal(false);
    }
 
    return (
@@ -162,59 +108,7 @@ export default function CreateGamePage() {
                </ButtonGroup>
             </div>
          </PageLayout>
-         {showActiveModal && activeGameId && (
-            <ActiveGameModal
-               onContinue={() =>
-                  navigate(
-                     `/game/play?game_id=${encodeURIComponent(activeGameId)}`
-                  )
-               }
-               onConcede={handleConcedeActive}
-            />
-         )}
-         {showMultiModal && multiSession && !showActiveModal && (
-            <ActiveGameModal
-               title={
-                  multiSession.type === "lobby" ? (
-                     "Lobby In Progress"
-                  ) : (
-                     <>
-                        Multiplayer Game
-                        <br />
-                        In Progress
-                     </>
-                  )
-               }
-               message={
-                  multiSession.type === "lobby"
-                     ? "You have an active lobby. Rejoin?"
-                     : "You have a multiplayer game in progress. Rejoin?"
-               }
-               continueLabel="Rejoin"
-               concedeLabel="Leave"
-               confirmMessage={
-                  multiSession.type === "lobby"
-                     ? "Are you sure you want to leave the lobby?"
-                     : "Are you sure you want to leave the game? Your seat will be taken over by a bot."
-               }
-               onContinue={() => {
-                  if (multiSession.type === "lobby") {
-                     navigate(`/game/lobby/${multiSession.code}`);
-                  } else {
-                     navigate(
-                        `/game/multi-play?game_id=${encodeURIComponent(
-                           multiSession.gameId
-                        )}`
-                     );
-                  }
-               }}
-               onConcede={() => {
-                  clearMultiplayerSession(multiSession);
-                  setMultiSession(null);
-                  setShowMultiModal(false);
-               }}
-            />
-         )}
+         {activeGameModals}
       </>
    );
 }

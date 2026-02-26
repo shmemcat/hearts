@@ -4,8 +4,6 @@ A full-stack, real-time implementation of the classic Hearts card game with sing
 
 **Live at [hearts.shmem.dev](https://hearts.shmem.dev/)**
 
-![CleanShot 2024-02-23 at 19 22 37](https://github.com/shmemcat/hearts/assets/14319144/cca909dc-1068-4f1a-ad17-b64400b8ff52)
-
 ## Features
 
 - **Single-player vs. AI** -- four difficulty levels from random play to Monte Carlo simulation

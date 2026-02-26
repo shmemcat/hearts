@@ -37,11 +37,11 @@ export default function Home() {
                </div>
 
                <div className={containers["menu-button-container"]}>
-                  <Link to="/game/create">
-                     <Button name="Create Game" />
+                  <Link to="/play">
+                     <Button name="Play" />
                   </Link>
-                  <Link to="/game/join">
-                     <Button name="Join Game" />
+                  <Link to="/leaderboard">
+                     <Button name="Leaderboard" />
                   </Link>
                   <Link to="/rules">
                      <Button name="Rules" />

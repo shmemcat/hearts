@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 from hearts.extensions import db
 from hearts.game.card import Card
 from hearts.lobby import get_lobby
-from hearts.models import ActiveGame, DifficultyStats
+from hearts.models import ActiveGame, DifficultyStats, GameResult
 from hearts.multiplayer_runner import MultiplayerRunner, SeatConfig
 from hearts.jwt_utils import get_current_user
 
@@ -339,6 +339,15 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
             stats.best_score = player_score
         if stats.worst_score is None or player_score > stats.worst_score:
             stats.worst_score = player_score
+
+        won = seat_idx in winners and len(winners) == 1
+        db.session.add(
+            GameResult(
+                user_id=user_id,
+                difficulty="multiplayer",
+                won=won,
+            )
+        )
 
     db.session.commit()
 

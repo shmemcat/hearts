@@ -21,6 +21,8 @@ import {
    faStopwatch,
    faEclipse,
    faHeartCrack,
+   faRankingStar,
+   faMedal,
 } from "@fortawesome/pro-solid-svg-icons";
 import type { UserStatsResponse } from "@/lib/gameApi";
 
@@ -254,6 +256,22 @@ const SECRET_ACHIEVEMENTS: AchievementDef[] = [
       singleName: "Heartbreaker",
       singleDescription: "Break hearts 5 times in one game",
    },
+   {
+      id: "monthly_star",
+      secret: true,
+      icon: faRankingStar,
+      tiers: null,
+      singleName: "Monthly Star",
+      singleDescription: "Finish a month in the top 10",
+   },
+   {
+      id: "hall_of_fame",
+      secret: true,
+      icon: faMedal,
+      tiers: null,
+      singleName: "Hall of Fame",
+      singleDescription: "Make the all-time top 10",
+   },
 ];
 
 export const ALL_ACHIEVEMENTS: AchievementDef[] = [
@@ -430,6 +448,8 @@ export function computeAchievements(
       { def: secretById.marathon, unlocked: stats.marathon },
       { def: secretById.eclipse, unlocked: stats.eclipse },
       { def: secretById.heartbreaker, unlocked: stats.heartbreaker },
+      { def: secretById.monthly_star, unlocked: stats.monthly_star },
+      { def: secretById.hall_of_fame, unlocked: stats.hall_of_fame },
    ];
 
    for (const { def, unlocked } of secretChecks) {

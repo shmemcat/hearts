@@ -39,12 +39,14 @@ from hearts.game_socket import register_game_socket  # noqa: E402
 from hearts.lobby_routes import lobby_bp  # noqa: E402
 from hearts.lobby_socket import register_lobby_socket  # noqa: E402
 from hearts.multiplayer_socket import register_multiplayer_socket  # noqa: E402
+from hearts.leaderboard_routes import leaderboard_bp  # noqa: E402
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(games_bp)
 app.register_blueprint(stats_bp)
 app.register_blueprint(prefs_bp)
 app.register_blueprint(lobby_bp)
+app.register_blueprint(leaderboard_bp)
 register_game_socket(socketio)
 register_lobby_socket(socketio)
 register_multiplayer_socket(socketio)

@@ -92,6 +92,12 @@ class UserStats(db.Model):
     heartbreaker = db.Column(
         db.Boolean, default=False, nullable=False, server_default="0"
     )
+    monthly_star = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+    hall_of_fame = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
 
     user = db.relationship("User", back_populates="stats")
 
@@ -125,6 +131,8 @@ class UserStats(db.Model):
             "marathon": self.marathon,
             "eclipse": self.eclipse,
             "heartbreaker": self.heartbreaker,
+            "monthly_star": self.monthly_star,
+            "hall_of_fame": self.hall_of_fame,
         }
 
 
@@ -223,6 +231,20 @@ class DifficultyStats(db.Model):
             "current_win_streak": self.current_win_streak,
             "max_win_streak": self.max_win_streak,
         }
+
+
+class GameResult(db.Model):
+    __tablename__ = "game_results"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), nullable=False, index=True
+    )
+    difficulty = db.Column(db.String(16), nullable=False, index=True)
+    won = db.Column(db.Boolean, default=False, nullable=False)
+    completed_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    user = db.relationship("User", backref=db.backref("game_results", lazy="dynamic"))
 
 
 class PasswordResetToken(db.Model):

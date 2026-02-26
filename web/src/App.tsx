@@ -21,9 +21,11 @@ import VerifyEmail from "@/pages/verify-email";
 import ResendVerification from "@/pages/resend-verification";
 import CreateGame from "@/pages/game/create";
 import JoinGame from "@/pages/game/join";
-import PlayGame from "@/pages/game/play";
+import PlayGame from "@/pages/game/single-play";
 import LobbyPage from "@/pages/game/lobby";
 import MultiPlayPage from "@/pages/game/multi-play";
+import PlayMenu from "@/pages/play";
+import Leaderboard from "@/pages/leaderboard";
 import NotFound from "@/pages/404";
 
 export default function App() {
@@ -80,6 +82,14 @@ export default function App() {
                                           element={<ResendVerification />}
                                        />
                                        <Route
+                                          path="/play"
+                                          element={<PlayMenu />}
+                                       />
+                                       <Route
+                                          path="/leaderboard"
+                                          element={<Leaderboard />}
+                                       />
+                                       <Route
                                           path="/game/create"
                                           element={<CreateGame />}
                                        />
@@ -88,7 +98,7 @@ export default function App() {
                                           element={<JoinGame />}
                                        />
                                        <Route
-                                          path="/game/play"
+                                          path="/game/single-play"
                                           element={<PlayGame />}
                                        />
                                        <Route

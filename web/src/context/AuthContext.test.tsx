@@ -65,6 +65,8 @@ describe("AuthContext", () => {
          id: "42",
          email: "alice@test.com",
          name: "alice",
+         profile_icon: "user",
+         email_verified: false,
       });
       expect(result.current.token).toBe(token);
    });

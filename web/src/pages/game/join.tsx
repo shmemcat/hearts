@@ -4,18 +4,12 @@ import React from "react";
 
 import { Button } from "@/components/Buttons";
 import { FormInput } from "@/components/FormInput";
-import { ActiveGameModal } from "@/components/game";
 import { LoginWarning } from "@/components/LoginWarning";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
-import { checkActiveGame, concedeGame } from "@/lib/gameApi";
-import { getLobbyState, checkMultiplayerGameActive } from "@/lib/lobbyApi";
-import {
-   findActiveMultiplayerSession,
-   clearMultiplayerSession,
-   type ActiveMultiplayerSession,
-} from "@/lib/multiplayerSession";
+import { useActiveGameModals } from "@/hooks/useActiveGameModals";
+import { getLobbyState } from "@/lib/lobbyApi";
 
 export default function JoinGamePage() {
    const navigate = useNavigate();
@@ -23,52 +17,7 @@ export default function JoinGamePage() {
    const [lobbyCode, setLobbyCode] = React.useState("");
    const [submitting, setSubmitting] = React.useState(false);
    const [error, setError] = React.useState<string | null>(null);
-   const [activeGameId, setActiveGameId] = React.useState<string | null>(null);
-   const [showActiveModal, setShowActiveModal] = React.useState(false);
-   const [multiSession, setMultiSession] =
-      React.useState<ActiveMultiplayerSession | null>(null);
-   const [showMultiModal, setShowMultiModal] = React.useState(false);
-
-   React.useEffect(() => {
-      if (!token) return;
-      checkActiveGame(token).then((res) => {
-         if (res.ok && res.game_id) {
-            setActiveGameId(res.game_id);
-            setShowActiveModal(true);
-         }
-      });
-   }, [token]);
-
-   React.useEffect(() => {
-      const session = findActiveMultiplayerSession();
-      if (!session) return;
-      if (session.type === "lobby") {
-         getLobbyState(session.code).then((res) => {
-            if (res.ok && res.data.status !== "finished") {
-               setMultiSession(session);
-               setShowMultiModal(true);
-            } else {
-               clearMultiplayerSession(session);
-            }
-         });
-      } else {
-         checkMultiplayerGameActive(session.gameId).then((active) => {
-            if (active) {
-               setMultiSession(session);
-               setShowMultiModal(true);
-            } else {
-               clearMultiplayerSession(session);
-            }
-         });
-      }
-   }, []);
-
-   async function handleConcedeActive() {
-      if (!activeGameId) return;
-      await concedeGame(activeGameId, token);
-      setActiveGameId(null);
-      setShowActiveModal(false);
-   }
+   const activeGameModals = useActiveGameModals();
 
    async function handleJoin() {
       const code = lobbyCode.trim().toUpperCase();
@@ -141,59 +90,7 @@ export default function JoinGamePage() {
                </Link>
             </ButtonGroup>
          </PageLayout>
-         {showActiveModal && activeGameId && (
-            <ActiveGameModal
-               onContinue={() =>
-                  navigate(
-                     `/game/play?game_id=${encodeURIComponent(activeGameId)}`
-                  )
-               }
-               onConcede={handleConcedeActive}
-            />
-         )}
-         {showMultiModal && multiSession && !showActiveModal && (
-            <ActiveGameModal
-               title={
-                  multiSession.type === "lobby" ? (
-                     "Lobby In Progress"
-                  ) : (
-                     <>
-                        Multiplayer Game
-                        <br />
-                        In Progress
-                     </>
-                  )
-               }
-               message={
-                  multiSession.type === "lobby"
-                     ? "You have an active lobby. Rejoin?"
-                     : "You have a multiplayer game in progress. Rejoin?"
-               }
-               continueLabel="Rejoin"
-               concedeLabel="Leave"
-               confirmMessage={
-                  multiSession.type === "lobby"
-                     ? "Are you sure you want to leave the lobby?"
-                     : "Are you sure you want to leave the game? Your seat will be taken over by a bot."
-               }
-               onContinue={() => {
-                  if (multiSession.type === "lobby") {
-                     navigate(`/game/lobby/${multiSession.code}`);
-                  } else {
-                     navigate(
-                        `/game/multi-play?game_id=${encodeURIComponent(
-                           multiSession.gameId
-                        )}`
-                     );
-                  }
-               }}
-               onConcede={() => {
-                  clearMultiplayerSession(multiSession);
-                  setMultiSession(null);
-                  setShowMultiModal(false);
-               }}
-            />
-         )}
+         {activeGameModals}
       </>
    );
 }

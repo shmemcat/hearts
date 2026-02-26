@@ -88,8 +88,8 @@ describe("InfoModal", () => {
          />
       );
       const rows = screen.getAllByRole("row").slice(1); // skip header
-      const names = rows.map(
-         (r) => (r as HTMLTableRowElement).cells[0].textContent
+      const names = rows.map((r) =>
+         (r as HTMLTableRowElement).cells[0].textContent?.trim()
       );
       expect(names).toEqual(["Alice", "You", "Carol", "Bob"]);
    });

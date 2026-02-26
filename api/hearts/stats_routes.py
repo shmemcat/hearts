@@ -1,7 +1,13 @@
 from flask import Blueprint, request, jsonify, g
 
 from hearts.extensions import db
-from hearts.models import ActiveGame, DifficultyStats, DIFFICULTY_TO_CATEGORY, UserStats
+from hearts.models import (
+    ActiveGame,
+    DifficultyStats,
+    GameResult,
+    DIFFICULTY_TO_CATEGORY,
+    UserStats,
+)
 from hearts.jwt_utils import require_jwt
 
 stats_bp = Blueprint("stats", __name__, url_prefix="/stats")
@@ -31,6 +37,34 @@ def _get_or_create_difficulty_stats(user_id: int, category: str) -> DifficultySt
         db.session.add(ds)
         db.session.flush()
     return ds
+
+
+def _is_in_all_time_top_10(user_id: int, difficulty: str, category: str) -> bool:
+    """Check if a user is now in the all-time top 10 for a given category."""
+    if difficulty in ("hard", "harder", "hardest"):
+        col_map = {
+            "hard": UserStats.hard_wins,
+            "harder": UserStats.harder_wins,
+            "hardest": UserStats.hardest_wins,
+        }
+        col = col_map[difficulty]
+        user_val = getattr(
+            UserStats.query.filter_by(user_id=user_id).first(), difficulty + "_wins", 0
+        )
+        count_above = UserStats.query.filter(
+            col > user_val, UserStats.user_id != user_id
+        ).count()
+        return count_above < 10
+    else:
+        ds = DifficultyStats.query.filter_by(user_id=user_id, category=category).first()
+        if not ds:
+            return False
+        count_above = DifficultyStats.query.filter(
+            DifficultyStats.category == category,
+            DifficultyStats.games_won > ds.games_won,
+            DifficultyStats.user_id != user_id,
+        ).count()
+        return count_above < 10
 
 
 def _compute_newly_unlocked(
@@ -104,6 +138,8 @@ def _compute_newly_unlocked(
         "marathon",
         "eclipse",
         "heartbreaker",
+        "monthly_star",
+        "hall_of_fame",
     ]
     for field in bool_fields:
         if not old_snapshot.get(field) and getattr(stats, field):
@@ -206,6 +242,8 @@ def record_game():
         "marathon": stats.marathon,
         "eclipse": stats.eclipse,
         "heartbreaker": stats.heartbreaker,
+        "monthly_star": stats.monthly_star,
+        "hall_of_fame": stats.hall_of_fame,
     }
 
     stats.games_played += 1
@@ -277,6 +315,20 @@ def record_game():
             ds.max_win_streak = ds.current_win_streak
     else:
         ds.current_win_streak = 0
+
+    # ── Game result log (for leaderboard) ──────────────────────────────
+    db.session.add(
+        GameResult(
+            user_id=g.current_user.id,
+            difficulty=difficulty,
+            won=won,
+        )
+    )
+
+    # ── Hall of Fame achievement ────────────────────────────────────────
+    if won and not stats.hall_of_fame:
+        if _is_in_all_time_top_10(g.current_user.id, difficulty, category):
+            stats.hall_of_fame = True
 
     newly_unlocked = _compute_newly_unlocked(old_snapshot, stats, won, final_score)
 
