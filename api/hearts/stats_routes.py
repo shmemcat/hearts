@@ -1,3 +1,5 @@
+from datetime import date
+
 from flask import Blueprint, request, jsonify, g
 
 from hearts.extensions import db
@@ -9,6 +11,30 @@ from hearts.models import (
     UserStats,
 )
 from hearts.jwt_utils import require_jwt
+
+
+def _easter_date(year: int) -> date:
+    """Compute Easter Sunday for *year* using the Anonymous Gregorian algorithm."""
+    a = year % 19
+    b, c = divmod(year, 100)
+    d, e = divmod(b, 4)
+    f = (b + 8) // 25
+    g_ = (b - f + 1) // 3
+    h = (19 * a + b - d - g_ + 15) % 30
+    i, k = divmod(c, 4)
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month, day = divmod(h + l - 7 * m + 114, 31)
+    return date(year, month, day + 1)
+
+
+def _thanksgiving_date(year: int) -> date:
+    """Return Thanksgiving (4th Thursday of November) for *year*."""
+    # Nov 1 weekday: 0=Mon … 6=Sun
+    first = date(year, 11, 1)
+    thu_offset = (3 - first.weekday()) % 7
+    return date(year, 11, 1 + thu_offset + 21)
+
 
 stats_bp = Blueprint("stats", __name__, url_prefix="/stats")
 
@@ -132,6 +158,13 @@ def _compute_newly_unlocked(
         "double_moon",
         "early_bird",
         "lonely_heart",
+        "new_year",
+        "lucky_clover",
+        "easter_egg",
+        "fireworks",
+        "spooky",
+        "thankful",
+        "christmas_spirit",
         "photo_finish",
         "demolition",
         "speed_demon",
@@ -209,12 +242,27 @@ def record_game():
     started_after_midnight = False
     started_early_morning = False
     is_valentines = False
+    is_new_year = False
+    is_st_patricks = False
+    is_easter = False
+    is_independence = False
+    is_halloween = False
+    is_thanksgiving = False
+    is_christmas = False
     if active_game and active_game.created_at:
         hour = active_game.created_at.hour
         started_after_midnight = hour < 5
         started_early_morning = 5 <= hour < 8
         started_dt = active_game.created_at
-        is_valentines = started_dt.month == 2 and started_dt.day == 14
+        m, d, y = started_dt.month, started_dt.day, started_dt.year
+        is_valentines = m == 2 and d == 14
+        is_new_year = m == 1 and d == 1
+        is_st_patricks = m == 3 and d == 17
+        is_easter = date(y, m, d) == _easter_date(y)
+        is_independence = m == 7 and d == 4
+        is_halloween = m == 10 and d == 31
+        is_thanksgiving = date(y, m, d) == _thanksgiving_date(y)
+        is_christmas = m == 12 and d == 25
 
     if active_game:
         db.session.delete(active_game)
@@ -247,6 +295,13 @@ def record_game():
         "heartbreaker": stats.heartbreaker,
         "monthly_star": stats.monthly_star,
         "hall_of_fame": stats.hall_of_fame,
+        "new_year": stats.new_year,
+        "lucky_clover": stats.lucky_clover,
+        "easter_egg": stats.easter_egg,
+        "fireworks": stats.fireworks,
+        "spooky": stats.spooky,
+        "thankful": stats.thankful,
+        "christmas_spirit": stats.christmas_spirit,
     }
 
     stats.games_played += 1
@@ -284,12 +339,26 @@ def record_game():
         stats.early_bird = True
     if is_valentines and not stats.lonely_heart:
         stats.lonely_heart = True
+    if is_new_year and not stats.new_year:
+        stats.new_year = True
+    if is_st_patricks and not stats.lucky_clover:
+        stats.lucky_clover = True
+    if is_easter and not stats.easter_egg:
+        stats.easter_egg = True
+    if is_independence and not stats.fireworks:
+        stats.fireworks = True
+    if is_halloween and not stats.spooky:
+        stats.spooky = True
+    if is_thanksgiving and not stats.thankful:
+        stats.thankful = True
+    if is_christmas and not stats.christmas_spirit:
+        stats.christmas_spirit = True
     if won and opponent_scores and not stats.photo_finish:
         margin = min(opponent_scores) - final_score
         if margin == 1:
             stats.photo_finish = True
     if won and opponent_scores and not stats.demolition:
-        if max(opponent_scores) >= 100:
+        if all(s >= 100 for s in opponent_scores):
             stats.demolition = True
     if won and round_count > 0 and round_count <= 4 and not stats.speed_demon:
         stats.speed_demon = True

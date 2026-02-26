@@ -245,6 +245,13 @@ export type UserStatsResponse = {
    heartbreaker: boolean;
    monthly_star: boolean;
    hall_of_fame: boolean;
+   new_year: boolean;
+   lucky_clover: boolean;
+   easter_egg: boolean;
+   fireworks: boolean;
+   spooky: boolean;
+   thankful: boolean;
+   christmas_spirit: boolean;
 };
 
 export async function fetchStats(

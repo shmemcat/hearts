@@ -98,6 +98,19 @@ class UserStats(db.Model):
     hall_of_fame = db.Column(
         db.Boolean, default=False, nullable=False, server_default="0"
     )
+    new_year = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+    lucky_clover = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+    easter_egg = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+    fireworks = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+    spooky = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+    thankful = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+    christmas_spirit = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
 
     user = db.relationship("User", back_populates="stats")
 
@@ -133,6 +146,13 @@ class UserStats(db.Model):
             "heartbreaker": self.heartbreaker,
             "monthly_star": self.monthly_star,
             "hall_of_fame": self.hall_of_fame,
+            "new_year": self.new_year,
+            "lucky_clover": self.lucky_clover,
+            "easter_egg": self.easter_egg,
+            "fireworks": self.fireworks,
+            "spooky": self.spooky,
+            "thankful": self.thankful,
+            "christmas_spirit": self.christmas_spirit,
         }
 
 
