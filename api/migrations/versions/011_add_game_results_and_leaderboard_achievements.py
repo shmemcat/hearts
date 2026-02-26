@@ -30,11 +30,15 @@ def upgrade():
 
     op.add_column(
         "user_stats",
-        sa.Column("monthly_star", sa.Boolean, nullable=False, server_default="0"),
+        sa.Column(
+            "monthly_star", sa.Boolean, nullable=False, server_default=sa.text("false")
+        ),
     )
     op.add_column(
         "user_stats",
-        sa.Column("hall_of_fame", sa.Boolean, nullable=False, server_default="0"),
+        sa.Column(
+            "hall_of_fame", sa.Boolean, nullable=False, server_default=sa.text("false")
+        ),
     )
 
     # Backfill: seed GameResult rows from existing aggregate stats so the
@@ -58,7 +62,7 @@ def upgrade():
             conn.execute(
                 sa.text(
                     "INSERT INTO game_results (user_id, difficulty, won, completed_at) "
-                    "VALUES (:uid, :diff, 1, :ts)"
+                    "VALUES (:uid, :diff, true, :ts)"
                 ),
                 {"uid": user_id, "diff": diff, "ts": now},
             )
@@ -81,7 +85,7 @@ def upgrade():
                 conn.execute(
                     sa.text(
                         "INSERT INTO game_results (user_id, difficulty, won, completed_at) "
-                        "VALUES (:uid, :diff, 1, :ts)"
+                        "VALUES (:uid, :diff, true, :ts)"
                     ),
                     {"uid": user_id, "diff": diff, "ts": now},
                 )
