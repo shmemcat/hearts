@@ -563,3 +563,98 @@ class TestDeleteAccount:
         )
         assert r.status_code == 200
         assert PasswordResetToken.query.filter_by(user_id=user.id).first() is None
+
+
+# -----------------------------------------------------------------------------
+# PATCH /profile
+# -----------------------------------------------------------------------------
+
+
+class TestUpdateProfile:
+    def _login_token(self, client):
+        _register_and_verify(client)
+        r = client.post("/login", json={"username": "alice", "password": "password123"})
+        return r.get_json()["token"]
+
+    def test_change_icon(self, auth_client):
+        token = self._login_token(auth_client)
+        r = auth_client.patch(
+            "/profile",
+            json={"profile_icon": "cat"},
+            headers=auth_headers(token),
+        )
+        assert r.status_code == 200
+        assert r.get_json()["user"]["profile_icon"] == "cat"
+
+    def test_invalid_icon_rejected(self, auth_client):
+        token = self._login_token(auth_client)
+        r = auth_client.patch(
+            "/profile",
+            json={"profile_icon": "robot"},
+            headers=auth_headers(token),
+        )
+        assert r.status_code == 400
+        assert "Invalid" in r.get_json()["error"]
+
+    def test_empty_body_rejected(self, auth_client):
+        token = self._login_token(auth_client)
+        r = auth_client.patch(
+            "/profile",
+            json={},
+            headers=auth_headers(token),
+        )
+        assert r.status_code == 400
+        assert "No changes" in r.get_json()["error"]
+
+    def test_requires_auth(self, auth_client):
+        r = auth_client.patch("/profile", json={"profile_icon": "cat"})
+        assert r.status_code == 401
+
+    @patch("hearts.auth_routes.send_verification_email")
+    def test_change_email(self, mock_send, auth_client):
+        token = self._login_token(auth_client)
+        r = auth_client.patch(
+            "/profile",
+            json={"email": "newalice@example.com"},
+            headers=auth_headers(token),
+        )
+        assert r.status_code == 200
+        user_data = r.get_json()["user"]
+        assert user_data["email"] == "newalice@example.com"
+        assert user_data["email_verified"] is False
+        mock_send.assert_called_once()
+
+    def test_change_email_invalid(self, auth_client):
+        token = self._login_token(auth_client)
+        r = auth_client.patch(
+            "/profile",
+            json={"email": "not-an-email"},
+            headers=auth_headers(token),
+        )
+        assert r.status_code == 400
+
+    @patch("hearts.auth_routes.send_verification_email")
+    def test_change_email_duplicate(self, mock_send, auth_client):
+        _register(auth_client, username="bob", email="bob@example.com")
+        token = self._login_token(auth_client)
+        r = auth_client.patch(
+            "/profile",
+            json={"email": "bob@example.com"},
+            headers=auth_headers(token),
+        )
+        assert r.status_code == 409
+
+    def test_icon_persists_across_requests(self, auth_client):
+        token = self._login_token(auth_client)
+        auth_client.patch(
+            "/profile",
+            json={"profile_icon": "dragon"},
+            headers=auth_headers(token),
+        )
+        r = auth_client.get("/me", headers=auth_headers(token))
+        assert r.get_json()["user"]["profile_icon"] == "dragon"
+
+    def test_default_icon_is_user(self, auth_client):
+        token = self._login_token(auth_client)
+        r = auth_client.get("/me", headers=auth_headers(token))
+        assert r.get_json()["user"]["profile_icon"] == "user"
