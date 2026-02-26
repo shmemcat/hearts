@@ -6,6 +6,7 @@ import { faCrown, faCopy, faCheck } from "@fortawesome/pro-solid-svg-icons";
 
 import { Button } from "@/components/Buttons";
 import { BotDifficultyModal } from "@/components/game/BotDifficultyModal";
+import { PlayerIcon } from "@/components/game/PlayerIcon";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
@@ -180,8 +181,8 @@ export default function LobbyPage() {
    const handleJoin = useCallback(() => {
       const name = joinName.trim();
       if (!name) return;
-      sendJoin(name);
-   }, [joinName]);
+      sendJoin(name, user?.profile_icon);
+   }, [joinName, user?.profile_icon]);
 
    const handleLeave = useCallback(() => {
       sendLeave();
@@ -355,7 +356,14 @@ export default function LobbyPage() {
                      <span className={styles.waitingDots} />
                   </>
                ) : (
-                  seat.name ?? "—"
+                  <>
+                     <PlayerIcon
+                        name={seat.name ?? ""}
+                        icon={seat.icon}
+                        size={14}
+                     />{" "}
+                     {seat.name ?? "—"}
+                  </>
                )}
                {seatIsHost && (
                   <FontAwesomeIcon

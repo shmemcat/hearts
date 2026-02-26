@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import party from "party-js";
 
 import { Button } from "@/components/Buttons";
+import { PlayerIcon } from "./PlayerIcon";
 import type { GamePlayer } from "@/types/game";
 import styles from "@/styles/play.module.css";
 
@@ -62,7 +63,14 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
                                  isWinner ? styles.scoreTableWinner : ""
                               }
                            >
-                              <td>{p.name}</td>
+                              <td>
+                                 <PlayerIcon
+                                    name={p.name}
+                                    icon={p.icon}
+                                    size={13}
+                                 />{" "}
+                                 {p.name}
+                              </td>
                               <td>{p.score}</td>
                            </tr>
                         );

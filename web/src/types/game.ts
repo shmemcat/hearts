@@ -9,6 +9,7 @@ export type GamePlayer = {
    name: string;
    score: number;
    card_count: number;
+   icon?: string;
 };
 
 export type CurrentTrickSlot = {

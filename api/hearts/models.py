@@ -11,6 +11,9 @@ class User(db.Model):
     username = db.Column(db.String(64), unique=True, nullable=False, index=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
+    profile_icon = db.Column(
+        db.String(64), default="user", nullable=False, server_default="user"
+    )
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
     verification_token = db.Column(db.String(64), unique=True, index=True)
     verification_expires = db.Column(db.DateTime)
@@ -27,6 +30,7 @@ class User(db.Model):
             "email": self.email,
             "name": self.username,
             "email_verified": self.email_verified,
+            "profile_icon": self.profile_icon,
             "preferences": self.preferences.to_dict() if self.preferences else None,
         }
 

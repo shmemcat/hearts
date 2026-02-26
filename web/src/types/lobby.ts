@@ -8,6 +8,7 @@ export type LobbySeat = {
    index: number;
    status: SeatStatus;
    name?: string;
+   icon?: string;
 };
 
 export type LobbyState = {

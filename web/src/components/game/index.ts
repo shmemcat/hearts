@@ -4,6 +4,7 @@ export { ConcedeButton, ConcedeModal } from "./ConcedeModal";
 export { GameOverBlock } from "./GameOverBlock";
 export { HeartIcon } from "./HeartIcon";
 export { GameSeat } from "./GameSeat";
+export { PlayerIcon } from "./PlayerIcon";
 export { Hand } from "./Hand";
 export { InfoButton, InfoModal } from "./InfoModal";
 export { InfoPill } from "./InfoPill";

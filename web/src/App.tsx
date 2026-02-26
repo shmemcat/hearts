@@ -12,6 +12,7 @@ import Home from "@/pages/index";
 import User from "@/pages/user";
 import About from "@/pages/about";
 import Options from "@/pages/options";
+import Profile from "@/pages/profile";
 import Rules from "@/pages/rules";
 import Register from "@/pages/register";
 import ForgotPassword from "@/pages/forgot-password";
@@ -49,6 +50,10 @@ export default function App() {
                                        <Route
                                           path="/options"
                                           element={<Options />}
+                                       />
+                                       <Route
+                                          path="/profile"
+                                          element={<Profile />}
                                        />
                                        <Route
                                           path="/rules"

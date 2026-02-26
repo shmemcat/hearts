@@ -1,6 +1,7 @@
 import React from "react";
 
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { PlayerIcon } from "./PlayerIcon";
 import styles from "./GameSeat.module.css";
 
 export interface GameSeatProps {
@@ -20,6 +21,8 @@ export interface GameSeatProps {
    showHearts: boolean;
    /** Number of hearts won this round so far. */
    heartCount: number;
+   /** Profile icon key for this player. */
+   icon?: string;
 }
 
 /** Animates an integer counting up (or down) to `target` over `duration` ms. */
@@ -65,6 +68,7 @@ export const GameSeat: React.FC<GameSeatProps> = ({
    isCurrentTurn,
    showHearts,
    heartCount,
+   icon,
 }) => {
    const isMobile = useIsMobile();
    const displayedHeartCount = useCountUp(heartCount);
@@ -99,7 +103,10 @@ export const GameSeat: React.FC<GameSeatProps> = ({
             isCurrentTurn ? styles.gameTableSeatYourTurn : ""
          }`}
       >
-         <span className={styles.gameTableSeatName}>{name}</span>
+         <span className={styles.gameTableSeatName}>
+            <PlayerIcon name={name} icon={icon} className={styles.seatIcon} />
+            {name}
+         </span>
          <span className={styles.gameTableSeatScore}>
             {score}
             {showHearts && (

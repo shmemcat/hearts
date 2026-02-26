@@ -26,6 +26,7 @@ class Seat:
     player_token: Optional[str] = None
     sid: Optional[str] = None
     is_ai: bool = False
+    icon: str = "user"
 
 
 @dataclass
@@ -49,9 +50,18 @@ class Lobby:
             if seat is None:
                 seats.append({"index": i, "status": "empty"})
             elif seat.is_ai:
-                seats.append({"index": i, "status": "ai", "name": seat.name})
+                seats.append(
+                    {"index": i, "status": "ai", "name": seat.name, "icon": "robot"}
+                )
             else:
-                seats.append({"index": i, "status": "human", "name": seat.name})
+                seats.append(
+                    {
+                        "index": i,
+                        "status": "human",
+                        "name": seat.name,
+                        "icon": seat.icon,
+                    }
+                )
         return {
             "code": self.code,
             "host_token": self.host_token,
@@ -76,7 +86,7 @@ def cleanup_expired() -> None:
         _lobbies.pop(code, None)
 
 
-def create_lobby(host_name: str, num_ai: int = 0) -> Lobby:
+def create_lobby(host_name: str, num_ai: int = 0, host_icon: str = "user") -> Lobby:
     """Create a new lobby. Host gets seat 0. AI fills counter-clockwise (3, 2, 1)."""
     cleanup_expired()
 
@@ -91,13 +101,13 @@ def create_lobby(host_name: str, num_ai: int = 0) -> Lobby:
 
     host_token = uuid.uuid4().hex
     lobby = Lobby(code=code, host_token=host_token)
-    lobby.seats[0] = Seat(name=host_name, player_token=host_token)
+    lobby.seats[0] = Seat(name=host_name, player_token=host_token, icon=host_icon)
     lobby.player_tokens[host_token] = 0
 
     ai_order = [3, 2, 1]
     for i in range(min(num_ai, 3)):
         seat_idx = ai_order[i]
-        lobby.seats[seat_idx] = Seat(name=f"Bot {i + 1}", is_ai=True)
+        lobby.seats[seat_idx] = Seat(name=f"Bot {i + 1}", is_ai=True, icon="robot")
 
     _lobbies[code] = lobby
     return lobby
@@ -113,7 +123,7 @@ def get_lobby(code: str) -> Optional[Lobby]:
     return lobby
 
 
-def join_lobby(code: str, name: str) -> Tuple[int, str]:
+def join_lobby(code: str, name: str, icon: str = "user") -> Tuple[int, str]:
     """Join a lobby. Returns (seat_index, player_token). Raises ValueError on failure."""
     lobby = get_lobby(code)
     if lobby is None:
@@ -139,7 +149,7 @@ def join_lobby(code: str, name: str) -> Tuple[int, str]:
         raise ValueError("Lobby is full")
 
     token = uuid.uuid4().hex
-    lobby.seats[target] = Seat(name=name, player_token=token)
+    lobby.seats[target] = Seat(name=name, player_token=token, icon=icon)
     lobby.player_tokens[token] = target
     lobby.touch()
     return target, token
@@ -210,7 +220,7 @@ def start_game(code: str, difficulty: str) -> str:
     bot_num = 1
     for i in range(4):
         if lobby.seats[i] is None:
-            lobby.seats[i] = Seat(name=f"Bot {bot_num}", is_ai=True)
+            lobby.seats[i] = Seat(name=f"Bot {bot_num}", is_ai=True, icon="robot")
             bot_num += 1
         elif lobby.seats[i].is_ai:
             bot_num += 1

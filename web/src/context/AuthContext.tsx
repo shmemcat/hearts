@@ -3,7 +3,13 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api";
 import { STORAGE_KEY } from "@/lib/constants";
 
-type User = { id: string; email: string; name?: string };
+type User = {
+   id: string;
+   email: string;
+   name?: string;
+   profile_icon?: string;
+   email_verified?: boolean;
+};
 
 export type UserPreferences = {
    card_style: string;
@@ -48,6 +54,7 @@ function isTokenExpired(token: string): boolean {
 type AuthContextValue = AuthState & {
    login: (email: string, password: string) => Promise<{ error?: string }>;
    logout: () => void;
+   updateUser: (partial: Partial<User>) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -88,6 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                      email: data.user.email,
                      name:
                         data.user.username ?? data.user.name ?? data.user.email,
+                     profile_icon: data.user.profile_icon ?? "user",
+                     email_verified: data.user.email_verified ?? false,
                   },
                   token,
                   preferences: data.user.preferences ?? null,
@@ -159,6 +168,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             id: String(user.id),
             email: user.email,
             name: user.username ?? user.name ?? user.email,
+            profile_icon: user.profile_icon ?? "user",
+            email_verified: user.email_verified ?? false,
          },
          token,
          preferences: user.preferences ?? null,
@@ -177,7 +188,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
    };
 
-   const value: AuthContextValue = { ...state, login, logout };
+   const updateUser = (partial: Partial<User>) => {
+      setState((prev) => {
+         if (!prev.user) return prev;
+         return { ...prev, user: { ...prev.user, ...partial } };
+      });
+   };
+
+   const value: AuthContextValue = { ...state, login, logout, updateUser };
 
    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

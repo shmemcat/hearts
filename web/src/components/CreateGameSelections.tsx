@@ -69,16 +69,11 @@ export const CreateGameSelections: React.FC<CreateGameSelectionsProps> = ({
             />
          ) : gameType === "Online" ? (
             <div className="pt-4">
-               <Tooltip
-                  content="Remaining spots will be backfilled by bots"
-                  side="bottom"
-               >
-                  <p className="text-sm opacity-70 cursor-default inline-block">
-                     Invite friends via the lobby link or code.
-                     <br />
-                     Empty seats are filled by bots.
-                  </p>
-               </Tooltip>
+               <p className="text-sm opacity-70 cursor-default inline-block">
+                  Invite friends via the lobby link or code.
+                  <br />
+                  Empty seats are filled by bots.
+               </p>
             </div>
          ) : null}
       </>

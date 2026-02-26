@@ -15,6 +15,7 @@ import {
    InfoPill,
    MobileGameTable,
    PhaseHint,
+   PlayerIcon,
    RoundSummaryOverlay,
    ShootTheMoonOverlay,
    Trick,
@@ -94,7 +95,7 @@ export default function PlayGamePage() {
    const [roundSummary, setRoundSummary] = useState<{
       deltas: number[];
       round: number;
-      players: { name: string; score: number }[];
+      players: { name: string; score: number; icon?: string }[];
    } | null>(null);
    const [passTransition, setPassTransition] = useState<{
       phase: "exiting" | "gap" | "entering";
@@ -158,9 +159,10 @@ export default function PlayGamePage() {
          roundPendingStateRef.current = pending;
          const currentRound = stateRef.current?.round ?? 1;
          const roundPlayers = pending.players.map(
-            (p: { name: string; score: number }) => ({
+            (p: { name: string; score: number; icon?: string }) => ({
                name: p.name,
                score: p.score,
+               icon: p.icon,
             })
          );
 
@@ -593,7 +595,11 @@ export default function PlayGamePage() {
          shooterIndex: shooterIdx,
          deltas: heartsPerPlayer.map((_, i) => (i === shooterIdx ? 0 : 26)),
          round: currentRound ?? 1,
-         players: state.players.map((p) => ({ name: p.name, score: p.score })),
+         players: state.players.map((p) => ({
+            name: p.name,
+            score: p.score,
+            icon: p.icon,
+         })),
       });
    }, [heartsPerPlayer, state, currentRound]);
 
@@ -1083,7 +1089,14 @@ export default function PlayGamePage() {
                                                 : ""
                                           }
                                        >
-                                          <td>{p.name}</td>
+                                          <td>
+                                             <PlayerIcon
+                                                name={p.name}
+                                                icon={p.icon}
+                                                size={13}
+                                             />{" "}
+                                             {p.name}
+                                          </td>
                                           <td>{p.score}</td>
                                        </tr>
                                     ))}
@@ -1117,6 +1130,7 @@ export default function PlayGamePage() {
                                  isCurrentTurn: seatIsCurrentTurn(0),
                                  showHearts: !!showHeartsOnSeats,
                                  heartCount: heartsPerPlayer[0],
+                                 icon: state.players[0]?.icon,
                               },
                               {
                                  name: state.players[1]?.name ?? "—",
@@ -1129,6 +1143,7 @@ export default function PlayGamePage() {
                                  isCurrentTurn: seatIsCurrentTurn(1),
                                  showHearts: !!showHeartsOnSeats,
                                  heartCount: heartsPerPlayer[1],
+                                 icon: state.players[1]?.icon,
                               },
                               {
                                  name: state.players[2]?.name ?? "—",
@@ -1141,6 +1156,7 @@ export default function PlayGamePage() {
                                  isCurrentTurn: seatIsCurrentTurn(2),
                                  showHearts: !!showHeartsOnSeats,
                                  heartCount: heartsPerPlayer[2],
+                                 icon: state.players[2]?.icon,
                               },
                               {
                                  name: state.players[3]?.name ?? "—",
@@ -1153,6 +1169,7 @@ export default function PlayGamePage() {
                                  isCurrentTurn: seatIsCurrentTurn(3),
                                  showHearts: !!showHeartsOnSeats,
                                  heartCount: heartsPerPlayer[3],
+                                 icon: state.players[3]?.icon,
                               },
                            ]}
                            trickSlots={slots}
@@ -1190,6 +1207,7 @@ export default function PlayGamePage() {
                               isCurrentTurn={seatIsCurrentTurn(2)}
                               showHearts={!!showHeartsOnSeats}
                               heartCount={heartsPerPlayer[2]}
+                              icon={state.players[2]?.icon}
                            />
                            {/* Left (player 1) */}
                            <GameSeat
@@ -1203,6 +1221,7 @@ export default function PlayGamePage() {
                               isCurrentTurn={seatIsCurrentTurn(1)}
                               showHearts={!!showHeartsOnSeats}
                               heartCount={heartsPerPlayer[1]}
+                              icon={state.players[1]?.icon}
                            />
                            {/* Center: trick + hearts icon */}
                            <div className={styles.tableCenter}>
@@ -1243,6 +1262,7 @@ export default function PlayGamePage() {
                               isCurrentTurn={seatIsCurrentTurn(3)}
                               showHearts={!!showHeartsOnSeats}
                               heartCount={heartsPerPlayer[3]}
+                              icon={state.players[3]?.icon}
                            />
                            {/* Bottom (player 0 = human) */}
                            <GameSeat
@@ -1256,6 +1276,7 @@ export default function PlayGamePage() {
                               isCurrentTurn={seatIsCurrentTurn(0)}
                               showHearts={!!showHeartsOnSeats}
                               heartCount={heartsPerPlayer[0]}
+                              icon={state.players[0]?.icon}
                            />
                         </div>
                      )}

@@ -145,9 +145,10 @@ def register_lobby_socket(socketio):
         if not name:
             emit("error", {"message": "Name is required"}, namespace="/lobby")
             return
+        icon = (data.get("icon") if isinstance(data, dict) else "") or "user"
 
         try:
-            seat_idx, token = join_lobby(code, name)
+            seat_idx, token = join_lobby(code, name, icon=icon)
         except ValueError as e:
             emit("error", {"message": str(e)}, namespace="/lobby")
             return
@@ -255,6 +256,7 @@ def register_lobby_socket(socketio):
                         "name": seat.name,
                         "is_ai": seat.is_ai,
                         "player_token": seat.player_token,
+                        "icon": seat.icon,
                     }
                 )
 

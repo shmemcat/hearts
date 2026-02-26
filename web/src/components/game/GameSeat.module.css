@@ -29,7 +29,15 @@
    margin-left: 77px;
 }
 
+.seatIcon {
+   font-size: 0.85em;
+   opacity: 0.8;
+   margin-right: 5px;
+}
+
 .gameTableSeatName {
+   display: inline-flex;
+   align-items: center;
    font-weight: 600;
    font-size: 0.95rem;
    color: var(--header);

@@ -14,7 +14,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 import { faUser as farUser } from "@fortawesome/pro-regular-svg-icons";
 import {
-   faUser as fasUser,
    faMoon as fasMoon,
    faSunBright as fasSunBright,
    faMusicNote as fasMusicNote,
@@ -25,6 +24,7 @@ import {
    faMusicSlash as fasMusicSlash,
 } from "@fortawesome/pro-solid-svg-icons";
 import { HeartIcon } from "@/components/game";
+import { getProfileIcon } from "@/lib/profileIcons";
 
 /** Props passed to FontAwesomeIcon for icon-select-bounce (CSS .icon[clicked="1"]) */
 interface IconAnimationProps {
@@ -34,6 +34,7 @@ interface IconAnimationProps {
 
 const FADE_IN_ROUTES = new Set([
    "/user",
+   "/profile",
    "/game/create",
    "/game/join",
    "/about",
@@ -115,6 +116,8 @@ const UserButton: React.FC = () => {
    const [animation, setAnimation] = React.useState(0);
    const { user } = useAuth();
 
+   const icon = user ? getProfileIcon(user.profile_icon) : farUser;
+
    const onClickHandler = () => {
       setAnimation(1);
    };
@@ -129,7 +132,7 @@ const UserButton: React.FC = () => {
             >
                <FontAwesomeIcon
                   className="icon"
-                  icon={user ? fasUser : farUser}
+                  icon={icon}
                   {...({
                      clicked: animation,
                      onAnimationEnd: () => setAnimation(0),

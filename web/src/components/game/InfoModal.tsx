@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChartSimple } from "@fortawesome/pro-solid-svg-icons";
 
 import { Button } from "@/components/Buttons";
+import { PlayerIcon } from "./PlayerIcon";
 import type { PassDirection } from "@/types/game";
 import styles from "./InfoModal.module.css";
 
@@ -18,7 +19,7 @@ export interface InfoModalProps {
    round: number;
    passDirection: PassDirection;
    difficulty?: string;
-   players: { name: string; score: number }[];
+   players: { name: string; score: number; icon?: string }[];
    onClose: () => void;
    onConcede?: () => void;
    gameOver?: boolean;
@@ -74,7 +75,14 @@ export const InfoModal: React.FC<InfoModalProps> = ({
                            key={p.idx}
                            className={p.idx === 0 ? styles.scoreTableYou : ""}
                         >
-                           <td>{p.name}</td>
+                           <td>
+                              <PlayerIcon
+                                 name={p.name}
+                                 icon={p.icon}
+                                 size={13}
+                              />{" "}
+                              {p.name}
+                           </td>
                            <td>{p.score}</td>
                         </tr>
                      ))}

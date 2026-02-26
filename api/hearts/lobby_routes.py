@@ -22,9 +22,10 @@ def create():
     data = request.get_json() or {}
     host_name = (data.get("host_name") or "Host").strip() or "Host"
     num_ai = min(max(int(data.get("num_ai", 0)), 0), 3)
+    host_icon = (data.get("host_icon") or "user").strip() or "user"
 
     try:
-        lobby = create_lobby(host_name, num_ai)
+        lobby = create_lobby(host_name, num_ai, host_icon=host_icon)
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
 

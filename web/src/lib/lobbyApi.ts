@@ -14,14 +14,15 @@ export type CreateLobbyResponse = {
 };
 
 export async function createLobby(
-   hostName: string
+   hostName: string,
+   hostIcon?: string
 ): Promise<
    { ok: true; data: CreateLobbyResponse } | { ok: false; error: string }
 > {
    const res = await fetch(`${base()}/lobbies/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ host_name: hostName }),
+      body: JSON.stringify({ host_name: hostName, host_icon: hostIcon }),
    });
    const data = await res.json().catch(() => ({}));
    if (!res.ok) {

@@ -134,6 +134,9 @@ function UserInfo() {
             <TabbedStatsPanel diffStats={diffStats} />
             <AchievementsPanel stats={stats} userId={user.id} />
             <ButtonGroup padding="default">
+               <Link to="/profile">
+                  <Button name="Profile" />
+               </Link>
                <Link to="/options">
                   <Button name="Options" />
                </Link>

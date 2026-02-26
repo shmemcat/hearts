@@ -251,6 +251,249 @@ def resend_verification():
     )
 
 
+VALID_PROFILE_ICONS = {
+    "user",
+    # Animals
+    "alicorn",
+    "badger-honey",
+    "bat",
+    "bee",
+    "bird",
+    "bugs",
+    "butterfly",
+    "cat",
+    "crab",
+    "crow",
+    "deer",
+    "dinosaur",
+    "dog",
+    "dolphin",
+    "dove",
+    "dragon",
+    "duck",
+    "elephant",
+    "feather",
+    "fish",
+    "frog",
+    "hippo",
+    "horse",
+    "kiwi-bird",
+    "lobster",
+    "monkey",
+    "narwhal",
+    "otter",
+    "owl",
+    "paw-simple",
+    "pig",
+    "rabbit",
+    "ram",
+    "seal",
+    "sheep",
+    "shrimp",
+    "snake",
+    "spider",
+    "squirrel",
+    "turtle",
+    "unicorn",
+    "whale",
+    "worm",
+    # Card Game
+    "cards",
+    "club",
+    "diamond",
+    "spade",
+    "heart",
+    "dice",
+    "crown",
+    "chess-queen",
+    "chess-rook",
+    "chess-bishop",
+    # Space & Weather
+    "moon",
+    "moon-stars",
+    "sun-bright",
+    "star",
+    "meteor",
+    "cloud-bolt",
+    "snowflake",
+    "rainbow",
+    "rocket",
+    "comet",
+    # Nature
+    "leaf",
+    "seedling",
+    "tree",
+    "clover",
+    "flower-tulip",
+    "mountain-sun",
+    "cactus",
+    "mushroom",
+    "tree-palm",
+    "flower-daffodil",
+    # Food & Drink
+    "mug-hot",
+    "pizza-slice",
+    "cookie",
+    "ice-cream",
+    "candy-cane",
+    "lemon",
+    "apple-whole",
+    "pepper-hot",
+    "martini-glass-citrus",
+    "wine-glass",
+    "ramen",
+    "burger",
+    "cheese",
+    "cherries",
+    "croissant",
+    "cupcake",
+    "egg",
+    "grapes",
+    "hotdog",
+    "popcorn",
+    "taco",
+    # Music & Art
+    "music",
+    "guitar",
+    "drum",
+    "palette",
+    "paintbrush-fine",
+    "headphones",
+    "microphone-stand",
+    "record-vinyl",
+    "radio",
+    "piano",
+    # Fun Objects
+    "hat-wizard",
+    "wand-magic-sparkles",
+    "gem",
+    "fire",
+    "bolt",
+    "shield",
+    "skull-crossbones",
+    "binoculars",
+    "compass",
+    "anchor",
+    "bomb",
+    "swords",
+    "axe-battle",
+    "key",
+    "dagger",
+    "hourglass",
+    "scroll",
+    "ring",
+    "flask",
+    "telescope",
+    # Cute
+    "face-smile",
+    "face-sunglasses",
+    "face-cowboy-hat",
+    "face-party",
+    "cake-candles",
+    "gift",
+    "balloon",
+    "sparkles",
+    "face-laugh-beam",
+    "treasure-chest",
+    # Sports
+    "futbol",
+    "basketball",
+    "bicycle",
+    "person-skiing",
+    "fish-fins",
+    "baseball-bat-ball",
+    "tennis-ball",
+    "table-tennis-paddle-ball",
+    "person-swimming",
+    "person-running",
+    # Coding
+    "code",
+    "terminal",
+    "laptop-code",
+    "bug",
+    "microchip",
+    "binary",
+    "database",
+    "keyboard",
+    "server",
+    "brackets-curly",
+    # Gaming
+    "gamepad",
+    "gamepad-modern",
+    "chess-pawn",
+    "chess-knight",
+    "dice-d20",
+    "sword-laser",
+    "ufo",
+    "joystick",
+    "puzzle-piece",
+    "bowling-ball",
+    # Holiday
+    "ghost",
+    "jack-o-lantern",
+    "candy-cane",
+    "snowman",
+    "gifts",
+    "hat-santa",
+    "cauldron",
+    "bat",
+    "gingerbread-man",
+    "stocking",
+    # Symbols
+    "yin-yang",
+    "peace",
+    "infinity",
+    "eye",
+    "hand-spock",
+    "alien-8bit",
+    "user-astronaut",
+    "user-ninja",
+    "atom",
+    "om",
+}
+
+
+@auth_bp.route("/profile", methods=["PATCH"])
+@require_jwt
+@limiter.limit("30 per minute")
+def update_profile():
+    data = request.get_json() or {}
+    user = g.current_user
+    changed = False
+
+    if "profile_icon" in data:
+        icon = (data["profile_icon"] or "").strip()
+        if icon not in VALID_PROFILE_ICONS:
+            return jsonify({"error": f"Invalid profile icon: {icon}"}), 400
+        user.profile_icon = icon
+        changed = True
+
+    email_changed = False
+    if "email" in data:
+        new_email = (data["email"] or "").strip().lower()
+        if not _validate_email(new_email):
+            return jsonify({"error": "Invalid email"}), 400
+        if new_email != user.email:
+            existing = User.query.filter_by(email=new_email).first()
+            if existing and existing.id != user.id:
+                return jsonify({"error": "Email already registered"}), 409
+            user.email = new_email
+            user.email_verified = False
+            user.set_verification_token()
+            email_changed = True
+            changed = True
+
+    if not changed:
+        return jsonify({"error": "No changes provided"}), 400
+
+    db.session.commit()
+
+    if email_changed:
+        send_verification_email(user.email, user.verification_token)
+
+    return jsonify({"user": user.to_dict()}), 200
+
+
 @auth_bp.route("/me", methods=["GET"])
 @require_jwt
 def me():

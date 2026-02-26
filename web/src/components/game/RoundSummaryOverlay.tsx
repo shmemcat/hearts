@@ -1,12 +1,13 @@
 import React from "react";
 
 import { Button } from "@/components/Buttons";
+import { PlayerIcon } from "./PlayerIcon";
 import styles from "@/styles/play.module.css";
 
 export interface RoundSummaryData {
    deltas: number[];
    round: number;
-   players: { name: string; score: number }[];
+   players: { name: string; score: number; icon?: string }[];
 }
 
 export interface RoundSummaryOverlayProps {
@@ -47,7 +48,14 @@ export const RoundSummaryOverlay: React.FC<RoundSummaryOverlayProps> = ({
                               p.idx === 0 ? styles.scoreTableWinner : ""
                            }
                         >
-                           <td>{p.name}</td>
+                           <td>
+                              <PlayerIcon
+                                 name={p.name}
+                                 icon={p.icon}
+                                 size={13}
+                              />{" "}
+                              {p.name}
+                           </td>
                            <td className={styles.scoreDelta}>
                               {p.delta > 0 ? `+${p.delta}` : "0"}
                            </td>

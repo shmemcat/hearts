@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import party from "party-js";
 
 import { Button } from "@/components/Buttons";
+
 import { useSound } from "@/context/SoundContext";
 import styles from "./ShootTheMoonOverlay.module.css";
 
@@ -9,7 +10,7 @@ export interface ShootTheMoonData {
    shooterIndex: number;
    deltas: number[];
    round: number;
-   players: { name: string; score: number }[];
+   players: { name: string; score: number; icon?: string }[];
 }
 
 export interface ShootTheMoonOverlayProps extends ShootTheMoonData {

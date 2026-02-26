@@ -18,6 +18,7 @@ import {
    RoundSummaryOverlay,
    ShootTheMoonOverlay,
    Trick,
+   PlayerIcon,
 } from "@/components/game";
 import type { ShootTheMoonData } from "@/components/game/ShootTheMoonOverlay";
 import { triggerLogoFadeOut } from "@/components/Navbar";
@@ -84,7 +85,7 @@ export default function MultiPlayPage() {
    const [roundSummary, setRoundSummary] = useState<{
       deltas: number[];
       round: number;
-      players: { name: string; score: number }[];
+      players: { name: string; score: number; icon?: string }[];
    } | null>(null);
    const [shootTheMoon, setShootTheMoon] = useState<ShootTheMoonData | null>(
       null
@@ -148,9 +149,10 @@ export default function MultiPlayPage() {
          );
          const currentRound = stateRef.current?.round ?? 1;
          const roundPlayers = pending.players.map(
-            (p: { name: string; score: number }) => ({
+            (p: { name: string; score: number; icon?: string }) => ({
                name: p.name,
                score: p.score,
+               icon: p.icon,
             })
          );
 
@@ -620,60 +622,6 @@ export default function MultiPlayPage() {
       );
    }
 
-   if (terminated) {
-      return (
-         <>
-            <Helmet>
-               <title>Game Terminated | Hearts</title>
-            </Helmet>
-            <PageLayout
-               title="MULTIPLAYER"
-               hideTitleBlock
-               className={PLAY_PAGE_LAYOUT_CLASS}
-            >
-               <div className={styles.concededBackdrop}>
-                  <div className={styles.concededModal}>
-                     <p className={styles.concededTitle}>Game Terminated</p>
-                     <p className="text-sm mb-3 opacity-80">
-                        All players have left the game.
-                     </p>
-                     {state && (
-                        <table className={styles.scoreTable}>
-                           <thead>
-                              <tr>
-                                 <th>Player</th>
-                                 <th>Score</th>
-                              </tr>
-                           </thead>
-                           <tbody>
-                              {[...state.players]
-                                 .map((p, i) => ({ ...p, idx: i }))
-                                 .sort((a, b) => a.score - b.score)
-                                 .map((p) => (
-                                    <tr key={p.idx}>
-                                       <td>{p.name}</td>
-                                       <td>{p.score}</td>
-                                    </tr>
-                                 ))}
-                           </tbody>
-                        </table>
-                     )}
-                     <Link to="/game/create">
-                        <Button
-                           name="Create New Game"
-                           style={{ width: "250px", marginTop: "8px" }}
-                        />
-                     </Link>
-                     <Link to="/" onClick={() => triggerLogoFadeOut()}>
-                        <Button name="Home" style={{ width: "250px" }} />
-                     </Link>
-                  </div>
-               </div>
-            </PageLayout>
-         </>
-      );
-   }
-
    if (error && !state) {
       return (
          <>
@@ -842,6 +790,7 @@ export default function MultiPlayPage() {
                                  showHearts: !!showHeartsOnSeats,
                                  heartCount:
                                     heartsPerPlayer[orderedIndices[0]] ?? 0,
+                                 icon: orderedPlayers[0]?.icon,
                               },
                               {
                                  name: orderedPlayers[1]?.name ?? "—",
@@ -857,6 +806,7 @@ export default function MultiPlayPage() {
                                  showHearts: !!showHeartsOnSeats,
                                  heartCount:
                                     heartsPerPlayer[orderedIndices[1]] ?? 0,
+                                 icon: orderedPlayers[1]?.icon,
                               },
                               {
                                  name: orderedPlayers[2]?.name ?? "—",
@@ -872,6 +822,7 @@ export default function MultiPlayPage() {
                                  showHearts: !!showHeartsOnSeats,
                                  heartCount:
                                     heartsPerPlayer[orderedIndices[2]] ?? 0,
+                                 icon: orderedPlayers[2]?.icon,
                               },
                               {
                                  name: orderedPlayers[3]?.name ?? "—",
@@ -887,6 +838,7 @@ export default function MultiPlayPage() {
                                  showHearts: !!showHeartsOnSeats,
                                  heartCount:
                                     heartsPerPlayer[orderedIndices[3]] ?? 0,
+                                 icon: orderedPlayers[3]?.icon,
                               },
                            ]}
                            trickSlots={trickSlots}
@@ -929,6 +881,7 @@ export default function MultiPlayPage() {
                               heartCount={
                                  heartsPerPlayer[orderedIndices[1]] ?? 0
                               }
+                              icon={orderedPlayers[1]?.icon}
                            />
                            {/* Left */}
                            <GameSeat
@@ -946,6 +899,7 @@ export default function MultiPlayPage() {
                               heartCount={
                                  heartsPerPlayer[orderedIndices[2]] ?? 0
                               }
+                              icon={orderedPlayers[2]?.icon}
                            />
                            {/* Center: trick */}
                            <div className={styles.tableCenter}>
@@ -991,6 +945,7 @@ export default function MultiPlayPage() {
                               heartCount={
                                  heartsPerPlayer[orderedIndices[3]] ?? 0
                               }
+                              icon={orderedPlayers[3]?.icon}
                            />
                            {/* Bottom (me) */}
                            <GameSeat
@@ -1012,6 +967,7 @@ export default function MultiPlayPage() {
                               heartCount={
                                  heartsPerPlayer[orderedIndices[0]] ?? 0
                               }
+                              icon={orderedPlayers[0]?.icon}
                            />
                         </div>
                      )}
@@ -1158,6 +1114,57 @@ export default function MultiPlayPage() {
                      players={state.players}
                      winnerIndex={state.winner_index}
                   />
+                  <ButtonGroup>
+                     <Link to="/game/create">
+                        <Button
+                           name="Create New Game"
+                           style={{ width: "250px" }}
+                        />
+                     </Link>
+                     <Link to="/" onClick={() => triggerLogoFadeOut()}>
+                        <Button name="Home" style={{ width: "250px" }} />
+                     </Link>
+                  </ButtonGroup>
+               </div>
+            </div>
+         )}
+
+         {/* Game terminated */}
+         {terminated && (
+            <div className={styles.gameOverBackdrop}>
+               <div className={styles.gameOverBlock}>
+                  <p className={styles.gameOverTitle}>Game Terminated</p>
+                  <p className="text-sm opacity-80">
+                     All players have left the game.
+                  </p>
+                  {state && (
+                     <table className={styles.scoreTable}>
+                        <thead>
+                           <tr>
+                              <th>Player</th>
+                              <th>Score</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {[...state.players]
+                              .map((p, i) => ({ ...p, idx: i }))
+                              .sort((a, b) => a.score - b.score)
+                              .map((p) => (
+                                 <tr key={p.idx}>
+                                    <td>
+                                       <PlayerIcon
+                                          name={p.name}
+                                          icon={p.icon}
+                                          size={13}
+                                       />{" "}
+                                       {p.name}
+                                    </td>
+                                    <td>{p.score}</td>
+                                 </tr>
+                              ))}
+                        </tbody>
+                     </table>
+                  )}
                   <ButtonGroup>
                      <Link to="/game/create">
                         <Button

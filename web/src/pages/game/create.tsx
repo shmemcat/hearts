@@ -77,7 +77,7 @@ export default function CreateGamePage() {
       if (gameType === "Online") {
          try {
             const hostName = user?.name || "Host";
-            const result = await createLobby(hostName);
+            const result = await createLobby(hostName, user?.profile_icon);
             if (result.ok) {
                localStorage.setItem(
                   `hearts_lobby_token_${result.data.code}`,

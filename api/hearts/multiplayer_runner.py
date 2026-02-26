@@ -33,7 +33,7 @@ def _round_complete(state: GameState) -> bool:
 
 
 class SeatConfig:
-    __slots__ = ("name", "is_human", "player_token", "conceded")
+    __slots__ = ("name", "is_human", "player_token", "conceded", "icon")
 
     def __init__(
         self,
@@ -41,11 +41,13 @@ class SeatConfig:
         is_human: bool = False,
         player_token: Optional[str] = None,
         conceded: bool = False,
+        icon: str = "user",
     ):
         self.name = name
         self.is_human = is_human
         self.player_token = player_token
         self.conceded = conceded
+        self.icon = icon
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -53,6 +55,7 @@ class SeatConfig:
             "is_human": self.is_human,
             "player_token": self.player_token,
             "conceded": self.conceded,
+            "icon": self.icon,
         }
 
     @classmethod
@@ -62,6 +65,7 @@ class SeatConfig:
             is_human=d.get("is_human", False),
             player_token=d.get("player_token"),
             conceded=d.get("conceded", False),
+            icon=d.get("icon", "user"),
         )
 
 
@@ -334,6 +338,7 @@ class MultiplayerRunner:
                     "card_count": len(s.hands[i]),
                     "is_human": self._seats[i].is_human,
                     "conceded": self._seats[i].conceded,
+                    "icon": self._seats[i].icon,
                 }
             )
         my_hand = [c.to_code() for c in s.hand(seat_index)]
@@ -388,6 +393,7 @@ class MultiplayerRunner:
                     "card_count": len(s.hands[i]),
                     "is_human": self._seats[i].is_human,
                     "conceded": self._seats[i].conceded,
+                    "icon": self._seats[i].icon,
                 }
             )
         current_trick = [

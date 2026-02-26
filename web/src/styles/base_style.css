@@ -99,6 +99,8 @@ html {
    --achievement-secret-text: hsla(0, 0%, 18%, 0.35);
    --badgeboxshadow: var(--buttonboxshadow);
    --color-warning: hsl(32, 95%, 44%);
+   --stats-label: hsl(342, 36%, 64%);
+   --stats-header: hsl(342, 36%, 64%);
 }
 
 [data-theme="dark"] {
@@ -159,6 +161,8 @@ html {
    --achievement-locked: hsla(230, 21%, 61%, 0.6);
    --achievement-secret-text: hsla(230, 15%, 48%, 0.5);
    --buttonboxshadow: hsla(342, 30%, 30%, 0.3);
+   --stats-label: hsl(341, 80%, 84%);
+   --stats-header: hsl(335, 19%, 45%);
 }
 
 body {

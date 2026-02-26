@@ -370,6 +370,7 @@ def create_multiplayer_game(
                 name=sd["name"],
                 is_human=not sd["is_ai"],
                 player_token=sd.get("player_token"),
+                icon=sd.get("icon", "robot" if sd["is_ai"] else "user"),
             )
         )
 

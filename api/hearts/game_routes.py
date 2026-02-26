@@ -18,6 +18,16 @@ from hearts.models import ActiveGame, UserStats
 
 games_bp = Blueprint("games", __name__, url_prefix="/games")
 
+
+def _inject_player_icons(state: dict, game_id: str) -> dict:
+    """Add profile icons to each player in the state dict."""
+    user = get_current_user()
+    human_icon = user.profile_icon if user else "user"
+    for i, p in enumerate(state.get("players", [])):
+        p["icon"] = human_icon if i == 0 else "robot"
+    return state
+
+
 _store: Dict[str, GameRunner] = {}
 
 
@@ -117,7 +127,7 @@ def get_game(game_id: str):
     runner = _get_runner(game_id)
     if runner is None:
         return jsonify({"error": "Game not found"}), 404
-    return jsonify(runner.get_state_for_frontend())
+    return jsonify(_inject_player_icons(runner.get_state_for_frontend(), game_id))
 
 
 @games_bp.route("/<game_id>/pass", methods=["POST"])
@@ -139,7 +149,7 @@ def submit_pass(game_id: str):
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     _save_to_db(game_id, runner)
-    return jsonify(runner.get_state_for_frontend())
+    return jsonify(_inject_player_icons(runner.get_state_for_frontend(), game_id))
 
 
 @games_bp.route("/<game_id>/advance", methods=["POST"])
@@ -157,7 +167,7 @@ def advance_game(game_id: str):
         runner.advance_to_human_turn()
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    payload = runner.get_state_for_frontend()
+    payload = _inject_player_icons(runner.get_state_for_frontend(), game_id)
     payload["intermediate_plays"] = runner.get_last_play_events()
     payload["round_just_ended"] = runner.get_last_round_ended()
     if runner.state.game_over:
@@ -185,7 +195,7 @@ def submit_play(game_id: str):
         runner.submit_play(card)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-    payload = runner.get_state_for_frontend()
+    payload = _inject_player_icons(runner.get_state_for_frontend(), game_id)
     payload["intermediate_plays"] = runner.get_last_play_events()
     payload["round_just_ended"] = runner.get_last_round_ended()
     if runner.state.game_over:

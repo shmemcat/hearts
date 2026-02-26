@@ -165,7 +165,7 @@
    font-weight: 700;
    letter-spacing: 3px;
    text-transform: uppercase;
-   color: var(--hoverpink);
+   color: var(--stats-header);
    background: transparent;
    border: none;
    padding: 8px 16px;
@@ -241,7 +241,7 @@
    font-weight: 600;
    letter-spacing: 2px;
    text-transform: uppercase;
-   color: var(--hoverpink);
+   color: var(--stats-label);
 }
 
 .stats-value {

@@ -59,8 +59,8 @@ export function disconnect(): void {
    }
 }
 
-export function sendJoin(name: string): void {
-   if (socket?.connected) socket.emit("join", { name });
+export function sendJoin(name: string, icon?: string): void {
+   if (socket?.connected) socket.emit("join", { name, icon });
 }
 
 export function sendLeave(): void {
