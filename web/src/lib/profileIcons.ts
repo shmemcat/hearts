@@ -140,7 +140,7 @@ import {
    faAlien8bit,
    faUserAstronaut,
    faUserNinja,
-   faRobot,
+   faUserRobot,
    faCode,
    faTerminal,
    faLaptopCode,
@@ -803,7 +803,7 @@ const ICON_MAP = new Map<string, IconDefinition>(
    PROFILE_ICONS.map((e) => [e.key, e.icon])
 );
 ICON_MAP.set("user", faUser);
-ICON_MAP.set("robot", faRobot);
+ICON_MAP.set("robot", faUserRobot);
 
 export function getProfileIcon(key: string | undefined | null): IconDefinition {
    if (!key) return faUser;

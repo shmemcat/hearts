@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faRobot } from "@fortawesome/pro-solid-svg-icons";
+import { faUserRobot } from "@fortawesome/pro-solid-svg-icons";
 import { getProfileIcon } from "@/lib/profileIcons";
 
 const BOT_RE = /^Bot\s*\d+$/i;
@@ -17,7 +17,7 @@ export const PlayerIcon: React.FC<PlayerIconProps> = ({
    size,
    className,
 }) => {
-   const faIcon = BOT_RE.test(name) ? faRobot : getProfileIcon(icon);
+   const faIcon = BOT_RE.test(name) ? faUserRobot : getProfileIcon(icon);
    return (
       <FontAwesomeIcon
          icon={faIcon}
