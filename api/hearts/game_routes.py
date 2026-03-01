@@ -53,6 +53,8 @@ def _save_to_db(
     game_id: str, runner: GameRunner, user_id: Optional[int] = None
 ) -> None:
     """Persist the current runner state to the database."""
+    from datetime import datetime
+
     row = ActiveGame.query.filter_by(game_id=game_id).first()
     if row is None:
         row = ActiveGame(
@@ -64,6 +66,7 @@ def _save_to_db(
         db.session.add(row)
     else:
         row.state_json = runner.to_json()
+        row.updated_at = datetime.utcnow()
     db.session.commit()
 
 

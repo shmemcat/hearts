@@ -59,8 +59,13 @@ export function disconnect(): void {
    }
 }
 
-export function sendJoin(name: string, icon?: string): void {
-   if (socket?.connected) socket.emit("join", { name, icon });
+export function sendJoin(
+   name: string,
+   icon?: string,
+   seatPreference?: number
+): void {
+   if (socket?.connected)
+      socket.emit("join", { name, icon, seat_preference: seatPreference });
 }
 
 export function sendLeave(): void {

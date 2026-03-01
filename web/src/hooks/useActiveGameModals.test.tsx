@@ -21,10 +21,13 @@ vi.mock("@/lib/gameApi", () => ({
 
 const mockGetLobbyState = vi.fn();
 const mockCheckMultiplayerGameActive = vi.fn();
+const mockConcedeMultiplayerGame = vi.fn();
 vi.mock("@/lib/lobbyApi", () => ({
    getLobbyState: (...args: unknown[]) => mockGetLobbyState(...args),
    checkMultiplayerGameActive: (...args: unknown[]) =>
       mockCheckMultiplayerGameActive(...args),
+   concedeMultiplayerGame: (...args: unknown[]) =>
+      mockConcedeMultiplayerGame(...args),
 }));
 
 const mockFindSession = vi.fn();
@@ -44,10 +47,15 @@ beforeEach(() => {
    mockConcedeGame.mockReset();
    mockGetLobbyState.mockReset();
    mockCheckMultiplayerGameActive.mockReset();
+   mockConcedeMultiplayerGame.mockReset();
    mockFindSession.mockReset();
    mockClearSession.mockReset();
 
    mockCheckActiveGame.mockResolvedValue({ ok: true, game_id: null });
+   mockConcedeMultiplayerGame.mockResolvedValue({
+      ok: true,
+      status: "conceded",
+   });
    mockFindSession.mockReturnValue(null);
 });
 
@@ -205,7 +213,7 @@ describe("useActiveGameModals", () => {
       expect(screen.queryByText("Lobby In Progress")).not.toBeInTheDocument();
    });
 
-   it("leave flow: clears multiplayer session", async () => {
+   it("leave flow: clears multiplayer lobby session", async () => {
       mockFindSession.mockReturnValue({ type: "lobby", code: "ABCD" });
       mockGetLobbyState.mockResolvedValue({
          ok: true,
@@ -228,5 +236,37 @@ describe("useActiveGameModals", () => {
             code: "ABCD",
          });
       });
+      expect(mockConcedeMultiplayerGame).not.toHaveBeenCalled();
+   });
+
+   it("leave flow: concedes multiplayer game via API then clears session", async () => {
+      mockFindSession.mockReturnValue({ type: "game", gameId: "mp-123" });
+      mockCheckMultiplayerGameActive.mockResolvedValue(true);
+      localStorage.setItem("hearts_mp_token_mp-123", "player-tok-abc");
+
+      const user = userEvent.setup();
+      renderWithProviders(<TestHarness />, { route: "/play" });
+
+      await waitFor(() => {
+         expect(
+            screen.getByText("You have a multiplayer game in progress. Rejoin?")
+         ).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole("button", { name: "Leave" }));
+      await user.click(screen.getByRole("button", { name: "Yes" }));
+
+      await waitFor(() => {
+         expect(mockConcedeMultiplayerGame).toHaveBeenCalledWith(
+            "mp-123",
+            "player-tok-abc"
+         );
+      });
+      expect(mockClearSession).toHaveBeenCalledWith({
+         type: "game",
+         gameId: "mp-123",
+      });
+
+      localStorage.removeItem("hearts_mp_token_mp-123");
    });
 });

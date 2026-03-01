@@ -190,6 +190,9 @@ class ActiveGame(db.Model):
     difficulty = db.Column(db.String(16), nullable=False, server_default="easy")
     state_json = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
     is_multiplayer = db.Column(
         db.Boolean, default=False, nullable=False, server_default="0"
     )

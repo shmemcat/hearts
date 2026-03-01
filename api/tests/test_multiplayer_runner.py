@@ -245,9 +245,9 @@ class TestConcedePlayer:
         runner = _find_runner_at_phase(Phase.PASSING)
         hand0 = list(runner.state.hands[0])
         runner.submit_pass(0, hand0[:3])
-        assert 0 in runner._pending_passes
+        assert 0 in runner.pending_passes
         runner.concede_player(0)
-        assert 0 not in runner._pending_passes
+        assert 0 not in runner.pending_passes
 
     def test_concede_during_passing_triggers_apply_if_remaining_done(self):
         runner = _find_runner_at_phase(Phase.PASSING)
@@ -346,5 +346,5 @@ class TestSerialization:
         runner.submit_pass(0, hand0[:3])
         data = runner.to_dict()
         restored = MultiplayerRunner.from_dict(data)
-        assert 0 in restored._pending_passes
-        assert len(restored._pending_passes[0]) == 3
+        assert 0 in restored.pending_passes
+        assert len(restored.pending_passes[0]) == 3

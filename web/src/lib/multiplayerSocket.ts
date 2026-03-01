@@ -29,11 +29,13 @@ const idleWarningListeners: VoidCb[] = [];
 
 export function connectMulti(
    gameId: string,
-   playerToken?: string | null
+   playerToken?: string | null,
+   jwtToken?: string | null
 ): void {
    disconnect();
    const query: Record<string, string> = { game_id: gameId };
    if (playerToken) query.player_token = playerToken;
+   if (jwtToken) query.auth_token = jwtToken;
 
    socket = io("/multi", {
       path: "/socket.io",

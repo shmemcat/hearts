@@ -1,5 +1,5 @@
 """
-REST endpoints for lobby management: create and query lobbies.
+REST endpoints for lobby management: create, query, and multiplayer concede.
 """
 
 from flask import Blueprint, request, jsonify, current_app
@@ -7,6 +7,11 @@ from flask import Blueprint, request, jsonify, current_app
 from hearts.extensions import limiter
 from hearts.lobby import create_lobby, get_lobby
 from hearts.models import ActiveGame
+from hearts.multiplayer_socket import (
+    concede_multiplayer_by_token,
+    cleanup_stale_multiplayer_games,
+    cleanup_game_if_stale,
+)
 
 lobby_bp = Blueprint("lobbies", __name__, url_prefix="/lobbies")
 
@@ -19,6 +24,7 @@ def create():
     Body: { "host_name": "Alice", "num_ai": 0 }
     Returns: { "code": "ABC123", "url": "https://…/game/lobby/ABC123", "player_token": "…" }
     """
+    cleanup_stale_multiplayer_games()
     data = request.get_json() or {}
     host_name = (data.get("host_name") or "Host").strip() or "Host"
     num_ai = min(max(int(data.get("num_ai", 0)), 0), 3)
@@ -55,6 +61,32 @@ def get_lobby_state(code: str):
 
 @lobby_bp.route("/game/<game_id>/active", methods=["GET"])
 def check_game_active(game_id: str):
-    """Return whether a multiplayer game is still active."""
-    active = ActiveGame.query.filter_by(game_id=game_id, is_multiplayer=True).first()
-    return jsonify({"active": active is not None})
+    """Return whether a multiplayer game is still active.
+
+    Also cleans up the game if it has been inactive for too long.
+    """
+    if cleanup_game_if_stale(game_id):
+        return jsonify({"active": False})
+    row = ActiveGame.query.filter_by(game_id=game_id, is_multiplayer=True).first()
+    return jsonify({"active": row is not None})
+
+
+@lobby_bp.route("/game/<game_id>/concede", methods=["POST"])
+def concede_multiplayer(game_id: str):
+    """Concede from a multiplayer game via REST (used by the out-of-game modal).
+
+    Body: { "player_token": "..." }
+    """
+    data = request.get_json() or {}
+    player_token = (data.get("player_token") or "").strip()
+    if not player_token:
+        return jsonify({"error": "player_token is required"}), 400
+
+    from hearts import socketio
+
+    app = current_app._get_current_object()
+    result = concede_multiplayer_by_token(game_id, player_token, socketio, app)
+    if result is None:
+        return jsonify({"error": "Game not found or seat not valid"}), 404
+
+    return jsonify({"status": result})

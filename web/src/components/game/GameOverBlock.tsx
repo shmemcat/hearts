@@ -10,18 +10,26 @@ import styles from "@/styles/play.module.css";
 export interface GameOverBlockProps {
    players: GamePlayer[];
    winnerIndex: number | null;
+   mySeatIndex?: number;
+   children?: React.ReactNode;
 }
 
 export const GameOverBlock: React.FC<GameOverBlockProps> = ({
    players,
    winnerIndex,
+   mySeatIndex = 0,
+   children,
 }) => {
-   const humanWon = winnerIndex === 0;
    const isTie = winnerIndex === -1;
+   const winnerName =
+      winnerIndex != null && winnerIndex >= 0
+         ? players[winnerIndex]?.name
+         : null;
+   const myWon = winnerIndex === mySeatIndex;
    const confettiRef = useRef<HTMLParagraphElement>(null);
 
    useEffect(() => {
-      if (!humanWon) return;
+      if (!myWon) return;
       const timer = setTimeout(() => {
          if (confettiRef.current) {
             party.confetti(confettiRef.current, {
@@ -30,13 +38,21 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
          }
       }, 100);
       return () => clearTimeout(timer);
-   }, [humanWon]);
+   }, [myWon]);
+
+   const title = isTie
+      ? "It's a tie!"
+      : myWon
+      ? "You won!"
+      : winnerName
+      ? `${winnerName} won!`
+      : "Game Over";
 
    return (
       <div className={styles.gameOverBackdrop}>
          <div className={styles.gameOverBlock}>
             <p ref={confettiRef} className={styles.gameOverTitle}>
-               {humanWon ? "You won!" : isTie ? "It's a tie!" : "Game Over"}
+               {title}
             </p>
             <table className={styles.scoreTable}>
                <thead>
@@ -56,13 +72,15 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
                         const isWinner = isTie
                            ? p.score === minScore
                            : p.idx === winnerIndex;
+                        const isMe = p.idx === mySeatIndex;
+                        const rowClass = [
+                           isWinner ? styles.scoreTableWinner : "",
+                           isMe ? styles.scoreTableMe : "",
+                        ]
+                           .filter(Boolean)
+                           .join(" ");
                         return (
-                           <tr
-                              key={p.idx}
-                              className={
-                                 isWinner ? styles.scoreTableWinner : ""
-                              }
-                           >
+                           <tr key={p.idx} className={rowClass}>
                               <td>
                                  <PlayerIcon
                                     name={p.name}
@@ -77,9 +95,11 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
                      })}
                </tbody>
             </table>
-            <Link to="/game/create">
-               <Button name="Create New Game" style={{ width: "250px" }} />
-            </Link>
+            {children ?? (
+               <Link to="/game/create">
+                  <Button name="Create New Game" style={{ width: "250px" }} />
+               </Link>
+            )}
          </div>
       </div>
    );

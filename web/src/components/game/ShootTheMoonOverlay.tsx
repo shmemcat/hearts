@@ -39,45 +39,47 @@ export const ShootTheMoonOverlay: React.FC<ShootTheMoonOverlayProps> = ({
    }, [play]);
 
    return (
-      <div className={styles.overlay}>
-         <span className={styles.moon} aria-hidden>
-            <span className={styles.moonLight}>🌕</span>
-            <span className={styles.moonDark}>🌙</span>
-         </span>
-         <div className={styles.rocketWrap} aria-hidden>
-            <span className={styles.rocket}>🚀</span>
-         </div>
-         <div className={styles.explosion} aria-hidden />
-         <div ref={confettiRef} className={styles.confettiAnchor} />
+      <div className={styles.backdrop}>
+         <div className={styles.overlay}>
+            <span className={styles.moon} aria-hidden>
+               <span className={styles.moonLight}>🌕</span>
+               <span className={styles.moonDark}>🌙</span>
+            </span>
+            <div className={styles.rocketWrap} aria-hidden>
+               <span className={styles.rocket}>🚀</span>
+            </div>
+            <div className={styles.explosion} aria-hidden />
+            <div ref={confettiRef} className={styles.confettiAnchor} />
 
-         <p className={styles.title}>Shot the Moon!</p>
-         <p className={styles.shooterName}>
-            {players[shooterIndex]?.name} took all the hearts!
-         </p>
+            <p className={styles.title}>Shot the Moon!</p>
+            <p className={styles.shooterName}>
+               {players[shooterIndex]?.name} took all the hearts!
+            </p>
 
-         <div className={styles.deltas}>
-            {players.map((p, i) => (
-               <div key={i} className={styles.deltaItem}>
-                  <span className={styles.deltaName}>{p.name}</span>
-                  <span
-                     className={`${styles.deltaBadge} ${
-                        i === shooterIndex
-                           ? styles.deltaShooter
-                           : styles.deltaPenalty
-                     }`}
-                  >
-                     {i === shooterIndex ? "0" : `+${deltas[i]}`}
-                  </span>
-               </div>
-            ))}
-         </div>
+            <div className={styles.deltas}>
+               {players.map((p, i) => (
+                  <div key={i} className={styles.deltaItem}>
+                     <span className={styles.deltaName}>{p.name}</span>
+                     <span
+                        className={`${styles.deltaBadge} ${
+                           i === shooterIndex
+                              ? styles.deltaShooter
+                              : styles.deltaPenalty
+                        }`}
+                     >
+                        {i === shooterIndex ? "0" : `+${deltas[i]}`}
+                     </span>
+                  </div>
+               ))}
+            </div>
 
-         <div className={styles.continueWrap}>
-            <Button
-               name="Continue"
-               onClick={onContinue}
-               style={{ width: "180px" }}
-            />
+            <div className={styles.continueWrap}>
+               <Button
+                  name="Continue"
+                  onClick={onContinue}
+                  style={{ width: "180px" }}
+               />
+            </div>
          </div>
       </div>
    );

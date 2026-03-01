@@ -123,7 +123,9 @@ def get_lobby(code: str) -> Optional[Lobby]:
     return lobby
 
 
-def join_lobby(code: str, name: str, icon: str = "user") -> Tuple[int, str]:
+def join_lobby(
+    code: str, name: str, icon: str = "user", seat_preference: Optional[int] = None
+) -> Tuple[int, str]:
     """Join a lobby. Returns (seat_index, player_token). Raises ValueError on failure."""
     lobby = get_lobby(code)
     if lobby is None:
@@ -131,20 +133,29 @@ def join_lobby(code: str, name: str, icon: str = "user") -> Tuple[int, str]:
     if lobby.status != "waiting":
         raise ValueError("Game has already started")
 
-    clockwise = [1, 2, 3]
-
-    # Prefer empty seats first, then AI seats
     target: Optional[int] = None
-    for idx in clockwise:
-        if lobby.seats[idx] is None:
-            target = idx
-            break
-    if target is None:
+
+    if seat_preference is not None:
+        if seat_preference not in (1, 2, 3):
+            raise ValueError("Invalid seat number")
+        seat = lobby.seats[seat_preference]
+        if seat is None or seat.is_ai:
+            target = seat_preference
+        else:
+            raise ValueError("Seat is already taken")
+    else:
+        clockwise = [1, 2, 3]
         for idx in clockwise:
-            seat = lobby.seats[idx]
-            if seat is not None and seat.is_ai:
+            if lobby.seats[idx] is None:
                 target = idx
                 break
+        if target is None:
+            for idx in clockwise:
+                seat = lobby.seats[idx]
+                if seat is not None and seat.is_ai:
+                    target = idx
+                    break
+
     if target is None:
         raise ValueError("Lobby is full")
 

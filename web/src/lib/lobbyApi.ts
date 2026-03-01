@@ -61,3 +61,29 @@ export async function checkMultiplayerGameActive(
       return false;
    }
 }
+
+export async function concedeMultiplayerGame(
+   gameId: string,
+   playerToken: string
+): Promise<{ ok: true; status: string } | { ok: false; error: string }> {
+   try {
+      const res = await fetch(
+         `${base()}/lobbies/game/${encodeURIComponent(gameId)}/concede`,
+         {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ player_token: playerToken }),
+         }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+         return {
+            ok: false,
+            error: data.error ?? `Request failed (${res.status})`,
+         };
+      }
+      return { ok: true, status: data.status };
+   } catch {
+      return { ok: false, error: "Network error" };
+   }
+}

@@ -30,6 +30,7 @@ import styles from "@/styles/lobby.module.css";
 
 const MP_TOKEN_KEY = (gameId: string) => `hearts_mp_token_${gameId}`;
 const MP_SEAT_KEY = (gameId: string) => `hearts_mp_seat_${gameId}`;
+const MP_LOBBY_KEY = (gameId: string) => `hearts_mp_lobby_${gameId}`;
 const LOBBY_TOKEN_KEY = (code: string) => `hearts_lobby_token_${code}`;
 
 export default function LobbyPage() {
@@ -144,7 +145,6 @@ export default function LobbyPage() {
          const gameId = event.game_id;
          const token = myTokenRef.current;
          if (token) {
-            // Find our seat assignment
             const assignment = event.seat_assignments.find(
                (a) => a.player_token === token
             );
@@ -156,6 +156,7 @@ export default function LobbyPage() {
                );
             }
          }
+         localStorage.setItem(MP_LOBBY_KEY(gameId), upperCode);
          localStorage.removeItem(LOBBY_TOKEN_KEY(upperCode));
          navigate(`/game/multi-play?game_id=${encodeURIComponent(gameId)}`);
       });
@@ -178,11 +179,24 @@ export default function LobbyPage() {
       };
    }, [upperCode, navigate]);
 
-   const handleJoin = useCallback(() => {
-      const name = joinName.trim();
-      if (!name) return;
-      sendJoin(name, user?.profile_icon);
-   }, [joinName, user?.profile_icon]);
+   const [nameError, setNameError] = useState(false);
+
+   const handleJoinSeat = useCallback(
+      (seatIndex: number) => {
+         if (user?.name) {
+            sendJoin(user.name, user.profile_icon, seatIndex);
+            return;
+         }
+         const name = joinName.trim();
+         if (!name) {
+            setNameError(true);
+            return;
+         }
+         setNameError(false);
+         sendJoin(name, undefined, seatIndex);
+      },
+      [joinName, user]
+   );
 
    const handleLeave = useCallback(() => {
       sendLeave();
@@ -342,6 +356,8 @@ export default function LobbyPage() {
          lobby != null &&
          seat.index === 0 &&
          lobby.seats[0]?.status === "human";
+      const canSelect =
+         seat.status === "empty" && isVisitor && lobby?.status === "waiting";
       return (
          <div
             key={seat.index}
@@ -349,36 +365,48 @@ export default function LobbyPage() {
                seatIsHost ? styles.isHost : ""
             } ${seat.status === "empty" ? styles.isEmpty : ""}`}
          >
-            <span className={styles.seatName}>
-               {seat.status === "empty" ? (
-                  <>
-                     Waiting
-                     <span className={styles.waitingDots} />
-                  </>
-               ) : (
-                  <>
-                     <PlayerIcon
-                        name={seat.name ?? ""}
-                        icon={seat.icon}
-                        size={14}
-                     />{" "}
-                     {seat.name ?? "—"}
-                  </>
-               )}
-               {seatIsHost && (
-                  <FontAwesomeIcon
-                     icon={faCrown}
-                     className={styles.crownIcon}
-                  />
-               )}
-            </span>
-            <span className={styles.seatLabel}>
-               {seat.status === "ai"
-                  ? "Bot"
-                  : seat.status === "human"
-                  ? "Player"
-                  : "Open"}
-            </span>
+            {canSelect ? (
+               <button
+                  className={styles.selectSeatBtn}
+                  onClick={() => handleJoinSeat(seat.index)}
+               >
+                  <span>Select</span>
+                  <span>Seat</span>
+               </button>
+            ) : (
+               <>
+                  <span className={styles.seatName}>
+                     {seat.status === "empty" ? (
+                        <>
+                           Waiting
+                           <span className={styles.waitingDots} />
+                        </>
+                     ) : (
+                        <>
+                           <PlayerIcon
+                              name={seat.name ?? ""}
+                              icon={seat.icon}
+                              size={14}
+                           />{" "}
+                           {seat.name ?? "—"}
+                        </>
+                     )}
+                     {seatIsHost && (
+                        <FontAwesomeIcon
+                           icon={faCrown}
+                           className={styles.crownIcon}
+                        />
+                     )}
+                  </span>
+                  <span className={styles.seatLabel}>
+                     {seat.status === "ai"
+                        ? "Bot"
+                        : seat.status === "human"
+                        ? "Player"
+                        : "Open"}
+                  </span>
+               </>
+            )}
          </div>
       );
    };
@@ -445,8 +473,8 @@ export default function LobbyPage() {
                   <div className={styles.seatsGrid}>
                      {lobby.seats.map(renderSeat)}
                      <div className={styles.seatCenter}>
-                        {/* Visitor: join form */}
-                        {isVisitor && lobby.status === "waiting" && (
+                        {/* Visitor: name input (no Join button — use Select Seat on empty seats) */}
+                        {isVisitor && lobby.status === "waiting" && !user && (
                            <>
                               {isFull ? (
                                  <p className="text-sm opacity-70">
@@ -462,18 +490,16 @@ export default function LobbyPage() {
                                        onChange={(e) => {
                                           setJoinName(e.target.value);
                                           setNameManuallyEdited(true);
-                                       }}
-                                       onKeyDown={(e) => {
-                                          if (e.key === "Enter") handleJoin();
+                                          if (e.target.value.trim())
+                                             setNameError(false);
                                        }}
                                        maxLength={20}
                                     />
-                                    <Button
-                                       name="Join"
-                                       disabled={!joinName.trim()}
-                                       onClick={handleJoin}
-                                       style={{ width: "80px", height: "38px" }}
-                                    />
+                                    {nameError && (
+                                       <span className={styles.nameError}>
+                                          State your name!
+                                       </span>
+                                    )}
                                  </div>
                               )}
                            </>

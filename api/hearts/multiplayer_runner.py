@@ -118,12 +118,25 @@ class MultiplayerRunner:
             state, pass_strategy, play_strategy, seats, rng=rng, difficulty=difficulty
         )
 
-    def _is_active_human(self, seat_index: int) -> bool:
+    def is_active_human(self, seat_index: int) -> bool:
+        """Return True if the seat is occupied by a non-conceded human."""
         s = self._seats[seat_index]
         return s.is_human and not s.conceded
 
+    # Keep underscore alias so internal callers still work during transition
+    _is_active_human = is_active_human
+
+    @property
+    def pending_passes(self) -> Dict[int, List[Card]]:
+        """Read-only view of which seats have submitted passes this round."""
+        return self._pending_passes
+
+    def apply_all_passes(self) -> None:
+        """Collect AI passes for any seats that haven't submitted, then apply."""
+        self._apply_all_passes()
+
     def _all_humans_conceded(self) -> bool:
-        return not any(self._is_active_human(i) for i in range(4))
+        return not any(self.is_active_human(i) for i in range(4))
 
     # ── Pass phase ──────────────────────────────────────────────────────
 

@@ -137,6 +137,11 @@
    border-style: dashed;
 }
 
+.seat.isEmpty:has(.selectSeatBtn) {
+   opacity: 1;
+   border-style: solid;
+}
+
 .seatName {
    font-weight: 600;
    font-size: 0.95rem;
@@ -223,6 +228,44 @@
 
 .joinInput::placeholder {
    opacity: 0.5;
+}
+
+/* Select Seat button inside empty seats */
+.selectSeatBtn {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   gap: 0;
+   line-height: 1.2;
+   border: none;
+   background-color: var(--lightpink);
+   color: var(--buttontext);
+   border-radius: 8px;
+   padding: 8px 14px;
+   cursor: pointer;
+   font-family: inherit;
+   font-size: 0.85rem;
+   font-weight: 900;
+   box-shadow: inset -2px -2px 0px var(--buttonboxshadow);
+   transition: background-color 0.15s;
+}
+
+.selectSeatBtn:hover {
+   background-color: var(--hoverpink);
+   box-shadow: inset -2px -2px 0px var(--buttonboxshadowhover);
+}
+
+.selectSeatBtn:active {
+   background-color: var(--hoverpink);
+   box-shadow: inset 2px 2px 0px var(--buttonboxshadowhover);
+}
+
+/* Name validation error */
+.nameError {
+   color: hsl(0, 70%, 50%);
+   font-size: 0.8rem;
+   font-weight: 600;
 }
 
 /* Mobile adjustments */

@@ -146,9 +146,16 @@ def register_lobby_socket(socketio):
             emit("error", {"message": "Name is required"}, namespace="/lobby")
             return
         icon = (data.get("icon") if isinstance(data, dict) else "") or "user"
+        raw_seat = data.get("seat_preference") if isinstance(data, dict) else None
+        try:
+            seat_preference = int(raw_seat) if raw_seat is not None else None
+        except (ValueError, TypeError):
+            seat_preference = None
 
         try:
-            seat_idx, token = join_lobby(code, name, icon=icon)
+            seat_idx, token = join_lobby(
+                code, name, icon=icon, seat_preference=seat_preference
+            )
         except ValueError as e:
             emit("error", {"message": str(e)}, namespace="/lobby")
             return

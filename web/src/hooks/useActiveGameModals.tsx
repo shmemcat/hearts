@@ -4,7 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { ActiveGameModal } from "@/components/game";
 import { useAuth } from "@/context/AuthContext";
 import { checkActiveGame, concedeGame } from "@/lib/gameApi";
-import { getLobbyState, checkMultiplayerGameActive } from "@/lib/lobbyApi";
+import {
+   getLobbyState,
+   checkMultiplayerGameActive,
+   concedeMultiplayerGame,
+} from "@/lib/lobbyApi";
 import {
    findActiveMultiplayerSession,
    clearMultiplayerSession,
@@ -111,7 +115,18 @@ export function useActiveGameModals(): ReactNode {
                      );
                   }
                }}
-               onConcede={() => {
+               onConcede={async () => {
+                  if (multiSession.type === "game") {
+                     const mpToken = localStorage.getItem(
+                        `hearts_mp_token_${multiSession.gameId}`
+                     );
+                     if (mpToken) {
+                        await concedeMultiplayerGame(
+                           multiSession.gameId,
+                           mpToken
+                        );
+                     }
+                  }
                   clearMultiplayerSession(multiSession);
                   setMultiSession(null);
                   setShowMultiModal(false);

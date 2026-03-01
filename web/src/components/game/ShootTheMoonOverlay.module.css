@@ -1,17 +1,33 @@
 /* Shoot the Moon celebration overlay */
 
-.overlay {
-   position: absolute;
+.backdrop {
+   position: fixed;
    inset: 0;
+   z-index: 100;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   background: rgba(0, 0, 0, 0.4);
+   backdrop-filter: blur(4px);
+   -webkit-backdrop-filter: blur(4px);
+   animation: stmFadeIn 0.3s ease-out;
+}
+
+.overlay {
+   position: relative;
    display: flex;
    flex-direction: column;
    align-items: center;
    justify-content: center;
-   z-index: 10;
-   background: var(--roundsummarybackground);
+   width: 90%;
+   max-width: 620px;
+   min-height: 440px;
+   padding: 32px 28px;
+   background: var(--contentbox);
    border-radius: 16px;
    overflow: hidden;
-   animation: stmFadeIn 0.4s ease-out;
+   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+   animation: stmSlideUp 0.3s ease-out;
 }
 
 @keyframes stmFadeIn {
@@ -20,6 +36,17 @@
    }
    to {
       opacity: 1;
+   }
+}
+
+@keyframes stmSlideUp {
+   from {
+      opacity: 0;
+      transform: translateY(12px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
    }
 }
 
@@ -253,4 +280,52 @@
    z-index: 5;
    opacity: 0;
    animation: slideUp 0.4s ease-out 2.5s forwards;
+}
+
+/* ── Mobile overrides ────────────────────────────────────── */
+
+@media only screen and (max-width: 768px) {
+   .overlay {
+      min-height: 420px;
+      padding: 28px 20px;
+   }
+
+   .moon {
+      font-size: 44px;
+   }
+
+   .rocketWrap {
+      animation-name: rocketXMobile;
+   }
+
+   .rocket {
+      font-size: 32px;
+      animation-name: rocketYMobile;
+   }
+
+   @keyframes rocketXMobile {
+      from {
+         opacity: 1;
+         transform: translateX(0);
+      }
+      to {
+         opacity: 1;
+         transform: translateX(140px);
+      }
+   }
+
+   @keyframes rocketYMobile {
+      0% {
+         transform: translateY(0) rotate(-40deg);
+         opacity: 1;
+      }
+      85% {
+         transform: translateY(-210px) rotate(0deg);
+         opacity: 1;
+      }
+      100% {
+         transform: translateY(-200px) rotate(5deg);
+         opacity: 0;
+      }
+   }
 }

@@ -12,11 +12,13 @@ export interface RoundSummaryData {
 
 export interface RoundSummaryOverlayProps {
    summary: RoundSummaryData;
+   mySeatIndex?: number;
    onContinue: () => void;
 }
 
 export const RoundSummaryOverlay: React.FC<RoundSummaryOverlayProps> = ({
    summary,
+   mySeatIndex = 0,
    onContinue,
 }) => {
    return (
@@ -45,7 +47,7 @@ export const RoundSummaryOverlay: React.FC<RoundSummaryOverlayProps> = ({
                         <tr
                            key={p.idx}
                            className={
-                              p.idx === 0 ? styles.scoreTableWinner : ""
+                              p.idx === mySeatIndex ? styles.scoreTableMe : ""
                            }
                         >
                            <td>
@@ -67,7 +69,7 @@ export const RoundSummaryOverlay: React.FC<RoundSummaryOverlayProps> = ({
             <Button
                name="Continue"
                onClick={onContinue}
-               style={{ width: "180px", marginTop: "16px" }}
+               style={{ width: "180px" }}
             />
          </div>
       </div>

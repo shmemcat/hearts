@@ -20,6 +20,7 @@ export interface InfoModalProps {
    passDirection: PassDirection;
    difficulty?: string;
    players: { name: string; score: number; icon?: string }[];
+   mySeatIndex?: number;
    onClose: () => void;
    onConcede?: () => void;
    gameOver?: boolean;
@@ -30,6 +31,7 @@ export const InfoModal: React.FC<InfoModalProps> = ({
    passDirection,
    difficulty,
    players,
+   mySeatIndex = 0,
    onClose,
    onConcede,
    gameOver,
@@ -73,7 +75,9 @@ export const InfoModal: React.FC<InfoModalProps> = ({
                      .map((p) => (
                         <tr
                            key={p.idx}
-                           className={p.idx === 0 ? styles.scoreTableYou : ""}
+                           className={
+                              p.idx === mySeatIndex ? styles.scoreTableYou : ""
+                           }
                         >
                            <td>
                               <PlayerIcon

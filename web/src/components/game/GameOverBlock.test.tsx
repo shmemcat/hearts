@@ -16,23 +16,36 @@ const tiedPlayers = [
    { name: "Carol", score: 60, card_count: 0 },
 ];
 
-function renderGameOver(winnerIndex: number | null, customPlayers = players) {
+function renderGameOver(
+   winnerIndex: number | null,
+   customPlayers = players,
+   mySeatIndex = 0
+) {
    return render(
       <MemoryRouter>
-         <GameOverBlock players={customPlayers} winnerIndex={winnerIndex} />
+         <GameOverBlock
+            players={customPlayers}
+            winnerIndex={winnerIndex}
+            mySeatIndex={mySeatIndex}
+         />
       </MemoryRouter>
    );
 }
 
 describe("GameOverBlock", () => {
-   it("shows 'You won!' when human wins", () => {
+   it("shows 'You won!' when the local player wins", () => {
       renderGameOver(0);
       expect(screen.getByText("You won!")).toBeInTheDocument();
    });
 
-   it("shows 'Game Over' when human loses", () => {
+   it("shows 'You won!' for a non-zero mySeatIndex winner", () => {
+      renderGameOver(2, players, 2);
+      expect(screen.getByText("You won!")).toBeInTheDocument();
+   });
+
+   it("shows '[WinnerName] won!' when another player wins", () => {
       renderGameOver(2);
-      expect(screen.getByText("Game Over")).toBeInTheDocument();
+      expect(screen.getByText("Bob won!")).toBeInTheDocument();
    });
 
    it("shows 'Game Over' when winnerIndex is null", () => {
@@ -45,9 +58,8 @@ describe("GameOverBlock", () => {
       expect(screen.getByText("It's a tie!")).toBeInTheDocument();
    });
 
-   it("does not show 'You won!' or 'Game Over' on a tie", () => {
+   it("does not show 'Game Over' on a tie", () => {
       renderGameOver(-1, tiedPlayers);
-      expect(screen.queryByText("You won!")).not.toBeInTheDocument();
       expect(screen.queryByText("Game Over")).not.toBeInTheDocument();
    });
 
@@ -63,6 +75,28 @@ describe("GameOverBlock", () => {
       expect(highlightedNames).toContain("Alice");
       expect(highlightedNames).not.toContain("Bob");
       expect(highlightedNames).not.toContain("Carol");
+   });
+
+   it("highlights the user's own row", () => {
+      renderGameOver(2);
+      const rows = screen.getAllByRole("row").slice(1);
+      const myRow = rows.find(
+         (r) =>
+            (r as HTMLTableRowElement).cells[0].textContent?.trim() === "You"
+      );
+      expect(myRow).toBeDefined();
+      expect((myRow as HTMLElement).className).toContain("scoreTableMe");
+   });
+
+   it("highlights the user's own row in multiplayer with mySeatIndex", () => {
+      renderGameOver(0, players, 2);
+      const rows = screen.getAllByRole("row").slice(1);
+      const myRow = rows.find(
+         (r) =>
+            (r as HTMLTableRowElement).cells[0].textContent?.trim() === "Bob"
+      );
+      expect(myRow).toBeDefined();
+      expect((myRow as HTMLElement).className).toContain("scoreTableMe");
    });
 
    it("sorts players by score ascending", () => {
@@ -87,5 +121,21 @@ describe("GameOverBlock", () => {
       expect(
          screen.getByRole("button", { name: "Create New Game" })
       ).toBeInTheDocument();
+   });
+
+   it("renders custom children instead of default button", () => {
+      render(
+         <MemoryRouter>
+            <GameOverBlock players={players} winnerIndex={2}>
+               <button>Play Again</button>
+               <button>Home</button>
+            </GameOverBlock>
+         </MemoryRouter>
+      );
+      expect(screen.getByText("Play Again")).toBeInTheDocument();
+      expect(screen.getByText("Home")).toBeInTheDocument();
+      expect(
+         screen.queryByRole("button", { name: "Create New Game" })
+      ).not.toBeInTheDocument();
    });
 });

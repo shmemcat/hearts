@@ -51,23 +51,27 @@ import {
    NO_PASS_HOLD_MS,
 } from "@/lib/constants";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
 import handStyles from "@/components/game/Hand.module.css";
 import styles from "@/styles/play.module.css";
 
 const MP_TOKEN_KEY = (gameId: string) => `hearts_mp_token_${gameId}`;
 const MP_SEAT_KEY = (gameId: string) => `hearts_mp_seat_${gameId}`;
+const MP_LOBBY_KEY = (gameId: string) => `hearts_mp_lobby_${gameId}`;
 
 export default function MultiPlayPage() {
    const [searchParams] = useSearchParams();
    const gameId = searchParams.get("game_id") ?? "";
    const isMobile = useIsMobile();
+   const { token: jwtToken } = useAuth();
    const { play: playSound } = useSound();
 
    const playerToken = gameId
       ? localStorage.getItem(MP_TOKEN_KEY(gameId))
       : null;
    const savedSeat = gameId ? localStorage.getItem(MP_SEAT_KEY(gameId)) : null;
+   const lobbyCode = gameId ? localStorage.getItem(MP_LOBBY_KEY(gameId)) : null;
    const isSpectator = !playerToken;
 
    // ── Core UI state ──────────────────────────────────────────────────
@@ -130,6 +134,11 @@ export default function MultiPlayPage() {
    const passEnterDirRef = useRef<"left" | "right" | "above">("right");
    const passExitStartRef = useRef<number>(0);
    const roundEndStateRef = useRef<GameState | null>(null);
+   const lastSocketEventRef = useRef<number>(0);
+   const concededRef = useRef(conceded);
+   concededRef.current = conceded;
+   const terminatedRef = useRef(terminated);
+   terminatedRef.current = terminated;
 
    // ── Play queue (animation) ────────────────────────────────────────
    const applyPendingState = useCallback(() => {
@@ -280,7 +289,7 @@ export default function MultiPlayPage() {
    // ── WebSocket connect / disconnect ─────────────────────────────────
    useEffect(() => {
       if (!gameId) return;
-      connectMulti(gameId, playerToken);
+      connectMulti(gameId, playerToken, jwtToken);
 
       const retryTimer = setTimeout(() => {
          if (loadingRef.current) {
@@ -292,13 +301,14 @@ export default function MultiPlayPage() {
          clearTimeout(retryTimer);
          disconnectMulti();
       };
-   }, [gameId, playerToken]);
+   }, [gameId, playerToken, jwtToken]);
 
    // ── WebSocket subscriptions ────────────────────────────────────────
    useEffect(() => {
       if (!gameId) return;
 
       const unsubState = onMultiState((data: GameState) => {
+         lastSocketEventRef.current = Date.now();
          if (loadingRef.current) {
             setLoading(false);
             setState(data);
@@ -330,6 +340,7 @@ export default function MultiPlayPage() {
       });
 
       const unsubPlay = onMultiPlay((ev: PlayEvent) => {
+         lastSocketEventRef.current = Date.now();
          const seat = mySeatRef.current;
          const isOwnEcho =
             seat !== null &&
@@ -343,6 +354,7 @@ export default function MultiPlayPage() {
       });
 
       const unsubTrick = onMultiTrickComplete(() => {
+         lastSocketEventRef.current = Date.now();
          enqueue({ type: "trick_complete" });
       });
 
@@ -400,6 +412,33 @@ export default function MultiPlayPage() {
       };
    }, [gameId, enqueue, isActive, setSlots]);
 
+   // ── Watchdog: nudge server if game appears stuck ──────────────────
+   useEffect(() => {
+      if (!gameId) return;
+      const STALL_THRESHOLD_MS = 10_000;
+      const CHECK_INTERVAL_MS = 5_000;
+
+      const id = setInterval(() => {
+         const s = stateRef.current;
+         if (!s || s.game_over) return;
+         if (loadingRef.current) return;
+         if (concededRef.current || terminatedRef.current) return;
+
+         const elapsed = Date.now() - lastSocketEventRef.current;
+         if (elapsed < STALL_THRESHOLD_MS) return;
+
+         const seat = mySeatRef.current;
+         const isMyTurn =
+            s.phase === "playing" && seat !== null && s.whose_turn === seat;
+         if (isMyTurn) return;
+
+         sendMultiRequestState();
+         lastSocketEventRef.current = Date.now();
+      }, CHECK_INTERVAL_MS);
+
+      return () => clearInterval(id);
+   }, [gameId]);
+
    // ── Round banner + dealing animation ──────────────────────────────
    const handleContinueRoundRef = useRef<() => void>(() => {});
 
@@ -408,7 +447,7 @@ export default function MultiPlayPage() {
       const t = setTimeout(() => {
          setRoundBanner(null);
          const s = stateRef.current;
-         if (s?.phase === "passing" && s.pass_direction === "none") {
+         if (s?.pass_direction === "none") {
             setNoPassHold(true);
             setTimeout(() => setNoPassHold(false), NO_PASS_HOLD_MS);
          } else {
@@ -676,9 +715,11 @@ export default function MultiPlayPage() {
    // ── Phase hint text ───────────────────────────────────────────────
    let phaseHintText = "";
    if (isSpectator || conceded) {
-      phaseHintText = "Spectating";
+      phaseHintText = isMobile ? "" : "Spectating";
    } else if (state?.game_over) {
       phaseHintText = "";
+   } else if (noPassHold) {
+      phaseHintText = "No passing this round";
    } else if (state?.phase === "passing") {
       if (passSubmitted) {
          phaseHintText = "Waiting for other players...";
@@ -686,10 +727,11 @@ export default function MultiPlayPage() {
          phaseHintText = `Select 3 cards to pass ${state.pass_direction}`;
       }
    } else if (state?.phase === "playing") {
-      if (state.whose_turn === mySeat) {
+      const effectiveTurn = whoseTurn ?? state.whose_turn;
+      if (effectiveTurn === mySeat) {
          phaseHintText = "Your turn!";
       } else {
-         const turnPlayer = state.players[state.whose_turn]?.name ?? "";
+         const turnPlayer = state.players[effectiveTurn]?.name ?? "";
          phaseHintText = `${turnPlayer}'s turn`;
       }
    }
@@ -758,6 +800,7 @@ export default function MultiPlayPage() {
                         passDirection={state.pass_direction}
                         difficulty={state.difficulty}
                         players={state.players}
+                        mySeatIndex={conceded || isSpectator ? -1 : mySeat ?? 0}
                         onClose={() => setInfoModalOpen(false)}
                         onConcede={() => setConcedeModalOpen(true)}
                         gameOver={state.game_over || conceded || isSpectator}
@@ -973,30 +1016,35 @@ export default function MultiPlayPage() {
                      )}
 
                      {/* ── Centered pass button in table ──────────── */}
-                     {showPassUI && (
-                        <div className={styles.passCenter}>
-                           <Button
-                              name="Submit Pass"
-                              disabled={passSelection.size !== 3}
-                              onClick={handleConfirmPass}
-                              style={{
-                                 height: "52px",
-                                 width: "110px",
-                                 lineHeight: "1.2",
-                                 display: "flex",
-                                 flexDirection: "column",
-                                 alignItems: "center",
-                                 justifyContent: "center",
-                              }}
-                           >
-                              <span>pass</span>
-                              <span>{state?.pass_direction ?? ""}</span>
-                           </Button>
-                        </div>
-                     )}
+                     {!roundBanner &&
+                        !dealingHand &&
+                        showPassUI &&
+                        !passTransition && (
+                           <div className={styles.passCenter}>
+                              <Button
+                                 name="Submit Pass"
+                                 disabled={passSelection.size !== 3}
+                                 onClick={handleConfirmPass}
+                                 style={{
+                                    height: "52px",
+                                    width: "110px",
+                                    lineHeight: "1.2",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                 }}
+                              >
+                                 <span>pass</span>
+                                 <span>{state?.pass_direction ?? ""}</span>
+                              </Button>
+                           </div>
+                        )}
 
                      {/* Waiting for other players */}
-                     {state?.phase === "passing" &&
+                     {!roundBanner &&
+                        !dealingHand &&
+                        state?.phase === "passing" &&
                         passSubmitted &&
                         !passTransition &&
                         !isSpectator &&
@@ -1014,21 +1062,40 @@ export default function MultiPlayPage() {
                               </p>
                            </div>
                         )}
+
+                     {/* Round banner (start-of-round) */}
+                     {roundBanner && !roundSummary && (
+                        <div className={styles.roundBannerOverlay}>
+                           <span className={styles.roundBannerText}>
+                              Round {roundBanner.round}
+                           </span>
+                        </div>
+                     )}
                   </div>
 
                   <div className={styles.phaseHint}>
-                     <PhaseHint text={roundSummary ? null : phaseHintText} />
+                     <PhaseHint
+                        text={
+                           roundSummary || roundBanner || dealingHand
+                              ? null
+                              : phaseHintText
+                        }
+                     />
                   </div>
 
                   {/* Hand */}
-                  {!isSpectator &&
-                     !conceded &&
-                     (myHand.length > 0 || passTransition) && (
-                        <div
-                           className={`${handStyles.handWrapper} ${
-                              dealingHand ? handStyles.dealingHand : ""
-                           }`}
-                        >
+                  {!isSpectator && !conceded && (
+                     <div
+                        className={`${handStyles.handWrapper} ${
+                           dealingHand ? handStyles.dealingHand : ""
+                        }`}
+                        style={
+                           myHand.length === 0 && !passTransition
+                              ? { visibility: "hidden" }
+                              : undefined
+                        }
+                     >
+                        {myHand.length > 0 || passTransition ? (
                            <Hand
                               cards={
                                  passTransition
@@ -1053,8 +1120,15 @@ export default function MultiPlayPage() {
                               enteringCodes={passTransition?.enteringCodes}
                               enterDirection={passTransition?.enterDir}
                            />
-                        </div>
-                     )}
+                        ) : (
+                           <div className={handStyles.hand} aria-hidden="true">
+                              <div className={handStyles.handCardWrap}>
+                                 <div className={handStyles.handSlotEmpty} />
+                              </div>
+                           </div>
+                        )}
+                     </div>
+                  )}
 
                   {/* Spectator hand placeholder */}
                   {(isSpectator || conceded) && (
@@ -1071,6 +1145,35 @@ export default function MultiPlayPage() {
                         </p>
                      </div>
                   )}
+
+                  {/* Game over modal */}
+                  {state?.game_over && !terminated && (
+                     <GameOverBlock
+                        players={state.players}
+                        winnerIndex={state.winner_index}
+                        mySeatIndex={conceded || isSpectator ? -1 : mySeat ?? 0}
+                     >
+                        <ButtonGroup>
+                           {lobbyCode && (
+                              <Link to={`/game/lobby/${lobbyCode}`}>
+                                 <Button
+                                    name="Play Again"
+                                    style={{ width: "250px" }}
+                                 />
+                              </Link>
+                           )}
+                           <Link to="/game/create">
+                              <Button
+                                 name="Create New Game"
+                                 style={{ width: "250px" }}
+                              />
+                           </Link>
+                           <Link to="/" onClick={() => triggerLogoFadeOut()}>
+                              <Button name="Home" style={{ width: "250px" }} />
+                           </Link>
+                        </ButtonGroup>
+                     </GameOverBlock>
+                  )}
                </div>
             )}
          </PageLayout>
@@ -1079,6 +1182,7 @@ export default function MultiPlayPage() {
          {roundSummary && (
             <RoundSummaryOverlay
                summary={roundSummary}
+               mySeatIndex={conceded || isSpectator ? -1 : mySeat ?? 0}
                onContinue={() => handleContinueRoundRef.current()}
             />
          )}
@@ -1095,38 +1199,6 @@ export default function MultiPlayPage() {
                   setShootTheMoon(null);
                }}
             />
-         )}
-
-         {/* Round banner */}
-         {roundBanner && !roundSummary && (
-            <div className={styles.roundBanner}>
-               <span className={styles.roundBannerText}>
-                  Round {roundBanner.round}
-               </span>
-            </div>
-         )}
-
-         {/* Game over */}
-         {state?.game_over && !terminated && (
-            <div className={styles.gameOverBackdrop}>
-               <div className={styles.gameOverBlock}>
-                  <GameOverBlock
-                     players={state.players}
-                     winnerIndex={state.winner_index}
-                  />
-                  <ButtonGroup>
-                     <Link to="/game/create">
-                        <Button
-                           name="Create New Game"
-                           style={{ width: "250px" }}
-                        />
-                     </Link>
-                     <Link to="/" onClick={() => triggerLogoFadeOut()}>
-                        <Button name="Home" style={{ width: "250px" }} />
-                     </Link>
-                  </ButtonGroup>
-               </div>
-            </div>
          )}
 
          {/* Game terminated */}
@@ -1150,7 +1222,16 @@ export default function MultiPlayPage() {
                               .map((p, i) => ({ ...p, idx: i }))
                               .sort((a, b) => a.score - b.score)
                               .map((p) => (
-                                 <tr key={p.idx}>
+                                 <tr
+                                    key={p.idx}
+                                    className={
+                                       !conceded &&
+                                       !isSpectator &&
+                                       p.idx === (mySeat ?? 0)
+                                          ? styles.scoreTableMe
+                                          : ""
+                                    }
+                                 >
                                     <td>
                                        <PlayerIcon
                                           name={p.name}

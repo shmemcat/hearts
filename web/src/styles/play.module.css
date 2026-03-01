@@ -90,28 +90,18 @@
    }
 }
 
-/* ── Round summary overlay (on top of game table) ────────── */
+/* ── Round summary overlay (modal with blurred backdrop) ──── */
 .roundSummaryOverlay {
-   position: absolute;
+   position: fixed;
    inset: 0;
+   z-index: 100;
    display: flex;
    align-items: center;
    justify-content: center;
-   z-index: 10;
-   background: var(--roundsummarybackground);
-   border-radius: 16px;
-   animation: overlaySlideDown 0.35s ease-out;
-}
-
-@keyframes overlaySlideDown {
-   from {
-      opacity: 0;
-      transform: translateY(-20px);
-   }
-   to {
-      opacity: 1;
-      transform: translateY(0);
-   }
+   background: rgba(0, 0, 0, 0.4);
+   backdrop-filter: blur(4px);
+   -webkit-backdrop-filter: blur(4px);
+   animation: gameOverFadeIn 0.3s ease-out;
 }
 
 /* ── Round banner (start-of-round indicator) ─────────────── */
@@ -142,20 +132,26 @@
 }
 
 .roundSummaryBlock {
+   background: var(--contentbox);
+   border-radius: 16px;
+   padding: 24px 28px;
+   min-width: 280px;
+   max-width: 420px;
+   width: 90%;
    display: flex;
    flex-direction: column;
    align-items: center;
    text-align: center;
-   padding: 24px 32px;
-   max-width: 420px;
-   width: 90%;
+   gap: 14px;
+   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+   animation: gameOverSlideUp 0.3s ease-out;
 }
 
 .roundSummaryTitle {
    font-size: 1.2rem;
    font-weight: 700;
    color: var(--header);
-   margin-bottom: 16px;
+   margin: 0;
 }
 
 /* ── Score table (shared by round summary + game over) ───── */
@@ -185,6 +181,13 @@
 .scoreTableWinner {
    background: rgba(255, 182, 193, 0.3);
    font-weight: 700;
+}
+
+.scoreTableMe {
+   font-weight: 700;
+   text-decoration: underline;
+   text-decoration-color: var(--header);
+   text-underline-offset: 2px;
 }
 
 .scoreDelta {
@@ -351,12 +354,6 @@
       text-align: center;
    }
    .roundSummaryBlock {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      padding: 12px 12px;
-      max-width: 420px;
-      width: 90%;
+      padding: 16px 16px;
    }
 }

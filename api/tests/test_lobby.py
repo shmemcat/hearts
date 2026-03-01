@@ -87,6 +87,32 @@ class TestJoinLobby:
         with pytest.raises(ValueError, match="full"):
             join_lobby(lobby.code, "D")
 
+    def test_seat_preference_selects_specific_seat(self):
+        lobby = create_lobby("Host")
+        idx, _ = join_lobby(lobby.code, "Alice", seat_preference=3)
+        assert idx == 3
+        assert lobby.seats[3].name == "Alice"
+
+    def test_seat_preference_replaces_ai(self):
+        lobby = create_lobby("Host", num_ai=2)
+        idx, _ = join_lobby(lobby.code, "Alice", seat_preference=3)
+        assert idx == 3
+        assert lobby.seats[3].name == "Alice"
+        assert not lobby.seats[3].is_ai
+
+    def test_seat_preference_raises_for_taken_seat(self):
+        lobby = create_lobby("Host")
+        join_lobby(lobby.code, "Alice", seat_preference=2)
+        with pytest.raises(ValueError, match="already taken"):
+            join_lobby(lobby.code, "Bob", seat_preference=2)
+
+    def test_seat_preference_raises_for_invalid_number(self):
+        lobby = create_lobby("Host")
+        with pytest.raises(ValueError, match="Invalid seat"):
+            join_lobby(lobby.code, "Alice", seat_preference=0)
+        with pytest.raises(ValueError, match="Invalid seat"):
+            join_lobby(lobby.code, "Bob", seat_preference=5)
+
     def test_raises_for_nonexistent_lobby(self):
         with pytest.raises(ValueError, match="not found"):
             join_lobby("ZZZZZZ", "Test")
