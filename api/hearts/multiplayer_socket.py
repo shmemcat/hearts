@@ -8,6 +8,7 @@ own hand). Play/trick events are broadcast to the entire room.
 
 import logging
 import eventlet
+from datetime import date
 from typing import Any, Dict, Optional, Set, Tuple
 
 from flask import current_app, request
@@ -26,6 +27,12 @@ from hearts.multiplayer_game_ops import (
     advance_if_bot_turn,
 )
 from hearts.jwt_utils import get_current_user
+from hearts.stats_routes import (
+    _compute_newly_unlocked,
+    _easter_date,
+    _thanksgiving_date,
+    _is_in_all_time_top_10,
+)
 
 _RECONNECT_TIMEOUT_SECONDS = 120
 _IDLE_TIMEOUT_SECONDS = 600
@@ -354,6 +361,37 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
     scores = runner.state.scores
     min_score = min(scores)
     winners = [i for i, s in enumerate(scores) if s == min_score]
+    moon_shots_map = runner.moon_shots
+    hearts_broken_map = runner.hearts_broken_count
+    round_count = runner.state.round
+
+    active = ActiveGame.query.filter_by(game_id=game_id).first()
+    started_after_midnight = False
+    started_early_morning = False
+    is_valentines = False
+    is_new_year = False
+    is_st_patricks = False
+    is_easter = False
+    is_independence = False
+    is_halloween = False
+    is_thanksgiving = False
+    is_christmas = False
+    if active and active.created_at:
+        hour = active.created_at.hour
+        started_after_midnight = hour < 5
+        started_early_morning = 5 <= hour < 8
+        started_dt = active.created_at
+        m, d, y = started_dt.month, started_dt.day, started_dt.year
+        is_valentines = m == 2 and d == 14
+        is_new_year = m == 1 and d == 1
+        is_st_patricks = m == 3 and d == 17
+        is_easter = date(y, m, d) == _easter_date(y)
+        is_independence = m == 7 and d == 4
+        is_halloween = m == 10 and d == 31
+        is_thanksgiving = date(y, m, d) == _thanksgiving_date(y)
+        is_christmas = m == 12 and d == 25
+
+    unlocked_per_seat: Dict[int, list] = {}
 
     for seat_idx, user_id in auth_map.items():
         seat = runner.seats[seat_idx]
@@ -361,6 +399,10 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
             continue
         player_score = int(scores[seat_idx])
         won = seat_idx in winners and len(winners) == 1
+        seat_moon_shots = moon_shots_map.get(seat_idx, 0)
+        seat_hearts_broken = hearts_broken_map.get(seat_idx, 0)
+
+        opponent_scores = [int(scores[i]) for i in range(4) if i != seat_idx]
 
         # Per-category stats (multiplayer)
         ds = DifficultyStats.query.filter_by(
@@ -378,6 +420,7 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
         else:
             ds.current_win_streak = 0
         ds.total_points += player_score
+        ds.moon_shots += seat_moon_shots
         if ds.best_score is None or player_score < ds.best_score:
             ds.best_score = player_score
         if ds.worst_score is None or player_score > ds.worst_score:
@@ -388,6 +431,38 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
         if not us:
             us = UserStats(user_id=user_id)
             db.session.add(us)
+
+        old_snapshot = {
+            "games_played": us.games_played,
+            "games_won": us.games_won,
+            "moon_shots": us.moon_shots,
+            "best_score": us.best_score,
+            "hard_wins": us.hard_wins,
+            "harder_wins": us.harder_wins,
+            "hardest_wins": us.hardest_wins,
+            "max_win_streak": us.max_win_streak,
+            "night_owl": us.night_owl,
+            "lucky_seven": us.lucky_seven,
+            "double_moon": us.double_moon,
+            "early_bird": us.early_bird,
+            "lonely_heart": us.lonely_heart,
+            "photo_finish": us.photo_finish,
+            "demolition": us.demolition,
+            "speed_demon": us.speed_demon,
+            "marathon": us.marathon,
+            "eclipse": us.eclipse,
+            "heartbreaker": us.heartbreaker,
+            "monthly_star": us.monthly_star,
+            "hall_of_fame": us.hall_of_fame,
+            "new_year": us.new_year,
+            "lucky_clover": us.lucky_clover,
+            "easter_egg": us.easter_egg,
+            "fireworks": us.fireworks,
+            "spooky": us.spooky,
+            "thankful": us.thankful,
+            "christmas_spirit": us.christmas_spirit,
+        }
+
         us.games_played += 1
         if won:
             us.games_won += 1
@@ -397,10 +472,59 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
         else:
             us.current_win_streak = 0
         us.total_points += player_score
+        us.moon_shots += seat_moon_shots
         if us.best_score is None or player_score < us.best_score:
             us.best_score = player_score
         if us.worst_score is None or player_score > us.worst_score:
             us.worst_score = player_score
+
+        # Boolean achievements
+        if started_after_midnight and not us.night_owl:
+            us.night_owl = True
+        if started_early_morning and not us.early_bird:
+            us.early_bird = True
+        if won and player_score == 7 and not us.lucky_seven:
+            us.lucky_seven = True
+        if seat_moon_shots >= 2 and not us.double_moon:
+            us.double_moon = True
+        if seat_moon_shots >= 3 and not us.eclipse:
+            us.eclipse = True
+        if seat_hearts_broken >= 5 and not us.heartbreaker:
+            us.heartbreaker = True
+        if won and opponent_scores and not us.photo_finish:
+            if min(opponent_scores) - player_score == 1:
+                us.photo_finish = True
+        if won and opponent_scores and not us.demolition:
+            if all(s >= 100 for s in opponent_scores):
+                us.demolition = True
+        if won and round_count > 0 and round_count <= 4 and not us.speed_demon:
+            us.speed_demon = True
+        if round_count >= 10 and not us.marathon:
+            us.marathon = True
+        if is_valentines and not us.lonely_heart:
+            us.lonely_heart = True
+        if is_new_year and not us.new_year:
+            us.new_year = True
+        if is_st_patricks and not us.lucky_clover:
+            us.lucky_clover = True
+        if is_easter and not us.easter_egg:
+            us.easter_egg = True
+        if is_independence and not us.fireworks:
+            us.fireworks = True
+        if is_halloween and not us.spooky:
+            us.spooky = True
+        if is_thanksgiving and not us.thankful:
+            us.thankful = True
+        if is_christmas and not us.christmas_spirit:
+            us.christmas_spirit = True
+
+        if won and not us.hall_of_fame:
+            if _is_in_all_time_top_10(user_id, "multiplayer", "multiplayer"):
+                us.hall_of_fame = True
+
+        newly_unlocked = _compute_newly_unlocked(old_snapshot, us, won, player_score)
+        if newly_unlocked:
+            unlocked_per_seat[seat_idx] = newly_unlocked
 
         # Game result log (for leaderboard)
         db.session.add(
@@ -413,7 +537,20 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
 
     db.session.commit()
 
-    active = ActiveGame.query.filter_by(game_id=game_id).first()
+    # Emit achievement unlocks to each player
+    for seat_idx, unlocked in unlocked_per_seat.items():
+        sid = None
+        seat = runner.seats[seat_idx]
+        if seat.player_token:
+            sid = _token_to_sid.get(seat.player_token)
+        if sid:
+            socketio.emit(
+                "achievements_unlocked",
+                {"newly_unlocked": unlocked},
+                to=sid,
+                namespace="/multi",
+            )
+
     if active and active.lobby_code:
         lobby = get_lobby(active.lobby_code)
         if lobby:

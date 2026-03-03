@@ -89,6 +89,8 @@ class MultiplayerRunner:
         self._pending_passes: Dict[int, List[Card]] = {}
         self._last_play_events: List[Dict[str, Any]] = []
         self._last_round_ended: bool = False
+        self._moon_shots: Dict[int, int] = {i: 0 for i in range(4)}
+        self._hearts_broken_count: Dict[int, int] = {i: 0 for i in range(4)}
 
     @property
     def state(self) -> GameState:
@@ -130,6 +132,14 @@ class MultiplayerRunner:
     def pending_passes(self) -> Dict[int, List[Card]]:
         """Read-only view of which seats have submitted passes this round."""
         return self._pending_passes
+
+    @property
+    def moon_shots(self) -> Dict[int, int]:
+        return dict(self._moon_shots)
+
+    @property
+    def hearts_broken_count(self) -> Dict[int, int]:
+        return dict(self._hearts_broken_count)
 
     def apply_all_passes(self) -> None:
         """Collect AI passes for any seats that haven't submitted, then apply."""
@@ -204,6 +214,11 @@ class MultiplayerRunner:
         if card not in legal:
             raise ValueError("Illegal play")
 
+        if card.suit == Suit.HEARTS and not self._state.hearts_broken:
+            self._hearts_broken_count[seat_index] = (
+                self._hearts_broken_count.get(seat_index, 0) + 1
+            )
+
         play_event = {"player_index": seat_index, "card": card.to_code()}
         self._last_play_events = [play_event]
         self._last_round_ended = False
@@ -228,6 +243,9 @@ class MultiplayerRunner:
     ) -> Optional[str]:
         if not _round_complete(self._state):
             return None
+        for i in range(4):
+            if self._state.round_scores[i] == 26:
+                self._moon_shots[i] = self._moon_shots.get(i, 0) + 1
         self._state = apply_round_scoring(self._state)
         if self._state.game_over:
             if on_done:
@@ -464,6 +482,10 @@ class MultiplayerRunner:
             "difficulty": self._difficulty,
             "pending_passes": pending,
             "rng_state": [rng_state[0], list(rng_state[1]), rng_state[2]],
+            "moon_shots": {str(k): v for k, v in self._moon_shots.items()},
+            "hearts_broken_count": {
+                str(k): v for k, v in self._hearts_broken_count.items()
+            },
         }
 
     def to_json(self) -> str:
@@ -505,6 +527,11 @@ class MultiplayerRunner:
         pending_raw = data.get("pending_passes", {})
         for k, v in pending_raw.items():
             runner._pending_passes[int(k)] = [Card.from_code(c) for c in v]
+
+        for k, v in data.get("moon_shots", {}).items():
+            runner._moon_shots[int(k)] = int(v)
+        for k, v in data.get("hearts_broken_count", {}).items():
+            runner._hearts_broken_count[int(k)] = int(v)
 
         return runner
 

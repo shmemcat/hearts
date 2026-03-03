@@ -16,6 +16,7 @@ type PlayerConcededCb = (data: {
    reason?: string;
 }) => void;
 type ErrorCb = (message: string) => void;
+type AchievementsUnlockedCb = (data: { newly_unlocked: string[] }) => void;
 
 const stateListeners: StateCb[] = [];
 const playListeners: PlayCb[] = [];
@@ -26,6 +27,7 @@ const gameTerminatedListeners: VoidCb[] = [];
 const gameOverListeners: StateCb[] = [];
 const errorListeners: ErrorCb[] = [];
 const idleWarningListeners: VoidCb[] = [];
+const achievementsUnlockedListeners: AchievementsUnlockedCb[] = [];
 
 export function connectMulti(
    gameId: string,
@@ -76,6 +78,9 @@ export function connectMulti(
       const msg =
          typeof data?.message === "string" ? data.message : "Multiplayer error";
       errorListeners.forEach((cb) => cb(msg));
+   });
+   socket.on("achievements_unlocked", (data: { newly_unlocked: string[] }) => {
+      achievementsUnlockedListeners.forEach((cb) => cb(data));
    });
 }
 
@@ -130,3 +135,6 @@ export const onIdleWarning = makeSubscriber(idleWarningListeners);
 export const onGameTerminated = makeSubscriber(gameTerminatedListeners);
 export const onGameOver = makeSubscriber(gameOverListeners);
 export const onError = makeSubscriber(errorListeners);
+export const onAchievementsUnlocked = makeSubscriber(
+   achievementsUnlockedListeners
+);

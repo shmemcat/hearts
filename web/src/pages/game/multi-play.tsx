@@ -40,6 +40,7 @@ import {
    onGameTerminated as onMultiGameTerminated,
    onGameOver as onMultiGameOver,
    onError as onMultiError,
+   onAchievementsUnlocked as onMultiAchievementsUnlocked,
 } from "@/lib/multiplayerSocket";
 import { reorderSlotsForTableLayout, getShortName } from "@/lib/playUtils";
 import type { CurrentTrickSlot, GameState, PlayEvent } from "@/types/game";
@@ -53,6 +54,9 @@ import {
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
+import { useToast } from "@/context/ToastContext";
+import { resolveUnlockId } from "@/lib/achievements";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import handStyles from "@/components/game/Hand.module.css";
 import styles from "@/styles/play.module.css";
 
@@ -66,6 +70,7 @@ export default function MultiPlayPage() {
    const isMobile = useIsMobile();
    const { token: jwtToken } = useAuth();
    const { play: playSound } = useSound();
+   const { addToast } = useToast();
 
    const playerToken = gameId
       ? localStorage.getItem(MP_TOKEN_KEY(gameId))
@@ -399,6 +404,20 @@ export default function MultiPlayPage() {
          setError(msg);
       });
 
+      const unsubAchievements = onMultiAchievementsUnlocked((data) => {
+         for (const unlockId of data.newly_unlocked) {
+            const info = resolveUnlockId(unlockId);
+            if (info) {
+               addToast({
+                  achievementId: unlockId,
+                  name: info.name,
+                  icon: <FontAwesomeIcon icon={info.def.icon} />,
+                  tier: info.tier,
+               });
+            }
+         }
+      });
+
       return () => {
          unsubState();
          unsubPlay();
@@ -409,8 +428,9 @@ export default function MultiPlayPage() {
          unsubTerminated();
          unsubGameOver();
          unsubError();
+         unsubAchievements();
       };
-   }, [gameId, enqueue, isActive, setSlots]);
+   }, [gameId, enqueue, isActive, setSlots, addToast]);
 
    // ── Watchdog: nudge server if game appears stuck ──────────────────
    useEffect(() => {
