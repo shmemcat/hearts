@@ -9,7 +9,7 @@ from typing import Dict
 from flask import request
 from flask_socketio import emit
 
-from hearts.game_routes import _get_runner, _save_to_db, _delete_game
+from hearts.game_routes import _get_runner, _save_to_db, _evict_from_cache
 from hearts.game.card import Card
 from hearts.models import ActiveGame, User
 
@@ -49,7 +49,7 @@ def _make_callbacks(runner, game_id, human_icon: str = "user"):
         _inject_icons(payload, human_icon)
         emit("state", payload, namespace="/game")
         if runner.state.game_over:
-            _delete_game(game_id)
+            _evict_from_cache(game_id)
         else:
             _save_to_db(game_id, runner)
 
