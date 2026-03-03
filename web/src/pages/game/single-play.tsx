@@ -617,6 +617,15 @@ export default function PlayGamePage() {
       if (dealingHand) playSoundRef.current("cardFan");
    }, [dealingHand]);
 
+   // 1c. Hearts broken (first heart card appears on table this round)
+   const prevHeartsVisuallyBrokenRef = useRef(false);
+   useEffect(() => {
+      if (heartsVisuallyBroken && !prevHeartsVisuallyBrokenRef.current) {
+         playSoundRef.current("heartsBroken");
+      }
+      prevHeartsVisuallyBrokenRef.current = heartsVisuallyBroken;
+   }, [heartsVisuallyBroken]);
+
    // 2. Card played (new card appears on trick table)
    const prevSlotsRef = useRef(displaySlots);
    useEffect(() => {

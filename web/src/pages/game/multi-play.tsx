@@ -477,9 +477,35 @@ export default function MultiPlayPage() {
       if (hasHeart) setHeartsVisuallyBroken(true);
    }, [displaySlots]);
 
-   // ── Sound effects for trick sweep and heart deltas ─────────────
+   // ── Sound effects ────────────────────────────────────────────────
    const playSoundRef = useRef(playSound);
    playSoundRef.current = playSound;
+
+   useEffect(() => {
+      if (roundBanner) playSoundRef.current("heartDelta");
+   }, [roundBanner]);
+
+   const prevHeartsVisuallyBrokenRef = useRef(false);
+   useEffect(() => {
+      if (heartsVisuallyBroken && !prevHeartsVisuallyBrokenRef.current) {
+         playSoundRef.current("heartsBroken");
+      }
+      prevHeartsVisuallyBrokenRef.current = heartsVisuallyBroken;
+   }, [heartsVisuallyBroken]);
+
+   useEffect(() => {
+      if (dealingHand) playSoundRef.current("cardFan");
+   }, [dealingHand]);
+
+   const prevSlotsRef = useRef(displaySlots);
+   useEffect(() => {
+      const prev = prevSlotsRef.current;
+      const appeared = displaySlots.some(
+         (s, i) => s != null && prev[i] == null
+      );
+      prevSlotsRef.current = displaySlots;
+      if (appeared) playSoundRef.current("cardSlide");
+   }, [displaySlots]);
 
    useEffect(() => {
       if (collectTarget != null) playSoundRef.current("cardSweep");
@@ -489,6 +515,27 @@ export default function MultiPlayPage() {
       if (trickResult && trickResult.hearts > 0)
          playSoundRef.current("heartDelta");
    }, [trickResult]);
+
+   useEffect(() => {
+      if (roundSummary) playSoundRef.current("roundEnd");
+   }, [roundSummary]);
+
+   const gameOverSoundRef = useRef(false);
+   useEffect(() => {
+      if (state?.game_over && !gameOverSoundRef.current) {
+         gameOverSoundRef.current = true;
+         playSoundRef.current("gameEnd");
+      }
+   }, [state?.game_over]);
+
+   useEffect(() => {
+      if (
+         passTransition?.phase === "exiting" ||
+         passTransition?.phase === "entering"
+      ) {
+         playSoundRef.current("cardSweep");
+      }
+   }, [passTransition?.phase]);
 
    // ── Round summary continue ───────────────────────────────────────
    handleContinueRoundRef.current = () => {
@@ -562,8 +609,13 @@ export default function MultiPlayPage() {
          if (state.phase === "passing" && !passSubmitted) {
             setPassSelection((prev) => {
                const next = new Set(prev);
-               if (next.has(code)) next.delete(code);
-               else if (next.size < 3) next.add(code);
+               if (next.has(code)) {
+                  next.delete(code);
+                  playSoundRef.current("cardPlace");
+               } else if (next.size < 3) {
+                  next.add(code);
+                  playSoundRef.current("cardPlace");
+               }
                return next;
             });
             return;
