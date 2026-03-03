@@ -25,7 +25,7 @@ import {
    type CategoryStats,
    type DifficultyStatsMap,
 } from "@/lib/gameApi";
-import { computeAchievements } from "@/lib/achievements";
+import { computeAchievements, getSeenAchievements } from "@/lib/achievements";
 import { useToast } from "@/context/ToastContext";
 import containers from "@/styles/containers.module.css";
 import achievementStyles from "@/styles/achievements.module.css";
@@ -513,7 +513,7 @@ function AchievementsPanel({
          // New browser — seed the seen list so old achievements don't re-toast
          localStorage.setItem(storageKey, JSON.stringify(allKeys));
       } else {
-         const seen = new Set<string>(JSON.parse(storedSeen));
+         const seen = getSeenAchievements(storedSeen);
          const unseen = unlocked.filter((a) => {
             const key = a.tier ? `${a.def.id}_${a.tier}` : a.def.id;
             return !seen.has(key);

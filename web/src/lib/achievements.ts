@@ -30,6 +30,7 @@ import {
    faGhost,
    faTurkey,
    faGift,
+   faUserGroup,
 } from "@fortawesome/pro-solid-svg-icons";
 import type { UserStatsResponse } from "@/lib/gameApi";
 
@@ -143,6 +144,7 @@ const TIERED_ACHIEVEMENTS: AchievementDef[] = [
 ];
 
 const SECRET_ACHIEVEMENTS: AchievementDef[] = [
+   // ── Wins & difficulty ─────────────────────────────────────────────
    {
       id: "hi_mom",
       secret: true,
@@ -150,46 +152,6 @@ const SECRET_ACHIEVEMENTS: AchievementDef[] = [
       tiers: null,
       singleName: "Hi Mom",
       singleDescription: "You beat her. She's proud. Maybe.",
-   },
-   {
-      id: "night_owl",
-      secret: true,
-      icon: faOwl,
-      tiers: null,
-      singleName: "Night Owl",
-      singleDescription: "Start a game after midnight",
-   },
-   {
-      id: "lucky_seven",
-      secret: true,
-      icon: faDice,
-      tiers: null,
-      singleName: "Lucky Seven",
-      singleDescription: "Win with exactly 7 points",
-   },
-   {
-      id: "double_moon",
-      secret: true,
-      icon: faWandMagicSparkles,
-      tiers: null,
-      singleName: "Double Feature",
-      singleDescription: "Shoot the moon twice in one game",
-   },
-   {
-      id: "hot_streak",
-      secret: true,
-      icon: faFire,
-      tiers: null,
-      singleName: "Hot Streak",
-      singleDescription: "Win 5 games in a row",
-   },
-   {
-      id: "geezer",
-      secret: true,
-      icon: faVolumeXmark,
-      tiers: null,
-      singleName: "Geezer",
-      singleDescription: "Turn the music off",
    },
    {
       id: "wimp",
@@ -200,6 +162,89 @@ const SECRET_ACHIEVEMENTS: AchievementDef[] = [
       singleDescription: "Concede at the hardest difficulty",
    },
    {
+      id: "hot_streak",
+      secret: true,
+      icon: faFire,
+      tiers: null,
+      singleName: "Hot Streak",
+      singleDescription: "Win 5 games in a row",
+   },
+   {
+      id: "photo_finish",
+      secret: true,
+      icon: faFlagCheckered,
+      tiers: null,
+      singleName: "Photo Finish",
+      singleDescription: "Win by exactly 1 point",
+   },
+   {
+      id: "lucky_seven",
+      secret: true,
+      icon: faDice,
+      tiers: null,
+      singleName: "Lucky Seven",
+      singleDescription: "Win with exactly 7 points",
+   },
+   {
+      id: "demolition",
+      secret: true,
+      icon: faBomb,
+      tiers: null,
+      singleName: "Demolition",
+      singleDescription: "Win while all opponents have 100+ points",
+   },
+   {
+      id: "speed_demon",
+      secret: true,
+      icon: faBoltLightning,
+      tiers: null,
+      singleName: "Speed Demon",
+      singleDescription: "Win a game in 4 rounds or fewer",
+   },
+   {
+      id: "marathon",
+      secret: true,
+      icon: faStopwatch,
+      tiers: null,
+      singleName: "Marathon",
+      singleDescription: "Finish a game that goes 10+ rounds",
+   },
+   // ── Moon & hearts mechanics ───────────────────────────────────────
+   {
+      id: "double_moon",
+      secret: true,
+      icon: faWandMagicSparkles,
+      tiers: null,
+      singleName: "Double Feature",
+      singleDescription: "Shoot the moon twice in one game",
+   },
+   {
+      id: "eclipse",
+      secret: true,
+      icon: faEclipse,
+      tiers: null,
+      singleName: "Eclipse",
+      singleDescription: "Shoot the moon 3 times in one game",
+   },
+   {
+      id: "heartbreaker",
+      secret: true,
+      icon: faHeartCrack,
+      tiers: null,
+      singleName: "Heartbreaker",
+      singleDescription: "Break hearts 5 times in one game",
+   },
+   // ── Multiplayer ───────────────────────────────────────────────────
+   {
+      id: "better_with_friends",
+      secret: true,
+      icon: faUserGroup,
+      tiers: null,
+      singleName: "Better with Friends",
+      singleDescription: "Finish a multiplayer game",
+   },
+   // ── Time of day ───────────────────────────────────────────────────
+   {
       id: "early_bird",
       secret: true,
       icon: faSunBright,
@@ -208,13 +253,40 @@ const SECRET_ACHIEVEMENTS: AchievementDef[] = [
       singleDescription: "Start a game before 7 AM",
    },
    {
-      id: "lonely_heart",
+      id: "night_owl",
       secret: true,
-      icon: faCalendarHeart,
+      icon: faOwl,
       tiers: null,
-      singleName: "Lonely Heart",
-      singleDescription: "Play a game on Valentine's Day",
+      singleName: "Night Owl",
+      singleDescription: "Start a game after midnight",
    },
+   // ── Leaderboard ───────────────────────────────────────────────────
+   {
+      id: "monthly_star",
+      secret: true,
+      icon: faRankingStar,
+      tiers: null,
+      singleName: "Monthly Star",
+      singleDescription: "Finish a month in the top 10",
+   },
+   {
+      id: "hall_of_fame",
+      secret: true,
+      icon: faMedal,
+      tiers: null,
+      singleName: "Hall of Fame",
+      singleDescription: "Make the all-time top 10",
+   },
+   // ── Settings ──────────────────────────────────────────────────────
+   {
+      id: "geezer",
+      secret: true,
+      icon: faVolumeXmark,
+      tiers: null,
+      singleName: "Geezer",
+      singleDescription: "Turn the music off",
+   },
+   // ── Holidays (calendar order) ─────────────────────────────────────
    {
       id: "new_year",
       secret: true,
@@ -222,6 +294,14 @@ const SECRET_ACHIEVEMENTS: AchievementDef[] = [
       tiers: null,
       singleName: "Auld Lang Syne",
       singleDescription: "Play a game on New Year's Day",
+   },
+   {
+      id: "lonely_heart",
+      secret: true,
+      icon: faCalendarHeart,
+      tiers: null,
+      singleName: "Lonely Heart",
+      singleDescription: "Play a game on Valentine's Day",
    },
    {
       id: "lucky_clover",
@@ -270,70 +350,6 @@ const SECRET_ACHIEVEMENTS: AchievementDef[] = [
       tiers: null,
       singleName: "Christmas Spirit",
       singleDescription: "Play a game on Christmas",
-   },
-   {
-      id: "photo_finish",
-      secret: true,
-      icon: faFlagCheckered,
-      tiers: null,
-      singleName: "Photo Finish",
-      singleDescription: "Win by exactly 1 point",
-   },
-   {
-      id: "demolition",
-      secret: true,
-      icon: faBomb,
-      tiers: null,
-      singleName: "Demolition",
-      singleDescription: "Win while all opponents have 100+ points",
-   },
-   {
-      id: "speed_demon",
-      secret: true,
-      icon: faBoltLightning,
-      tiers: null,
-      singleName: "Speed Demon",
-      singleDescription: "Win a game in 4 rounds or fewer",
-   },
-   {
-      id: "marathon",
-      secret: true,
-      icon: faStopwatch,
-      tiers: null,
-      singleName: "Marathon",
-      singleDescription: "Finish a game that goes 10+ rounds",
-   },
-   {
-      id: "eclipse",
-      secret: true,
-      icon: faEclipse,
-      tiers: null,
-      singleName: "Eclipse",
-      singleDescription: "Shoot the moon 3 times in one game",
-   },
-   {
-      id: "heartbreaker",
-      secret: true,
-      icon: faHeartCrack,
-      tiers: null,
-      singleName: "Heartbreaker",
-      singleDescription: "Break hearts 5 times in one game",
-   },
-   {
-      id: "monthly_star",
-      secret: true,
-      icon: faRankingStar,
-      tiers: null,
-      singleName: "Monthly Star",
-      singleDescription: "Finish a month in the top 10",
-   },
-   {
-      id: "hall_of_fame",
-      secret: true,
-      icon: faMedal,
-      tiers: null,
-      singleName: "Hall of Fame",
-      singleDescription: "Make the all-time top 10",
    },
 ];
 
@@ -496,16 +512,35 @@ export function computeAchievements(
       def: AchievementDef;
       unlocked: boolean;
    }[] = [
+      // Wins & difficulty
       { def: secretById.hi_mom, unlocked: stats.hardest_wins >= 1 },
-      { def: secretById.night_owl, unlocked: stats.night_owl },
-      { def: secretById.lucky_seven, unlocked: stats.lucky_seven },
-      { def: secretById.double_moon, unlocked: stats.double_moon },
-      { def: secretById.hot_streak, unlocked: stats.max_win_streak >= 5 },
-      { def: secretById.geezer, unlocked: stats.geezer },
       { def: secretById.wimp, unlocked: stats.wimp },
+      { def: secretById.hot_streak, unlocked: stats.max_win_streak >= 5 },
+      { def: secretById.photo_finish, unlocked: stats.photo_finish },
+      { def: secretById.lucky_seven, unlocked: stats.lucky_seven },
+      { def: secretById.demolition, unlocked: stats.demolition },
+      { def: secretById.speed_demon, unlocked: stats.speed_demon },
+      { def: secretById.marathon, unlocked: stats.marathon },
+      // Moon & hearts mechanics
+      { def: secretById.double_moon, unlocked: stats.double_moon },
+      { def: secretById.eclipse, unlocked: stats.eclipse },
+      { def: secretById.heartbreaker, unlocked: stats.heartbreaker },
+      // Multiplayer
+      {
+         def: secretById.better_with_friends,
+         unlocked: stats.better_with_friends,
+      },
+      // Time of day
       { def: secretById.early_bird, unlocked: stats.early_bird },
-      { def: secretById.lonely_heart, unlocked: stats.lonely_heart },
+      { def: secretById.night_owl, unlocked: stats.night_owl },
+      // Leaderboard
+      { def: secretById.monthly_star, unlocked: stats.monthly_star },
+      { def: secretById.hall_of_fame, unlocked: stats.hall_of_fame },
+      // Settings
+      { def: secretById.geezer, unlocked: stats.geezer },
+      // Holidays (calendar order)
       { def: secretById.new_year, unlocked: stats.new_year },
+      { def: secretById.lonely_heart, unlocked: stats.lonely_heart },
       { def: secretById.lucky_clover, unlocked: stats.lucky_clover },
       { def: secretById.easter_egg, unlocked: stats.easter_egg },
       { def: secretById.fireworks, unlocked: stats.fireworks },
@@ -515,14 +550,6 @@ export function computeAchievements(
          def: secretById.christmas_spirit,
          unlocked: stats.christmas_spirit,
       },
-      { def: secretById.photo_finish, unlocked: stats.photo_finish },
-      { def: secretById.demolition, unlocked: stats.demolition },
-      { def: secretById.speed_demon, unlocked: stats.speed_demon },
-      { def: secretById.marathon, unlocked: stats.marathon },
-      { def: secretById.eclipse, unlocked: stats.eclipse },
-      { def: secretById.heartbreaker, unlocked: stats.heartbreaker },
-      { def: secretById.monthly_star, unlocked: stats.monthly_star },
-      { def: secretById.hall_of_fame, unlocked: stats.hall_of_fame },
    ];
 
    for (const { def, unlocked } of secretChecks) {
@@ -561,4 +588,39 @@ export function resolveUnlockId(unlockId: string): {
    }
 
    return null;
+}
+
+function parseSeenAchievements(raw: string | null): Set<string> {
+   if (!raw) return new Set();
+   try {
+      return new Set<string>(JSON.parse(raw));
+   } catch {
+      return new Set();
+   }
+}
+
+/**
+ * Mark achievement IDs as seen in localStorage so they won't be re-toasted
+ * when the user visits the user page. Call this when showing achievement
+ * toasts from game pages (single-play, multi-play).
+ */
+export function markAchievementsSeen(
+   userId: string,
+   achievementIds: string[]
+): void {
+   if (typeof window === "undefined" || achievementIds.length === 0) return;
+   const storageKey = `hearts_seen_achievements_${userId}`;
+   const seen = parseSeenAchievements(localStorage.getItem(storageKey));
+   for (const id of achievementIds) {
+      seen.add(id);
+   }
+   localStorage.setItem(storageKey, JSON.stringify([...seen]));
+}
+
+/**
+ * Read the set of already-seen achievement IDs for a user from localStorage.
+ * Returns an empty set if the key is missing or the stored value is malformed.
+ */
+export function getSeenAchievements(raw: string | null): Set<string> {
+   return parseSeenAchievements(raw);
 }

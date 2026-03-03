@@ -111,6 +111,9 @@ class UserStats(db.Model):
     christmas_spirit = db.Column(
         db.Boolean, default=False, nullable=False, server_default="0"
     )
+    better_with_friends = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
 
     user = db.relationship("User", back_populates="stats")
 
@@ -153,6 +156,7 @@ class UserStats(db.Model):
             "spooky": self.spooky,
             "thankful": self.thankful,
             "christmas_spirit": self.christmas_spirit,
+            "better_with_friends": self.better_with_friends,
         }
 
 

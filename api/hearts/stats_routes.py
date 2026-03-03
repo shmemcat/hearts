@@ -40,7 +40,7 @@ stats_bp = Blueprint("stats", __name__, url_prefix="/stats")
 
 _recorded_games: set = set()
 
-_UNLOCK_WHITELIST = {"geezer"}
+_UNLOCK_WHITELIST = {"geezer", "better_with_friends"}
 
 
 def reset_recorded_games() -> None:
@@ -460,6 +460,10 @@ def unlock_achievement():
     if achievement == "geezer" and not stats.geezer:
         stats.geezer = True
         newly_unlocked.append("geezer")
+
+    if achievement == "better_with_friends" and not stats.better_with_friends:
+        stats.better_with_friends = True
+        newly_unlocked.append("better_with_friends")
 
     db.session.commit()
     return jsonify({"stats": stats.to_dict(), "newly_unlocked": newly_unlocked}), 200

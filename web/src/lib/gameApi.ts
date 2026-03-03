@@ -252,6 +252,7 @@ export type UserStatsResponse = {
    spooky: boolean;
    thankful: boolean;
    christmas_spirit: boolean;
+   better_with_friends: boolean;
 };
 
 export async function fetchStats(

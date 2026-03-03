@@ -56,8 +56,8 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
 import { useToast } from "@/context/ToastContext";
-import { resolveUnlockId } from "@/lib/achievements";
-import { recordGameStats } from "@/lib/gameApi";
+import { markAchievementsSeen, resolveUnlockId } from "@/lib/achievements";
+import { recordGameStats, unlockAchievement } from "@/lib/gameApi";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import handStyles from "@/components/game/Hand.module.css";
 import styles from "@/styles/play.module.css";
@@ -71,7 +71,7 @@ export default function MultiPlayPage() {
    const [searchParams] = useSearchParams();
    const gameId = searchParams.get("game_id") ?? "";
    const isMobile = useIsMobile();
-   const { token: jwtToken } = useAuth();
+   const { token: jwtToken, user } = useAuth();
    const { play: playSound } = useSound();
    const { addToast } = useToast();
 
@@ -508,7 +508,11 @@ export default function MultiPlayPage() {
       });
 
       const unsubAchievements = onMultiAchievementsUnlocked((data) => {
-         for (const unlockId of data.newly_unlocked) {
+         const { newly_unlocked } = data;
+         if (user?.id && newly_unlocked.length > 0) {
+            markAchievementsSeen(user.id, newly_unlocked);
+         }
+         for (const unlockId of newly_unlocked) {
             const info = resolveUnlockId(unlockId);
             if (info) {
                addToast({
@@ -533,7 +537,7 @@ export default function MultiPlayPage() {
          unsubError();
          unsubAchievements();
       };
-   }, [gameId, enqueue, isActive, setSlots, addToast]);
+   }, [gameId, enqueue, isActive, setSlots, addToast, user?.id]);
 
    // ── Watchdog: nudge server if game appears stuck ──────────────────
    useEffect(() => {
@@ -764,6 +768,21 @@ export default function MultiPlayPage() {
             }
          }
       };
+
+      unlockAchievement(jwtToken, "better_with_friends").then((res) => {
+         if (!res.ok || res.newly_unlocked.length === 0) return;
+         for (const id of res.newly_unlocked) {
+            const info = resolveUnlockId(id);
+            if (info) {
+               addToast({
+                  achievementId: id,
+                  name: info.name,
+                  icon: <FontAwesomeIcon icon={info.def.icon} />,
+                  tier: info.tier,
+               });
+            }
+         }
+      });
 
       doRecord()
          .then(async (res) => {
