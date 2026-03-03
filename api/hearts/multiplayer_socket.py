@@ -32,6 +32,7 @@ from hearts.stats_routes import (
     _easter_date,
     _thanksgiving_date,
     _is_in_all_time_top_10,
+    _recorded_games,
 )
 
 _RECONNECT_TIMEOUT_SECONDS = 120
@@ -47,19 +48,28 @@ def _get_user_from_query_token():
 
     auth_token = (request.args.get("auth_token") or "").strip()
     if not auth_token:
+        logger.debug("_get_user_from_query_token: no auth_token in query params")
         return None
     secret = os.environ.get("JWT_SECRET")
     if not secret:
+        logger.warning("_get_user_from_query_token: JWT_SECRET env var not set")
         return None
     try:
         payload = pyjwt.decode(auth_token, secret, algorithms=["HS256"])
         user_id = payload.get("sub")
         if not user_id:
+            logger.warning("_get_user_from_query_token: JWT has no 'sub' claim")
             return None
         from hearts.models import User
 
-        return User.query.get(int(user_id))
-    except pyjwt.InvalidTokenError:
+        user = User.query.get(int(user_id))
+        if user:
+            logger.info("_get_user_from_query_token: authenticated user_id=%s", user_id)
+        else:
+            logger.warning("_get_user_from_query_token: no User for id=%s", user_id)
+        return user
+    except Exception:
+        logger.exception("_get_user_from_query_token: failed to decode JWT")
         return None
 
 
@@ -358,6 +368,12 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
     """Record stats for authenticated players and clean up."""
     _cancel_all_idle_timers(game_id)
     auth_map = _game_auth.get(game_id, {})
+    logger.info(
+        "_on_game_complete: game=%s auth_map=%s scores=%s",
+        game_id,
+        auth_map,
+        runner.state.scores,
+    )
     scores = runner.state.scores
     min_score = min(scores)
     winners = [i for i, s in enumerate(scores) if s == min_score]
@@ -535,7 +551,14 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
             )
         )
 
+        _recorded_games.add(f"{user_id}:{game_id}")
+
     db.session.commit()
+    logger.info(
+        "_on_game_complete: committed stats for game=%s users=%s",
+        game_id,
+        list(auth_map.values()),
+    )
 
     # Emit achievement unlocks to each player
     for seat_idx, unlocked in unlocked_per_seat.items():
@@ -740,6 +763,19 @@ def register_multiplayer_socket(socketio):
                     if user:
                         auth = _game_auth.setdefault(game_id, {})
                         auth[seat_idx] = user.id
+                        logger.info(
+                            "on_connect: stored auth game=%s seat=%d user=%d (auth_map=%s)",
+                            game_id,
+                            seat_idx,
+                            user.id,
+                            auth,
+                        )
+                    else:
+                        logger.warning(
+                            "on_connect: no authenticated user for game=%s seat=%d",
+                            game_id,
+                            seat_idx,
+                        )
 
                     # Restart idle timer if this seat has an actionable move
                     if runner.is_active_human(seat_idx):

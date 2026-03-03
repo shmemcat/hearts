@@ -238,7 +238,9 @@ def record_game():
     _recorded_games.add(dedup_key)
 
     active_game = ActiveGame.query.filter_by(game_id=game_id).first()
-    difficulty = active_game.difficulty if active_game else "easy"
+    difficulty = (
+        active_game.difficulty if active_game else (data.get("difficulty") or "easy")
+    )
     started_after_midnight = False
     started_early_morning = False
     is_valentines = False
@@ -264,7 +266,7 @@ def record_game():
         is_thanksgiving = date(y, m, d) == _thanksgiving_date(y)
         is_christmas = m == 12 and d == 25
 
-    if active_game:
+    if active_game and not active_game.is_multiplayer:
         db.session.delete(active_game)
 
     opponent_scores = [s for s in all_scores if s != final_score] if all_scores else []

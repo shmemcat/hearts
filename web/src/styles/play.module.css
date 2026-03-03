@@ -184,10 +184,8 @@
 }
 
 .scoreTableMe {
+   background: rgba(255, 182, 193, 0.3);
    font-weight: 700;
-   text-decoration: underline;
-   text-decoration-color: var(--header);
-   text-underline-offset: 2px;
 }
 
 .scoreDelta {

@@ -19,6 +19,7 @@ export interface InfoModalProps {
    round: number;
    passDirection: PassDirection;
    difficulty?: string;
+   difficultyPrefix?: string;
    players: { name: string; score: number; icon?: string }[];
    mySeatIndex?: number;
    onClose: () => void;
@@ -30,6 +31,7 @@ export const InfoModal: React.FC<InfoModalProps> = ({
    round,
    passDirection,
    difficulty,
+   difficultyPrefix,
    players,
    mySeatIndex = 0,
    onClose,
@@ -54,7 +56,10 @@ export const InfoModal: React.FC<InfoModalProps> = ({
                {difficultyLabel && (
                   <>
                      <span className={styles.rowSep}>·</span>
-                     <span className={styles.rowLabel}>{difficultyLabel}</span>
+                     <span className={styles.rowLabel}>
+                        {difficultyPrefix ? `${difficultyPrefix}: ` : ""}
+                        {difficultyLabel}
+                     </span>
                   </>
                )}
             </div>

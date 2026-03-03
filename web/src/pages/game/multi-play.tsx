@@ -23,7 +23,7 @@ import {
 import type { ShootTheMoonData } from "@/components/game/ShootTheMoonOverlay";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
-import { usePlayQueue } from "@/hooks/usePlayQueue";
+import { usePlayQueue, type QueueItem } from "@/hooks/usePlayQueue";
 import {
    connectMulti,
    disconnect as disconnectMulti,
@@ -56,6 +56,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
 import { useToast } from "@/context/ToastContext";
 import { resolveUnlockId } from "@/lib/achievements";
+import { recordGameStats } from "@/lib/gameApi";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import handStyles from "@/components/game/Hand.module.css";
 import styles from "@/styles/play.module.css";
@@ -144,13 +145,33 @@ export default function MultiPlayPage() {
    concededRef.current = conceded;
    const terminatedRef = useRef(terminated);
    terminatedRef.current = terminated;
+   const animationHoldRef = useRef(false);
+   animationHoldRef.current = !!(
+      roundBanner ||
+      dealingHand ||
+      noPassHold ||
+      roundSummary
+   );
+   const passTransitionRef = useRef(passTransition);
+   passTransitionRef.current = passTransition;
+   const pendingRoundEndRef = useRef<GameState | null>(null);
+   const eventBufferRef = useRef<QueueItem[]>([]);
 
    // ── Play queue (animation) ────────────────────────────────────────
    const applyPendingState = useCallback(() => {
-      const pending = pendingStateRef.current;
-      if (!pending) return;
-      if (pending.round_just_ended && moonOverlayActiveRef.current) return;
-      pendingStateRef.current = null;
+      let pending: GameState | null = pendingRoundEndRef.current;
+      if (pending) {
+         pendingRoundEndRef.current = null;
+      } else {
+         pending = pendingStateRef.current;
+         if (!pending) return;
+         pendingStateRef.current = null;
+      }
+
+      if (pending.round_just_ended && moonOverlayActiveRef.current) {
+         pendingRoundEndRef.current = pending;
+         return;
+      }
 
       if (pending.round_just_ended) {
          roundEndStateRef.current = pending;
@@ -196,6 +217,7 @@ export default function MultiPlayPage() {
             round: currentRound,
             players: roundPlayers,
          });
+         animationHoldRef.current = true;
          return;
       }
 
@@ -336,10 +358,15 @@ export default function MultiPlayPage() {
                setSlots(slots);
             }
             setRoundBanner({ round: data.round });
+            animationHoldRef.current = true;
             return;
          }
-         pendingStateRef.current = data;
-         if (!isActive()) {
+         if (data.round_just_ended) {
+            pendingRoundEndRef.current = data;
+         } else {
+            pendingStateRef.current = data;
+         }
+         if (!isActive() && !animationHoldRef.current) {
             applyPendingRef.current();
          }
       });
@@ -355,12 +382,20 @@ export default function MultiPlayPage() {
             lastHumanCardRef.current = null;
             return;
          }
-         enqueue({ type: "play", event: ev });
+         if (animationHoldRef.current || passTransitionRef.current) {
+            eventBufferRef.current.push({ type: "play", event: ev });
+         } else {
+            enqueue({ type: "play", event: ev });
+         }
       });
 
       const unsubTrick = onMultiTrickComplete(() => {
          lastSocketEventRef.current = Date.now();
-         enqueue({ type: "trick_complete" });
+         if (animationHoldRef.current || passTransitionRef.current) {
+            eventBufferRef.current.push({ type: "trick_complete" });
+         } else {
+            enqueue({ type: "trick_complete" });
+         }
       });
 
       const unsubPassReceived = onMultiPassReceived(() => {
@@ -459,6 +494,36 @@ export default function MultiPlayPage() {
       return () => clearInterval(id);
    }, [gameId]);
 
+   // ── Flush buffered events when animation hold ends ────────────────
+   useEffect(() => {
+      if (
+         roundBanner ||
+         dealingHand ||
+         noPassHold ||
+         passTransition ||
+         roundSummary
+      )
+         return;
+      const buffered = eventBufferRef.current;
+      if (buffered.length > 0) {
+         eventBufferRef.current = [];
+         for (const item of buffered) {
+            enqueue(item);
+         }
+      }
+      if (!isActive()) {
+         applyPendingRef.current();
+      }
+   }, [
+      roundBanner,
+      dealingHand,
+      noPassHold,
+      passTransition,
+      roundSummary,
+      enqueue,
+      isActive,
+   ]);
+
    // ── Round banner + dealing animation ──────────────────────────────
    const handleContinueRoundRef = useRef<() => void>(() => {});
 
@@ -548,6 +613,59 @@ export default function MultiPlayPage() {
       }
    }, [state?.game_over]);
 
+   // ── Record stats via HTTP when game ends (fallback for socket auth) ──
+   const statsRecordedRef = useRef(false);
+   useEffect(() => {
+      if (
+         !state?.game_over ||
+         statsRecordedRef.current ||
+         !jwtToken ||
+         !gameId ||
+         mySeat === null ||
+         conceded
+      )
+         return;
+      statsRecordedRef.current = true;
+      const myScore = state.players[mySeat]?.score ?? 0;
+      const won = state.winner_index === mySeat;
+      recordGameStats(jwtToken, {
+         game_id: gameId,
+         final_score: myScore,
+         won,
+         moon_shots: state.human_moon_shots ?? 0,
+         round_count: state.round,
+         all_scores: state.players.map((p) => p.score),
+         hearts_broken_count: state.human_hearts_broken ?? 0,
+         difficulty: "multiplayer",
+      }).then((res) => {
+         if (!res.ok) return;
+         const { newly_unlocked } = res.data;
+         for (const unlockId of newly_unlocked) {
+            const info = resolveUnlockId(unlockId);
+            if (info) {
+               addToast({
+                  achievementId: unlockId,
+                  name: info.name,
+                  icon: <FontAwesomeIcon icon={info.def.icon} />,
+                  tier: info.tier,
+               });
+            }
+         }
+      });
+   }, [
+      state?.game_over,
+      state?.winner_index,
+      state?.players,
+      state?.human_moon_shots,
+      state?.human_hearts_broken,
+      state?.round,
+      jwtToken,
+      gameId,
+      mySeat,
+      conceded,
+      addToast,
+   ]);
+
    useEffect(() => {
       if (
          passTransition?.phase === "exiting" ||
@@ -575,6 +693,7 @@ export default function MultiPlayPage() {
       const nextRound =
          nextState?.round ?? (state?.round ? state.round + 1 : 1);
       setRoundBanner({ round: nextRound });
+      animationHoldRef.current = true;
       setHeartsPerPlayer([0, 0, 0, 0]);
       setHeartsVisuallyBroken(false);
       setPassSelection(new Set());
@@ -855,6 +974,9 @@ export default function MultiPlayPage() {
                            round={state.round}
                            passDirection={state.pass_direction}
                            difficulty={state.difficulty}
+                           difficultyPrefix={
+                              state.difficulty ? "Bots" : undefined
+                           }
                         />
                         {!state.game_over && !conceded && !isSpectator && (
                            <ConcedeButton
@@ -871,6 +993,7 @@ export default function MultiPlayPage() {
                         round={state.round}
                         passDirection={state.pass_direction}
                         difficulty={state.difficulty}
+                        difficultyPrefix={state.difficulty ? "Bots" : undefined}
                         players={state.players}
                         mySeatIndex={conceded || isSpectator ? -1 : mySeat ?? 0}
                         onClose={() => setInfoModalOpen(false)}

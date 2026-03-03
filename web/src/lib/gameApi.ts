@@ -329,6 +329,7 @@ export async function recordGameStats(
       round_count: number;
       all_scores: number[];
       hearts_broken_count: number;
+      difficulty?: string;
    }
 ): Promise<
    { ok: true; data: RecordGameStatsResponse } | { ok: false; error: string }

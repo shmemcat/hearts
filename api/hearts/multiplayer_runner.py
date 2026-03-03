@@ -395,6 +395,7 @@ class MultiplayerRunner:
         ]
 
         pass_submitted = seat_index in self._pending_passes
+        has_bots = any(not st.is_human or st.conceded for st in self._seats)
 
         return {
             "phase": s.phase.value,
@@ -411,6 +412,9 @@ class MultiplayerRunner:
             "my_seat": seat_index,
             "pass_submitted": pass_submitted,
             "round_just_ended": self._last_round_ended,
+            "human_moon_shots": self._moon_shots.get(seat_index, 0),
+            "human_hearts_broken": self._hearts_broken_count.get(seat_index, 0),
+            **({"difficulty": self._difficulty} if has_bots else {}),
         }
 
     def get_state_for_spectator(self) -> Dict[str, Any]:
@@ -431,6 +435,8 @@ class MultiplayerRunner:
             {"player_index": idx, "card": card.to_code()}
             for idx, card in s.current_trick
         ]
+        has_bots = any(not st.is_human or st.conceded for st in self._seats)
+
         return {
             "phase": s.phase.value,
             "round": s.round,
@@ -446,6 +452,7 @@ class MultiplayerRunner:
             "my_seat": None,
             "pass_submitted": False,
             "round_just_ended": self._last_round_ended,
+            **({"difficulty": self._difficulty} if has_bots else {}),
         }
 
     def get_last_play_events(self) -> List[Dict[str, Any]]:

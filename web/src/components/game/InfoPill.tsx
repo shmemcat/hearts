@@ -15,12 +15,14 @@ export interface InfoPillProps {
    round: number;
    passDirection: PassDirection;
    difficulty?: string;
+   difficultyPrefix?: string;
 }
 
 export const InfoPill: React.FC<InfoPillProps> = ({
    round,
    passDirection,
    difficulty,
+   difficultyPrefix,
 }) => {
    const difficultyLabel = difficulty
       ? DIFFICULTY_LABELS[difficulty] ?? difficulty
@@ -33,7 +35,10 @@ export const InfoPill: React.FC<InfoPillProps> = ({
             {passDirection === "none" ? "No pass" : `Pass ${passDirection}`}
          </span>
          {difficultyLabel && (
-            <span className={styles.playInfoDifficulty}>{difficultyLabel}</span>
+            <span className={styles.playInfoDifficulty}>
+               {difficultyPrefix ? `${difficultyPrefix}: ` : ""}
+               {difficultyLabel}
+            </span>
          )}
       </div>
    );

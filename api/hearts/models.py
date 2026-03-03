@@ -207,6 +207,7 @@ DIFFICULTY_TO_CATEGORY = {
     "hard": "my_mom",
     "harder": "my_mom",
     "hardest": "my_mom",
+    "multiplayer": "multiplayer",
 }
 
 

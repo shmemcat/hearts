@@ -66,19 +66,8 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
                      .map((p, i) => ({ ...p, idx: i }))
                      .sort((a, b) => a.score - b.score)
                      .map((p) => {
-                        const minScore = Math.min(
-                           ...players.map((pl) => pl.score)
-                        );
-                        const isWinner = isTie
-                           ? p.score === minScore
-                           : p.idx === winnerIndex;
                         const isMe = p.idx === mySeatIndex;
-                        const rowClass = [
-                           isWinner ? styles.scoreTableWinner : "",
-                           isMe ? styles.scoreTableMe : "",
-                        ]
-                           .filter(Boolean)
-                           .join(" ");
+                        const rowClass = isMe ? styles.scoreTableMe : "";
                         return (
                            <tr key={p.idx} className={rowClass}>
                               <td>
