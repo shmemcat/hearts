@@ -24,6 +24,7 @@ type SoundName =
    | "cardPlace"
    | "heartDelta"
    | "heartsBroken"
+   | "playerJoin"
    | "roundEnd"
    | "gameEnd"
    | "shootTheMoon"
@@ -45,6 +46,7 @@ const SOUND_SOURCES: Record<SoundName, string[]> = {
    cardPlace: ["/sounds/card-place-1.mp3", "/sounds/card-place-2.mp3"],
    heartDelta: ["/sounds/pop.mp3", "/sounds/plopp.mp3"],
    heartsBroken: ["/sounds/hearts-broken.mp3"],
+   playerJoin: ["/sounds/pop.mp3", "/sounds/plopp.mp3"],
    roundEnd: ["/sounds/round-end.mp3"],
    gameEnd: ["/sounds/game-end.mp3"],
    shootTheMoon: ["/sounds/shoot-the-moon.mp3"],

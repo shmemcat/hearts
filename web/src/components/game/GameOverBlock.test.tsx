@@ -138,4 +138,39 @@ describe("GameOverBlock", () => {
          screen.queryByRole("button", { name: "Create New Game" })
       ).not.toBeInTheDocument();
    });
+
+   it("renders terminated variant with custom title and subtitle", () => {
+      render(
+         <MemoryRouter>
+            <GameOverBlock
+               title="Game Terminated"
+               subtitle="All players have left the game."
+               players={players}
+               mySeatIndex={0}
+            >
+               <button>Create New Game</button>
+               <button>Home</button>
+            </GameOverBlock>
+         </MemoryRouter>
+      );
+      expect(screen.getByText("Game Terminated")).toBeInTheDocument();
+      expect(
+         screen.getByText("All players have left the game.")
+      ).toBeInTheDocument();
+      expect(screen.getByText("Create New Game")).toBeInTheDocument();
+      expect(screen.getByText("Home")).toBeInTheDocument();
+   });
+
+   it("hides score table when players is empty in terminated mode", () => {
+      render(
+         <MemoryRouter>
+            <GameOverBlock
+               title="Game Terminated"
+               subtitle="All players have left the game."
+            />
+         </MemoryRouter>
+      );
+      expect(screen.getByText("Game Terminated")).toBeInTheDocument();
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+   });
 });

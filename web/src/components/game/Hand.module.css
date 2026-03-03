@@ -25,6 +25,14 @@
    z-index: 1;
 }
 
+/* Extend the hover hitbox to the wrapper so the card's translateY(-6px) transform
+   doesn't create a dead zone at the bottom. The wrapper's layout footprint is fixed,
+   so hovering those bottom few pixels still keeps the card raised. */
+.handCardWrap:hover button:not(:disabled) {
+   transform: translateY(-6px);
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 .handSlotEmpty {
    width: 72px;
    min-width: 72px;

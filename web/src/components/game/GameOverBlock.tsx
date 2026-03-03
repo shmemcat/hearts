@@ -8,24 +8,34 @@ import type { GamePlayer } from "@/types/game";
 import styles from "@/styles/play.module.css";
 
 export interface GameOverBlockProps {
-   players: GamePlayer[];
-   winnerIndex: number | null;
+   players?: GamePlayer[];
+   winnerIndex?: number | null;
    mySeatIndex?: number;
+   /** Custom title (e.g. "Game Terminated"). When provided, skips confetti and winner-based title. */
+   title?: string;
+   /** Subtitle shown below the title (e.g. "All players have left the game.") */
+   subtitle?: string;
    children?: React.ReactNode;
 }
 
 export const GameOverBlock: React.FC<GameOverBlockProps> = ({
-   players,
-   winnerIndex,
+   players = [],
+   winnerIndex = null,
    mySeatIndex = 0,
+   title: customTitle,
+   subtitle,
    children,
 }) => {
-   const isTie = winnerIndex === -1;
+   const isCustomMode = customTitle != null;
+   const isTie = !isCustomMode && winnerIndex === -1;
    const winnerName =
-      winnerIndex != null && winnerIndex >= 0
+      !isCustomMode &&
+      winnerIndex != null &&
+      winnerIndex >= 0 &&
+      players[winnerIndex]
          ? players[winnerIndex]?.name
          : null;
-   const myWon = winnerIndex === mySeatIndex;
+   const myWon = !isCustomMode && winnerIndex === mySeatIndex;
    const confettiRef = useRef<HTMLParagraphElement>(null);
 
    useEffect(() => {
@@ -40,7 +50,9 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
       return () => clearTimeout(timer);
    }, [myWon]);
 
-   const title = isTie
+   const title = isCustomMode
+      ? customTitle
+      : isTie
       ? "It's a tie!"
       : myWon
       ? "You won!"
@@ -48,7 +60,10 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
       ? `${winnerName} won!`
       : "Game Over";
 
-   const minScore = isTie ? Math.min(...players.map((p) => p.score)) : null;
+   const minScore =
+      !isCustomMode && isTie && players.length
+         ? Math.min(...players.map((p) => p.score))
+         : null;
 
    return (
       <div className={styles.gameOverBackdrop}>
@@ -56,42 +71,46 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
             <p ref={confettiRef} className={styles.gameOverTitle}>
                {title}
             </p>
-            <table className={styles.scoreTable}>
-               <thead>
-                  <tr>
-                     <th>Player</th>
-                     <th>Score</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  {[...players]
-                     .map((p, i) => ({ ...p, idx: i }))
-                     .sort((a, b) => a.score - b.score)
-                     .map((p) => {
-                        const isMe = p.idx === mySeatIndex;
-                        const isTiedWinner = isTie && p.score === minScore;
-                        const classes = [
-                           isMe ? styles.scoreTableMe : "",
-                           isTiedWinner ? styles.scoreTableWinner : "",
-                        ]
-                           .filter(Boolean)
-                           .join(" ");
-                        return (
-                           <tr key={p.idx} className={classes}>
-                              <td>
-                                 <PlayerIcon
-                                    name={p.name}
-                                    icon={p.icon}
-                                    size={13}
-                                 />{" "}
-                                 {p.name}
-                              </td>
-                              <td>{p.score}</td>
-                           </tr>
-                        );
-                     })}
-               </tbody>
-            </table>
+            {subtitle && <p className="text-sm opacity-80">{subtitle}</p>}
+            {players.length > 0 && (
+               <table className={styles.scoreTable}>
+                  <thead>
+                     <tr>
+                        <th>Player</th>
+                        <th>Score</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     {[...players]
+                        .map((p, i) => ({ ...p, idx: i }))
+                        .sort((a, b) => a.score - b.score)
+                        .map((p) => {
+                           const isMe = p.idx === mySeatIndex;
+                           const isTiedWinner =
+                              !isCustomMode && isTie && p.score === minScore;
+                           const classes = [
+                              isMe ? styles.scoreTableMe : "",
+                              isTiedWinner ? styles.scoreTableWinner : "",
+                           ]
+                              .filter(Boolean)
+                              .join(" ");
+                           return (
+                              <tr key={p.idx} className={classes}>
+                                 <td>
+                                    <PlayerIcon
+                                       name={p.name}
+                                       icon={p.icon}
+                                       size={13}
+                                    />{" "}
+                                    {p.name}
+                                 </td>
+                                 <td>{p.score}</td>
+                              </tr>
+                           );
+                        })}
+                  </tbody>
+               </table>
+            )}
             {children ?? (
                <Link to="/game/create">
                   <Button name="Create New Game" style={{ width: "250px" }} />

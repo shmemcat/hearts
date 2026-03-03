@@ -117,7 +117,10 @@ def get_lobby(code: str) -> Optional[Lobby]:
     lobby = _lobbies.get(code)
     if lobby is None:
         return None
-    if time.time() - lobby.last_activity > _EXPIRY_SECONDS:
+    if (
+        lobby.status != "playing"
+        and time.time() - lobby.last_activity > _EXPIRY_SECONDS
+    ):
         _lobbies.pop(code, None)
         return None
     return lobby

@@ -271,6 +271,14 @@
    position: static;
 }
 
+.infoBtnInline {
+   position: static !important;
+   width: 26px !important;
+   height: 26px !important;
+   border-radius: 14px !important;
+   font-size: 0.85rem !important;
+}
+
 /* Wrapper for the game table + round summary overlay */
 .gameTableWrapper {
    position: relative;

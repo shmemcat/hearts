@@ -115,13 +115,17 @@ export const InfoModal: React.FC<InfoModalProps> = ({
 
 export interface InfoButtonProps {
    onClick: () => void;
+   className?: string;
 }
 
-export const InfoButton: React.FC<InfoButtonProps> = ({ onClick }) => {
+export const InfoButton: React.FC<InfoButtonProps> = ({
+   onClick,
+   className,
+}) => {
    return (
       <button
          type="button"
-         className={styles.infoBtn}
+         className={[styles.infoBtn, className].filter(Boolean).join(" ")}
          onClick={onClick}
          aria-label="Round info"
       >

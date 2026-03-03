@@ -10,6 +10,7 @@ import { PlayerIcon } from "@/components/game/PlayerIcon";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { useSound } from "@/context/SoundContext";
 import { getLobbyState } from "@/lib/lobbyApi";
 import {
    connectLobby,
@@ -37,6 +38,7 @@ export default function LobbyPage() {
    const { code } = useParams<{ code: string }>();
    const navigate = useNavigate();
    const { user } = useAuth();
+   const { play: playSound } = useSound();
    const upperCode = (code ?? "").toUpperCase();
 
    const [lobby, setLobby] = useState<LobbyState | null>(null);
@@ -51,6 +53,7 @@ export default function LobbyPage() {
    );
    const myTokenRef = useRef(myToken);
    myTokenRef.current = myToken;
+   const prevHumanCountRef = useRef<number | null>(null);
 
    // Join form state — pre-fill with username if logged in
    const [joinName, setJoinName] = useState(user?.name ?? "");
@@ -128,6 +131,16 @@ export default function LobbyPage() {
    // WebSocket event subscriptions
    useEffect(() => {
       const unsubUpdate = onLobbyUpdate((state) => {
+         const humanCount = state.seats.filter(
+            (s) => s.status === "human"
+         ).length;
+         if (
+            prevHumanCountRef.current !== null &&
+            humanCount > prevHumanCountRef.current
+         ) {
+            playSound("playerJoin");
+         }
+         prevHumanCountRef.current = humanCount;
          setLobby(state);
       });
 
@@ -177,7 +190,7 @@ export default function LobbyPage() {
          unsubClosed();
          unsubError();
       };
-   }, [upperCode, navigate]);
+   }, [upperCode, navigate, playSound]);
 
    const [nameError, setNameError] = useState(false);
 

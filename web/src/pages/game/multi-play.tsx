@@ -75,11 +75,15 @@ export default function MultiPlayPage() {
    const { play: playSound } = useSound();
    const { addToast } = useToast();
 
-   const playerToken = gameId
-      ? localStorage.getItem(MP_TOKEN_KEY(gameId))
-      : null;
-   const savedSeat = gameId ? localStorage.getItem(MP_SEAT_KEY(gameId)) : null;
-   const lobbyCode = gameId ? localStorage.getItem(MP_LOBBY_KEY(gameId)) : null;
+   const [playerToken] = useState<string | null>(() =>
+      gameId ? localStorage.getItem(MP_TOKEN_KEY(gameId)) : null
+   );
+   const [savedSeat] = useState<string | null>(() =>
+      gameId ? localStorage.getItem(MP_SEAT_KEY(gameId)) : null
+   );
+   const [lobbyCode] = useState<string | null>(() =>
+      gameId ? localStorage.getItem(MP_LOBBY_KEY(gameId)) : null
+   );
    const isSpectator = !playerToken;
 
    // ── Core UI state ──────────────────────────────────────────────────
@@ -242,7 +246,12 @@ export default function MultiPlayPage() {
       const oldHand = prePassHandRef.current;
       const newHand = pending.my_hand ?? pending.human_hand ?? [];
 
-      if (passedSet && oldHand && newHand.length > 0) {
+      if (
+         passedSet &&
+         oldHand &&
+         newHand.length > 0 &&
+         !Array.from(passedSet).some((c: string) => newHand.includes(c))
+      ) {
          passedCardsRef.current = null;
          prePassHandRef.current = null;
 
@@ -281,6 +290,8 @@ export default function MultiPlayPage() {
                });
 
                setTimeout(() => {
+                  passTransitionRef.current = null;
+                  applyPendingRef.current();
                   setPassTransition(null);
                }, 1600);
             }, 500);
@@ -599,6 +610,8 @@ export default function MultiPlayPage() {
          const s = stateRef.current;
          if (s?.pass_direction === "none") {
             setNoPassHold(true);
+            setDealingHand(true);
+            setTimeout(() => setDealingHand(false), DEAL_HAND_MS);
             setTimeout(() => setNoPassHold(false), NO_PASS_HOLD_MS);
          } else {
             setDealingHand(true);
@@ -1020,6 +1033,7 @@ export default function MultiPlayPage() {
       state?.phase === "playing" && !roundSummary && !state?.game_over;
    const seatIsCurrentTurn = (i: number) =>
       !roundSummary &&
+      !roundEndHold &&
       state?.phase === "playing" &&
       !state?.game_over &&
       whoseTurn === i;
@@ -1043,11 +1057,14 @@ export default function MultiPlayPage() {
          phaseHintText = `Select 3 cards to pass ${state.pass_direction}`;
       }
    } else if (state?.phase === "playing") {
-      if (myHand.length === 0) {
+      const allTrickCardsPlayed = slots.every((s) => s?.card);
+      if (myHand.length === 0 && (allTrickCardsPlayed || roundEndHold)) {
          phaseHintText = "Round over";
       } else {
          const effectiveTurn = whoseTurn ?? state.whose_turn;
-         if (effectiveTurn === mySeat) {
+         if (effectiveTurn == null) {
+            phaseHintText = "";
+         } else if (effectiveTurn === mySeat) {
             phaseHintText = "Your turn!";
          } else {
             const turnPlayer = state.players[effectiveTurn]?.name ?? "";
@@ -1107,6 +1124,10 @@ export default function MultiPlayPage() {
                               state.difficulty ? "Bots" : undefined
                            }
                         />
+                        <InfoButton
+                           className={styles.infoBtnInline}
+                           onClick={() => setInfoModalOpen(true)}
+                        />
                         {!state.game_over && !conceded && !isSpectator && (
                            <ConcedeButton
                               onClick={() => setConcedeModalOpen(true)}
@@ -1117,7 +1138,7 @@ export default function MultiPlayPage() {
                   {!roundSummary && isMobile && (
                      <InfoButton onClick={() => setInfoModalOpen(true)} />
                   )}
-                  {infoModalOpen && isMobile && (
+                  {infoModalOpen && (
                      <InfoModal
                         round={state.round}
                         passDirection={state.pass_direction}
@@ -1446,14 +1467,13 @@ export default function MultiPlayPage() {
                      !dealingHand &&
                      !roundBanner &&
                      !roundSummary && (
-                        <div
-                           style={
-                              myHand.length === 0 && !passTransition
-                                 ? { visibility: "hidden" }
-                                 : undefined
-                           }
-                        >
-                           {myHand.length > 0 || passTransition ? (
+                        <div className={handStyles.handStack}>
+                           <div className={handStyles.hand} aria-hidden="true">
+                              <div className={handStyles.handCardWrap}>
+                                 <div className={handStyles.handSlotEmpty} />
+                              </div>
+                           </div>
+                           {(myHand.length > 0 || passTransition) && (
                               <Hand
                                  cards={
                                     passTransition
@@ -1480,15 +1500,6 @@ export default function MultiPlayPage() {
                                  enteringCodes={passTransition?.enteringCodes}
                                  enterDirection={passTransition?.enterDir}
                               />
-                           ) : (
-                              <div
-                                 className={handStyles.hand}
-                                 aria-hidden="true"
-                              >
-                                 <div className={handStyles.handCardWrap}>
-                                    <div className={handStyles.handSlotEmpty} />
-                                 </div>
-                              </div>
                            )}
                         </div>
                      )}
@@ -1516,7 +1527,7 @@ export default function MultiPlayPage() {
                         winnerIndex={state.winner_index}
                         mySeatIndex={conceded || isSpectator ? -1 : mySeat ?? 0}
                      >
-                        <ButtonGroup>
+                        <ButtonGroup padding="tight">
                            {lobbyCode &&
                               mySeat === 0 &&
                               !conceded &&
@@ -1581,62 +1592,24 @@ export default function MultiPlayPage() {
 
          {/* Game terminated */}
          {terminated && (
-            <div className={styles.gameOverBackdrop}>
-               <div className={styles.gameOverBlock}>
-                  <p className={styles.gameOverTitle}>Game Terminated</p>
-                  <p className="text-sm opacity-80">
-                     All players have left the game.
-                  </p>
-                  {state && (
-                     <table className={styles.scoreTable}>
-                        <thead>
-                           <tr>
-                              <th>Player</th>
-                              <th>Score</th>
-                           </tr>
-                        </thead>
-                        <tbody>
-                           {[...state.players]
-                              .map((p, i) => ({ ...p, idx: i }))
-                              .sort((a, b) => a.score - b.score)
-                              .map((p) => (
-                                 <tr
-                                    key={p.idx}
-                                    className={
-                                       !conceded &&
-                                       !isSpectator &&
-                                       p.idx === (mySeat ?? 0)
-                                          ? styles.scoreTableMe
-                                          : ""
-                                    }
-                                 >
-                                    <td>
-                                       <PlayerIcon
-                                          name={p.name}
-                                          icon={p.icon}
-                                          size={13}
-                                       />{" "}
-                                       {p.name}
-                                    </td>
-                                    <td>{p.score}</td>
-                                 </tr>
-                              ))}
-                        </tbody>
-                     </table>
-                  )}
-                  <ButtonGroup>
-                     <Link to="/game/create">
-                        <Button
-                           name="Create New Game"
-                           style={{ width: "250px" }}
-                        />
-                     </Link>
-                     <Link to="/" onClick={() => triggerLogoFadeOut()}>
-                        <Button name="Home" style={{ width: "250px" }} />
-                     </Link>
-                  </ButtonGroup>
-               </div>
-            </div>
+            <GameOverBlock
+               title="Game Terminated"
+               subtitle="All players have left the game."
+               players={state?.players ?? []}
+               mySeatIndex={conceded || isSpectator ? -1 : mySeat ?? 0}
+            >
+               <ButtonGroup padding="tight">
+                  <Link to="/game/create">
+                     <Button
+                        name="Create New Game"
+                        style={{ width: "250px" }}
+                     />
+                  </Link>
+                  <Link to="/" onClick={() => triggerLogoFadeOut()}>
+                     <Button name="Home" style={{ width: "250px" }} />
+                  </Link>
+               </ButtonGroup>
+            </GameOverBlock>
          )}
       </>
    );
