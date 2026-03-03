@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import { Button } from "@/components/Buttons";
+import { ToggleButtonGroup } from "@/components/ToggleButtonGroup";
 import { FormInput } from "@/components/FormInput";
 import { StyledLink } from "@/components/StyledLink";
 import {
@@ -258,12 +259,85 @@ function pickDefaultTab(diffStats: DifficultyStatsMap): StatCategory {
    return best;
 }
 
+type StatsMode = "all_time" | "separate";
+type MomSub = "hard" | "harder" | "hardest";
+
+const STATS_MODE_OPTIONS: { value: StatsMode; label: string }[] = [
+   { value: "all_time", label: "All Time" },
+   { value: "separate", label: "Separate" },
+];
+
+const MOM_SUB_TABS: { key: MomSub; label: string }[] = [
+   { key: "hard", label: "Hard" },
+   { key: "harder", label: "Harder" },
+   { key: "hardest", label: "Hardest" },
+];
+
+function aggregateAllStats(diffStats: DifficultyStatsMap): CategoryStats {
+   const sources: (CategoryStats | null)[] = [
+      diffStats.easy,
+      diffStats.medium,
+      diffStats.my_mom,
+      diffStats.multiplayer,
+   ];
+
+   let gamesPlayed = 0;
+   let gamesWon = 0;
+   let moonShots = 0;
+   let bestScore: number | null = null;
+   let worstScore: number | null = null;
+   let totalPoints = 0;
+   let maxWinStreak = 0;
+
+   for (const s of sources) {
+      if (!s) continue;
+      gamesPlayed += s.games_played;
+      gamesWon += s.games_won;
+      moonShots += s.moon_shots;
+      totalPoints +=
+         s.games_played > 0 && s.average_score != null
+            ? Math.round(s.average_score * s.games_played)
+            : 0;
+      if (s.best_score != null) {
+         bestScore =
+            bestScore == null
+               ? s.best_score
+               : Math.min(bestScore, s.best_score);
+      }
+      if (s.worst_score != null) {
+         worstScore =
+            worstScore == null
+               ? s.worst_score
+               : Math.max(worstScore, s.worst_score);
+      }
+      if (s.max_win_streak > maxWinStreak) {
+         maxWinStreak = s.max_win_streak;
+      }
+   }
+
+   return {
+      games_played: gamesPlayed,
+      games_won: gamesWon,
+      moon_shots: moonShots,
+      best_score: bestScore,
+      worst_score: worstScore,
+      average_score:
+         gamesPlayed > 0
+            ? Math.round((totalPoints / gamesPlayed) * 10) / 10
+            : null,
+      current_win_streak: 0,
+      max_win_streak: maxWinStreak,
+   };
+}
+
 function TabbedStatsPanel({
    diffStats,
 }: {
    diffStats: DifficultyStatsMap | null;
 }) {
    const [tab, setTab] = useState<StatCategory | null>(null);
+   const [statsMode, setStatsMode] = useState<StatsMode>("all_time");
+   const [momSub, setMomSub] = useState<MomSub>("hard");
 
    useEffect(() => {
       if (diffStats && tab === null) {
@@ -274,36 +348,72 @@ function TabbedStatsPanel({
    if (!diffStats) return null;
 
    const activeTab = tab ?? "my_mom";
-   const activeData = diffStats[activeTab];
+   const isMomTab = activeTab === "my_mom";
+   const isAllTime = statsMode === "all_time";
+
+   let activeData: CategoryStats | null;
+   if (isAllTime) {
+      activeData = aggregateAllStats(diffStats);
+   } else if (isMomTab) {
+      activeData = diffStats[momSub];
+   } else {
+      activeData = diffStats[activeTab];
+   }
 
    return (
       <>
-         <div className={containers["stats-tabs"]}>
-            {STAT_TABS.map(({ key, label, mobileLabel }) => (
-               <button
-                  key={key}
-                  className={`${containers["stats-tab"]}${
-                     activeTab === key
-                        ? ` ${containers["stats-tab-active"]}`
-                        : ""
-                  }`}
-                  onClick={() => setTab(key)}
-               >
-                  {mobileLabel ? (
-                     <>
-                        <span className={containers["desktop-only"]}>
+         <ToggleButtonGroup
+            options={STATS_MODE_OPTIONS}
+            value={statsMode}
+            onChange={setStatsMode}
+         />
+         {!isAllTime && (
+            <>
+               <div className={containers["stats-tabs"]}>
+                  {STAT_TABS.map(({ key, label, mobileLabel }) => (
+                     <button
+                        key={key}
+                        className={`${containers["stats-tab"]}${
+                           activeTab === key
+                              ? ` ${containers["stats-tab-active"]}`
+                              : ""
+                        }`}
+                        onClick={() => setTab(key)}
+                     >
+                        {mobileLabel ? (
+                           <>
+                              <span className={containers["desktop-only"]}>
+                                 {label}
+                              </span>
+                              <span className={containers["mobile-only"]}>
+                                 {mobileLabel}
+                              </span>
+                           </>
+                        ) : (
+                           label
+                        )}
+                     </button>
+                  ))}
+               </div>
+               {isMomTab && (
+                  <div className={containers["stats-tabs"]}>
+                     {MOM_SUB_TABS.map(({ key, label }) => (
+                        <button
+                           key={key}
+                           className={`${containers["stats-tab"]}${
+                              momSub === key
+                                 ? ` ${containers["stats-tab-active"]}`
+                                 : ""
+                           }`}
+                           onClick={() => setMomSub(key)}
+                        >
                            {label}
-                        </span>
-                        <span className={containers["mobile-only"]}>
-                           {mobileLabel}
-                        </span>
-                     </>
-                  ) : (
-                     label
-                  )}
-               </button>
-            ))}
-         </div>
+                        </button>
+                     ))}
+                  </div>
+               )}
+            </>
+         )}
          <StatsPanel stats={activeData} />
       </>
    );

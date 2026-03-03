@@ -48,6 +48,8 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
       ? `${winnerName} won!`
       : "Game Over";
 
+   const minScore = isTie ? Math.min(...players.map((p) => p.score)) : null;
+
    return (
       <div className={styles.gameOverBackdrop}>
          <div className={styles.gameOverBlock}>
@@ -67,9 +69,15 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
                      .sort((a, b) => a.score - b.score)
                      .map((p) => {
                         const isMe = p.idx === mySeatIndex;
-                        const rowClass = isMe ? styles.scoreTableMe : "";
+                        const isTiedWinner = isTie && p.score === minScore;
+                        const classes = [
+                           isMe ? styles.scoreTableMe : "",
+                           isTiedWinner ? styles.scoreTableWinner : "",
+                        ]
+                           .filter(Boolean)
+                           .join(" ");
                         return (
-                           <tr key={p.idx} className={rowClass}>
+                           <tr key={p.idx} className={classes}>
                               <td>
                                  <PlayerIcon
                                     name={p.name}

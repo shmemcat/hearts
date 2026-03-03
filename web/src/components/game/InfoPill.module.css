@@ -23,7 +23,7 @@
    font-weight: 700;
 }
 .playInfoDetail {
-   opacity: 0.7;
+   opacity: 1;
 }
 .playInfoDetail::before {
    content: "·";
@@ -31,9 +31,7 @@
    opacity: 0.5;
 }
 .playInfoDifficulty {
-   text-transform: uppercase;
    font-weight: 600;
-   opacity: 0.55;
    font-size: 0.75rem;
    letter-spacing: 1px;
 }

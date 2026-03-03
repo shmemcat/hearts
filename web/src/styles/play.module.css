@@ -33,6 +33,7 @@
    color: var(--header);
    opacity: 0.9;
    margin-bottom: 0;
+   transition: opacity 0.3s ease-in;
 }
 
 .gameOverBackdrop {
@@ -311,6 +312,16 @@
    justify-content: center;
    z-index: 5;
    pointer-events: none;
+   animation: passCenterFadeIn 0.3s ease-in;
+}
+
+@keyframes passCenterFadeIn {
+   from {
+      opacity: 0;
+   }
+   to {
+      opacity: 1;
+   }
 }
 
 .passCenter > * {

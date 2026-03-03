@@ -373,22 +373,31 @@ def record_game():
 
     # ── Per-difficulty stats ────────────────────────────────────────────
     category = DIFFICULTY_TO_CATEGORY.get(difficulty, "easy")
+
+    def _apply_game_to_ds(ds_row):
+        ds_row.games_played += 1
+        if won:
+            ds_row.games_won += 1
+        ds_row.moon_shots += moon_shot_count
+        ds_row.total_points += final_score
+        if ds_row.best_score is None or final_score < ds_row.best_score:
+            ds_row.best_score = final_score
+        if ds_row.worst_score is None or final_score > ds_row.worst_score:
+            ds_row.worst_score = final_score
+        if won:
+            ds_row.current_win_streak += 1
+            if ds_row.current_win_streak > ds_row.max_win_streak:
+                ds_row.max_win_streak = ds_row.current_win_streak
+        else:
+            ds_row.current_win_streak = 0
+
     ds = _get_or_create_difficulty_stats(g.current_user.id, category)
-    ds.games_played += 1
-    if won:
-        ds.games_won += 1
-    ds.moon_shots += moon_shot_count
-    ds.total_points += final_score
-    if ds.best_score is None or final_score < ds.best_score:
-        ds.best_score = final_score
-    if ds.worst_score is None or final_score > ds.worst_score:
-        ds.worst_score = final_score
-    if won:
-        ds.current_win_streak += 1
-        if ds.current_win_streak > ds.max_win_streak:
-            ds.max_win_streak = ds.current_win_streak
-    else:
-        ds.current_win_streak = 0
+    _apply_game_to_ds(ds)
+
+    # Dual-write: also record to the raw difficulty row for per-difficulty stats
+    if difficulty in ("hard", "harder", "hardest"):
+        ds_raw = _get_or_create_difficulty_stats(g.current_user.id, difficulty)
+        _apply_game_to_ds(ds_raw)
 
     # ── Game result log (for leaderboard) ──────────────────────────────
     db.session.add(
@@ -417,7 +426,16 @@ def get_stats_by_category():
     rows = DifficultyStats.query.filter_by(user_id=g.current_user.id).all()
     by_cat = {row.category: row.to_dict() for row in rows}
     result = {
-        cat: by_cat.get(cat) for cat in ("easy", "medium", "my_mom", "multiplayer")
+        cat: by_cat.get(cat)
+        for cat in (
+            "easy",
+            "medium",
+            "my_mom",
+            "hard",
+            "harder",
+            "hardest",
+            "multiplayer",
+        )
     }
     return jsonify(result), 200
 

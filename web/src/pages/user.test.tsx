@@ -254,7 +254,7 @@ describe("UserPage - Authenticated", () => {
       setAuthToken();
       renderWithProviders(<UserPage />, { route: "/user" });
       await waitFor(() => {
-         expect(screen.getByText("My Mom")).toBeInTheDocument();
+         expect(screen.getByText("All Time")).toBeInTheDocument();
       });
       expect(screen.getByText("10")).toBeInTheDocument();
       expect(screen.getByText("3")).toBeInTheDocument();

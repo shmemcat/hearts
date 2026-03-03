@@ -292,6 +292,9 @@ export type DifficultyStatsMap = {
    easy: CategoryStats | null;
    medium: CategoryStats | null;
    my_mom: CategoryStats | null;
+   hard: CategoryStats | null;
+   harder: CategoryStats | null;
+   hardest: CategoryStats | null;
    multiplayer: CategoryStats | null;
 };
 

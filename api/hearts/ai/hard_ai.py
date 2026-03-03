@@ -128,6 +128,145 @@ def _determinize(
 
 
 # ---------------------------------------------------------------------------
+# Moon-seeking play strategy (used in rollout to test moon viability)
+# ---------------------------------------------------------------------------
+
+
+class _MoonSeekingPlayStrategy(PlayStrategy):
+    """Plays to win every trick — used during rollout when testing moon viability."""
+
+    def __init__(self, rng: Optional[random.Random] = None) -> None:
+        self._rng = rng or random.Random()
+
+    def choose_play(
+        self,
+        state: GameState,
+        player_index: int,
+        legal_plays: List[Card],
+    ) -> Card:
+        if not legal_plays:
+            raise ValueError("No legal plays")
+        if len(legal_plays) == 1:
+            return legal_plays[0]
+
+        trick = state.trick_list()
+        if not trick:
+            return self._lead(legal_plays)
+        lead_suit = trick[0][1].suit
+        in_suit = [c for c in legal_plays if c.suit == lead_suit]
+        if in_suit:
+            return self._follow(in_suit, trick, lead_suit)
+        return self._dump(legal_plays)
+
+    @staticmethod
+    def _lead(legal: List[Card]) -> Card:
+        by_suit: Dict[Suit, List[Card]] = defaultdict(list)
+        for c in legal:
+            by_suit[c.suit].append(c)
+        best_suit = max(
+            by_suit,
+            key=lambda s: (len(by_suit[s]), max(c.rank for c in by_suit[s])),
+        )
+        return max(by_suit[best_suit], key=lambda c: c.rank)
+
+    @staticmethod
+    def _follow(
+        in_suit: List[Card],
+        trick: List[Tuple[int, Card]],
+        lead_suit: Suit,
+    ) -> Card:
+        high = max((c.rank for _, c in trick if c.suit == lead_suit), default=0)
+        above = [c for c in in_suit if c.rank > high]
+        if above:
+            return min(above, key=lambda c: c.rank)
+        return min(in_suit, key=lambda c: c.rank)
+
+    @staticmethod
+    def _dump(legal: List[Card]) -> Card:
+        non_penalty = [c for c in legal if c.suit != Suit.HEARTS and c != _QS]
+        if non_penalty:
+            return min(non_penalty, key=lambda c: c.rank)
+        hearts = [c for c in legal if c.suit == Suit.HEARTS]
+        if hearts:
+            return min(hearts, key=lambda c: c.rank)
+        return legal[0]
+
+
+class _MoonAwareRollout(PlayStrategy):
+    """Routes to moon-seeking strategy for the designated player, normal for others."""
+
+    def __init__(
+        self,
+        moon_player: int,
+        normal: PlayStrategy,
+        moon: PlayStrategy,
+    ) -> None:
+        self._moon_player = moon_player
+        self._normal = normal
+        self._moon = moon
+
+    def choose_play(
+        self,
+        state: GameState,
+        player_index: int,
+        legal_plays: List[Card],
+    ) -> Card:
+        if player_index == self._moon_player:
+            return self._moon.choose_play(state, player_index, legal_plays)
+        return self._normal.choose_play(state, player_index, legal_plays)
+
+
+# ---------------------------------------------------------------------------
+# Moon potential heuristic
+# ---------------------------------------------------------------------------
+
+
+_MOON_THRESHOLD = 12
+
+
+def _moon_score(
+    hand: List[Card],
+    round_scores: Tuple[int, ...],
+    player_index: int,
+) -> float:
+    """Score how promising a shoot-the-moon attempt looks. Higher = more promising."""
+    my_points = round_scores[player_index]
+    others_points = sum(round_scores) - my_points
+
+    if my_points >= 10 and others_points <= 3:
+        return _MOON_THRESHOLD + 1
+
+    if not hand:
+        return 0.0
+
+    score = 0.0
+
+    for c in hand:
+        if c.rank == 14:
+            score += 3.0
+        elif c.rank == 13:
+            score += 2.0
+        elif c.rank == 12:
+            score += 1.0
+        elif c.rank == 11:
+            score += 0.5
+
+    score += sum(0.5 for c in hand if c.suit == Suit.HEARTS)
+
+    if _QS in hand:
+        score += 2.0
+
+    suits = {s: sum(1 for c in hand if c.suit == s) for s in Suit}
+    for s in Suit:
+        if suits[s] == 0:
+            score += 2.0
+        elif suits[s] == 1:
+            score += 1.0
+
+    return score
+
+
+# ---------------------------------------------------------------------------
 # Simulation: play out remaining tricks using medium strategy
 # ---------------------------------------------------------------------------
 
@@ -253,7 +392,13 @@ class HardPassStrategy(PassStrategy):
 
 
 class HardPlayStrategy(PlayStrategy):
-    """Determinized Monte Carlo: sample possible worlds, simulate, pick best."""
+    """Determinized Monte Carlo: sample possible worlds, simulate, pick best.
+
+    When the hand or round state suggests moon potential, a parallel set of
+    simulations uses a moon-seeking rollout.  The move with the lowest expected
+    score across *either* strategy wins, so the bot naturally pivots to (or
+    away from) a moon attempt based on what the simulations show.
+    """
 
     def __init__(
         self,
@@ -265,6 +410,7 @@ class HardPlayStrategy(PlayStrategy):
         self._tracker = RoundTracker()
         # Separate RNG for rollout so it doesn't perturb the main RNG
         self._rollout = MediumPlayStrategy(rng=random.Random(42))
+        self._moon_strategy = _MoonSeekingPlayStrategy(rng=random.Random(43))
 
     def choose_play(
         self,
@@ -280,6 +426,18 @@ class HardPlayStrategy(PlayStrategy):
         self._tracker.observe(state)
         voids = self._tracker.known_voids
 
+        hand = state.hand(player_index)
+        try_moon = (
+            _moon_score(hand, state.round_scores, player_index) >= _MOON_THRESHOLD
+        )
+        moon_rollout: Optional[_MoonAwareRollout] = None
+        if try_moon:
+            moon_rollout = _MoonAwareRollout(
+                player_index,
+                self._rollout,
+                self._moon_strategy,
+            )
+
         best_card = legal_plays[0]
         best_avg = float("inf")
 
@@ -293,6 +451,16 @@ class HardPlayStrategy(PlayStrategy):
                 total_score += _evaluate_round_scores(final_scores, player_index)
 
             avg = total_score / self._num_worlds
+
+            if moon_rollout is not None:
+                total_moon = 0.0
+                for _ in range(self._num_worlds):
+                    sim_state = _determinize(state, player_index, voids, self._rng)
+                    sim_state = apply_play(sim_state, player_index, card)
+                    final_scores = _simulate_remaining(sim_state, moon_rollout)
+                    total_moon += _evaluate_round_scores(final_scores, player_index)
+                avg = min(avg, total_moon / self._num_worlds)
+
             if avg < best_avg:
                 best_avg = avg
                 best_card = card

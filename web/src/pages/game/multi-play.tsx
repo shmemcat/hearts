@@ -50,6 +50,7 @@ import {
    DEAL_HAND_MS,
    PASS_EXIT_MS,
    NO_PASS_HOLD_MS,
+   BADGE_LINGER_MS,
 } from "@/lib/constants";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useAuth } from "@/context/AuthContext";
@@ -110,6 +111,7 @@ export default function MultiPlayPage() {
       null
    );
    const [dealingHand, setDealingHand] = useState(false);
+   const [roundEndHold, setRoundEndHold] = useState(false);
    const [passTransition, setPassTransition] = useState<{
       phase: "exiting" | "gap" | "entering";
       displayHand: string[];
@@ -119,7 +121,7 @@ export default function MultiPlayPage() {
       enterDir?: "left" | "right" | "above";
    } | null>(null);
 
-   const mySeat: number | null =
+   const liveSeat: number | null =
       state?.my_seat ?? (savedSeat != null ? parseInt(savedSeat, 10) : null);
 
    // ── Refs ─────────────────────────────────────────────────────────
@@ -127,8 +129,10 @@ export default function MultiPlayPage() {
    const lastHumanCardRef = useRef<string | null>(null);
    const stateRef = useRef(state);
    stateRef.current = state;
-   const mySeatRef = useRef(mySeat);
-   mySeatRef.current = mySeat;
+   const mySeatRef = useRef(liveSeat);
+   if (liveSeat != null) mySeatRef.current = liveSeat;
+
+   const mySeat = mySeatRef.current;
    const loadingRef = useRef(loading);
    loadingRef.current = loading;
    const prevScoresRef = useRef<number[]>([0, 0, 0, 0]);
@@ -146,16 +150,18 @@ export default function MultiPlayPage() {
    concededRef.current = conceded;
    const terminatedRef = useRef(terminated);
    terminatedRef.current = terminated;
+   const pendingRoundEndRef = useRef<GameState | null>(null);
    const animationHoldRef = useRef(false);
    animationHoldRef.current = !!(
       roundBanner ||
       dealingHand ||
       noPassHold ||
-      roundSummary
+      roundSummary ||
+      roundEndHold ||
+      pendingRoundEndRef.current
    );
    const passTransitionRef = useRef(passTransition);
    passTransitionRef.current = passTransition;
-   const pendingRoundEndRef = useRef<GameState | null>(null);
    const eventBufferRef = useRef<QueueItem[]>([]);
 
    // ── Play queue (animation) ────────────────────────────────────────
@@ -192,33 +198,41 @@ export default function MultiPlayPage() {
             })
          );
 
-         if (midRoundMoonShownRef.current) {
-            midRoundMoonShownRef.current = false;
-            setShootTheMoon(null);
-         } else {
-            const zeroCount = deltas.filter((d: number) => d === 0).length;
-            const twentySixCount = deltas.filter(
-               (d: number) => d === 26
-            ).length;
-            if (zeroCount === 1 && twentySixCount === 3) {
-               const shooterIdx = deltas.indexOf(0);
-               setShootTheMoon({
-                  shooterIndex: shooterIdx,
-                  deltas,
-                  round: currentRound,
-                  players: roundPlayers,
-               });
-            } else {
-               setShootTheMoon(null);
-            }
-         }
-
-         setRoundSummary({
-            deltas,
-            round: currentRound,
-            players: roundPlayers,
-         });
+         // Hold briefly so the last trick's heart-delta badge is visible
+         // before the round summary modal covers the table.
+         setRoundEndHold(true);
          animationHoldRef.current = true;
+
+         setTimeout(() => {
+            if (midRoundMoonShownRef.current) {
+               midRoundMoonShownRef.current = false;
+               setShootTheMoon(null);
+            } else {
+               const zeroCount = deltas.filter((d: number) => d === 0).length;
+               const twentySixCount = deltas.filter(
+                  (d: number) => d === 26
+               ).length;
+               if (zeroCount === 1 && twentySixCount === 3) {
+                  const shooterIdx = deltas.indexOf(0);
+                  setShootTheMoon({
+                     shooterIndex: shooterIdx,
+                     deltas,
+                     round: currentRound,
+                     players: roundPlayers,
+                  });
+               } else {
+                  setShootTheMoon(null);
+               }
+            }
+
+            setRoundSummary({
+               deltas,
+               round: currentRound,
+               players: roundPlayers,
+            });
+            setRoundEndHold(false);
+         }, BADGE_LINGER_MS);
+
          return;
       }
 
@@ -277,6 +291,23 @@ export default function MultiPlayPage() {
          } else {
             runGapAndEnter();
          }
+         return;
+      }
+
+      // Defer state during an active pass transition so bot plays can
+      // animate before legal-play highlighting appears.
+      if (passTransitionRef.current) {
+         pendingStateRef.current = pending;
+         return;
+      }
+
+      // Never downgrade from a personalized game-over state to a spectator one.
+      if (
+         stateRef.current?.game_over &&
+         stateRef.current.my_seat != null &&
+         pending.game_over &&
+         pending.my_seat == null
+      ) {
          return;
       }
 
@@ -364,11 +395,26 @@ export default function MultiPlayPage() {
          }
          if (data.round_just_ended) {
             pendingRoundEndRef.current = data;
+            animationHoldRef.current = true;
+            if (!isActive()) {
+               applyPendingRef.current();
+            }
          } else {
+            // Don't let a spectator-reconnect state (my_seat=null) overwrite
+            // a pending personalized game-over state that has valid my_seat.
+            const existing = pendingStateRef.current;
+            if (
+               existing?.game_over &&
+               existing.my_seat != null &&
+               data.game_over &&
+               data.my_seat == null
+            ) {
+               return;
+            }
             pendingStateRef.current = data;
-         }
-         if (!isActive() && !animationHoldRef.current) {
-            applyPendingRef.current();
+            if (!isActive() && !animationHoldRef.current) {
+               applyPendingRef.current();
+            }
          }
       });
 
@@ -431,14 +477,19 @@ export default function MultiPlayPage() {
       });
 
       const unsubGameOver = onMultiGameOver((data: GameState) => {
-         setState(data);
+         if (!pendingStateRef.current) {
+            pendingStateRef.current = data;
+         }
+         if (!isActive() && !animationHoldRef.current) {
+            applyPendingRef.current();
+         }
          const token = localStorage.getItem(MP_TOKEN_KEY(gameId));
          const lobby = localStorage.getItem(MP_LOBBY_KEY(gameId));
          if (token && lobby) {
             localStorage.setItem(LOBBY_TOKEN_KEY(lobby), token);
          }
-         localStorage.removeItem(MP_TOKEN_KEY(gameId));
-         localStorage.removeItem(MP_SEAT_KEY(gameId));
+         // Token cleanup is handled by the statsCleanup effect so we
+         // don't trigger a spectator reconnect before stats are recorded.
       });
 
       const unsubError = onMultiError((msg: string) => {
@@ -491,7 +542,12 @@ export default function MultiPlayPage() {
          const seat = mySeatRef.current;
          const isMyTurn =
             s.phase === "playing" && seat !== null && s.whose_turn === seat;
-         if (isMyTurn) return;
+         const myHand = s.my_hand ?? s.human_hand ?? [];
+         if (
+            isMyTurn &&
+            ((s.legal_plays?.length ?? 0) > 0 || myHand.length === 0)
+         )
+            return;
 
          sendMultiRequestState();
          lastSocketEventRef.current = Date.now();
@@ -507,7 +563,9 @@ export default function MultiPlayPage() {
          dealingHand ||
          noPassHold ||
          passTransition ||
-         roundSummary
+         roundSummary ||
+         roundEndHold ||
+         pendingRoundEndRef.current
       )
          return;
       const buffered = eventBufferRef.current;
@@ -526,6 +584,7 @@ export default function MultiPlayPage() {
       noPassHold,
       passTransition,
       roundSummary,
+      roundEndHold,
       enqueue,
       isActive,
    ]);
@@ -621,6 +680,30 @@ export default function MultiPlayPage() {
 
    // ── Record stats via HTTP when game ends (fallback for socket auth) ──
    const statsRecordedRef = useRef(false);
+   const [statsFinished, setStatsFinished] = useState(false);
+   const gameOverDataRef = useRef<{
+      myScore: number;
+      won: boolean;
+      moonShots: number;
+      roundCount: number;
+      allScores: number[];
+      heartsBrokenCount: number;
+   } | null>(null);
+
+   // Capture game-over data from the FIRST state that has both game_over
+   // and a valid my_seat, so the HTTP call uses correct personalized data
+   // even if a spectator-reconnect state later overwrites `state`.
+   if (state?.game_over && mySeat !== null && !gameOverDataRef.current) {
+      gameOverDataRef.current = {
+         myScore: state.players[mySeat]?.score ?? 0,
+         won: state.winner_index === mySeat,
+         moonShots: state.human_moon_shots ?? 0,
+         roundCount: state.round,
+         allScores: state.players.map((p) => p.score),
+         heartsBrokenCount: state.human_hearts_broken ?? 0,
+      };
+   }
+
    useEffect(() => {
       if (
          !state?.game_over ||
@@ -632,21 +715,31 @@ export default function MultiPlayPage() {
       )
          return;
       statsRecordedRef.current = true;
-      const myScore = state.players[mySeat]?.score ?? 0;
-      const won = state.winner_index === mySeat;
-      recordGameStats(jwtToken, {
-         game_id: gameId,
-         final_score: myScore,
-         won,
-         moon_shots: state.human_moon_shots ?? 0,
-         round_count: state.round,
-         all_scores: state.players.map((p) => p.score),
-         hearts_broken_count: state.human_hearts_broken ?? 0,
-         difficulty: "multiplayer",
-      }).then((res) => {
+
+      const data = gameOverDataRef.current ?? {
+         myScore: state.players[mySeat]?.score ?? 0,
+         won: state.winner_index === mySeat,
+         moonShots: state.human_moon_shots ?? 0,
+         roundCount: state.round,
+         allScores: state.players.map((p) => p.score),
+         heartsBrokenCount: state.human_hearts_broken ?? 0,
+      };
+
+      const doRecord = () =>
+         recordGameStats(jwtToken, {
+            game_id: gameId,
+            final_score: data.myScore,
+            won: data.won,
+            moon_shots: data.moonShots,
+            round_count: data.roundCount,
+            all_scores: data.allScores,
+            hearts_broken_count: data.heartsBrokenCount,
+            difficulty: "multiplayer",
+         });
+
+      const handleUnlocks = (res: Awaited<ReturnType<typeof doRecord>>) => {
          if (!res.ok) return;
-         const { newly_unlocked } = res.data;
-         for (const unlockId of newly_unlocked) {
+         for (const unlockId of res.data.newly_unlocked) {
             const info = resolveUnlockId(unlockId);
             if (info) {
                addToast({
@@ -657,20 +750,34 @@ export default function MultiPlayPage() {
                });
             }
          }
-      });
-   }, [
-      state?.game_over,
-      state?.winner_index,
-      state?.players,
-      state?.human_moon_shots,
-      state?.human_hearts_broken,
-      state?.round,
-      jwtToken,
-      gameId,
-      mySeat,
-      conceded,
-      addToast,
-   ]);
+      };
+
+      doRecord()
+         .then(async (res) => {
+            if (!res.ok) {
+               await new Promise((r) => setTimeout(r, 2000));
+               const r2 = await doRecord();
+               handleUnlocks(r2);
+               return;
+            }
+            handleUnlocks(res);
+         })
+         .finally(() => {
+            setStatsFinished(true);
+         });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [state?.game_over, jwtToken, gameId, mySeat, conceded, addToast]);
+
+   // Clean up game tokens only after stats recording has settled (or is
+   // unnecessary). This avoids triggering a spectator reconnect that
+   // could overwrite personalized game-over state.
+   useEffect(() => {
+      if (!state?.game_over || !gameId) return;
+      const needsRecording = !!jwtToken && mySeat !== null && !conceded;
+      if (needsRecording && !statsFinished) return;
+      localStorage.removeItem(MP_TOKEN_KEY(gameId));
+      localStorage.removeItem(MP_SEAT_KEY(gameId));
+   }, [state?.game_over, statsFinished, gameId, jwtToken, mySeat, conceded]);
 
    useEffect(() => {
       if (
@@ -688,7 +795,9 @@ export default function MultiPlayPage() {
       moonOverlayActiveRef.current = false;
       const nextState = roundEndStateRef.current ?? pendingStateRef.current;
       roundEndStateRef.current = null;
-      pendingStateRef.current = null;
+      if (pendingStateRef.current?.round !== nextState?.round) {
+         pendingStateRef.current = null;
+      }
       if (nextState) {
          setState(nextState);
          prevScoresRef.current = nextState.players.map(
@@ -766,6 +875,7 @@ export default function MultiPlayPage() {
             return;
          }
          if (state.phase !== "playing" || state.game_over) return;
+         if (passTransition || noPassHold) return;
          if (state.whose_turn !== mySeat) return;
          if (!state.legal_plays.includes(code)) return;
 
@@ -793,7 +903,16 @@ export default function MultiPlayPage() {
          sendMultiPlay(code);
          setIdleWarning(false);
       },
-      [state, isSpectator, conceded, passSubmitted, mySeat, showImmediately]
+      [
+         state,
+         isSpectator,
+         conceded,
+         passSubmitted,
+         passTransition,
+         noPassHold,
+         mySeat,
+         showImmediately,
+      ]
    );
 
    // ── Concede handler ───────────────────────────────────────────────
@@ -913,7 +1032,7 @@ export default function MultiPlayPage() {
    let phaseHintText = "";
    if (isSpectator || conceded) {
       phaseHintText = isMobile ? "" : "Spectating";
-   } else if (state?.game_over) {
+   } else if (state?.game_over && !busy) {
       phaseHintText = "";
    } else if (noPassHold) {
       phaseHintText = "No passing this round";
@@ -924,12 +1043,16 @@ export default function MultiPlayPage() {
          phaseHintText = `Select 3 cards to pass ${state.pass_direction}`;
       }
    } else if (state?.phase === "playing") {
-      const effectiveTurn = whoseTurn ?? state.whose_turn;
-      if (effectiveTurn === mySeat) {
-         phaseHintText = "Your turn!";
+      if (myHand.length === 0) {
+         phaseHintText = "Round over";
       } else {
-         const turnPlayer = state.players[effectiveTurn]?.name ?? "";
-         phaseHintText = `${turnPlayer}'s turn`;
+         const effectiveTurn = whoseTurn ?? state.whose_turn;
+         if (effectiveTurn === mySeat) {
+            phaseHintText = "Your turn!";
+         } else {
+            const turnPlayer = state.players[effectiveTurn]?.name ?? "";
+            phaseHintText = `${turnPlayer}'s turn`;
+         }
       }
    }
 
@@ -1092,7 +1215,9 @@ export default function MultiPlayPage() {
                               effectiveMySeat
                            )}
                            centerIcon={
-                              !roundSummary && state.phase === "playing" ? (
+                              !roundSummary &&
+                              !passTransition &&
+                              state.phase === "playing" ? (
                                  <HeartIcon
                                     size={40}
                                     color={
@@ -1157,6 +1282,7 @@ export default function MultiPlayPage() {
                                  )}
                                  centerIcon={
                                     !roundSummary &&
+                                    !passTransition &&
                                     state.phase === "playing" ? (
                                        <HeartIcon
                                           size={40}
@@ -1284,52 +1410,88 @@ export default function MultiPlayPage() {
                      />
                   </div>
 
-                  {/* Hand */}
-                  {!isSpectator && !conceded && (
-                     <div
-                        className={`${handStyles.handWrapper} ${
-                           dealingHand ? handStyles.dealingHand : ""
-                        }`}
-                        style={
-                           myHand.length === 0 && !passTransition
-                              ? { visibility: "hidden" }
-                              : undefined
-                        }
-                     >
-                        {myHand.length > 0 || passTransition ? (
-                           <Hand
-                              cards={
-                                 passTransition
-                                    ? passTransition.displayHand
-                                    : myHand
-                              }
-                              legalCodes={
-                                 showPassUI
-                                    ? undefined
-                                    : state?.phase === "playing" &&
-                                      state.whose_turn === mySeat
-                                    ? new Set(legalPlays)
-                                    : new Set<string>()
-                              }
-                              selectedCodes={
-                                 showPassUI ? passSelection : undefined
-                              }
-                              selectionMode={showPassUI}
-                              onCardClick={handleCardClick}
-                              exitingCodes={passTransition?.exitingCodes}
-                              exitDirection={passTransition?.exitDir}
-                              enteringCodes={passTransition?.enteringCodes}
-                              enterDirection={passTransition?.enterDir}
-                           />
-                        ) : (
+                  {/* Hand placeholder (preserves layout during round summary / banner) */}
+                  {!isSpectator &&
+                     !conceded &&
+                     (roundSummary || roundBanner) &&
+                     !passTransition && (
+                        <div className={handStyles.hand} aria-hidden="true">
+                           <div className={handStyles.handCardWrap}>
+                              <div className={handStyles.handSlotEmpty} />
+                           </div>
+                        </div>
+                     )}
+
+                  {/* Deal-in animation (hand expanding from center) */}
+                  {!isSpectator &&
+                     !conceded &&
+                     dealingHand &&
+                     !roundSummary &&
+                     myHand.length > 0 && (
+                        <div className={handStyles.handStack}>
                            <div className={handStyles.hand} aria-hidden="true">
                               <div className={handStyles.handCardWrap}>
                                  <div className={handStyles.handSlotEmpty} />
                               </div>
                            </div>
-                        )}
-                     </div>
-                  )}
+                           <div className={handStyles.handDealIn}>
+                              <Hand cards={myHand} />
+                           </div>
+                        </div>
+                     )}
+
+                  {/* Hand */}
+                  {!isSpectator &&
+                     !conceded &&
+                     !dealingHand &&
+                     !roundBanner &&
+                     !roundSummary && (
+                        <div
+                           style={
+                              myHand.length === 0 && !passTransition
+                                 ? { visibility: "hidden" }
+                                 : undefined
+                           }
+                        >
+                           {myHand.length > 0 || passTransition ? (
+                              <Hand
+                                 cards={
+                                    passTransition
+                                       ? passTransition.displayHand
+                                       : myHand
+                                 }
+                                 legalCodes={
+                                    showPassUI
+                                       ? undefined
+                                       : state?.phase === "playing" &&
+                                         state.whose_turn === mySeat &&
+                                         !passTransition &&
+                                         !noPassHold
+                                       ? new Set(legalPlays)
+                                       : new Set<string>()
+                                 }
+                                 selectedCodes={
+                                    showPassUI ? passSelection : undefined
+                                 }
+                                 selectionMode={showPassUI}
+                                 onCardClick={handleCardClick}
+                                 exitingCodes={passTransition?.exitingCodes}
+                                 exitDirection={passTransition?.exitDir}
+                                 enteringCodes={passTransition?.enteringCodes}
+                                 enterDirection={passTransition?.enterDir}
+                              />
+                           ) : (
+                              <div
+                                 className={handStyles.hand}
+                                 aria-hidden="true"
+                              >
+                                 <div className={handStyles.handCardWrap}>
+                                    <div className={handStyles.handSlotEmpty} />
+                                 </div>
+                              </div>
+                           )}
+                        </div>
+                     )}
 
                   {/* Spectator hand placeholder */}
                   {(isSpectator || conceded) && (

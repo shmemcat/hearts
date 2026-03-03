@@ -12,7 +12,7 @@ export const PhaseHint: React.FC<PhaseHintProps> = ({ text }) => {
    return (
       <p
          className={styles.phaseHint}
-         style={text ? undefined : { visibility: "hidden" }}
+         style={text ? undefined : { visibility: "hidden", opacity: 0 }}
          aria-hidden={!text}
       >
          {/* Render a non-breaking space when hidden so the element keeps its line-height */}
