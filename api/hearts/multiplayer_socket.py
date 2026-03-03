@@ -577,7 +577,13 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
     if active and active.lobby_code:
         lobby = get_lobby(active.lobby_code)
         if lobby:
-            lobby.status = "finished"
+            lobby.status = "waiting"
+            lobby.game_id = None
+            for seat in lobby.seats:
+                if seat:
+                    seat.sid = None
+            lobby._disconnect_timers.clear()
+            lobby.touch()
 
     _delete_game(game_id)
     _game_auth.pop(game_id, None)

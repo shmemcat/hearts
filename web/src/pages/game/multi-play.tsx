@@ -64,6 +64,7 @@ import styles from "@/styles/play.module.css";
 const MP_TOKEN_KEY = (gameId: string) => `hearts_mp_token_${gameId}`;
 const MP_SEAT_KEY = (gameId: string) => `hearts_mp_seat_${gameId}`;
 const MP_LOBBY_KEY = (gameId: string) => `hearts_mp_lobby_${gameId}`;
+const LOBBY_TOKEN_KEY = (code: string) => `hearts_lobby_token_${code}`;
 
 export default function MultiPlayPage() {
    const [searchParams] = useSearchParams();
@@ -431,6 +432,11 @@ export default function MultiPlayPage() {
 
       const unsubGameOver = onMultiGameOver((data: GameState) => {
          setState(data);
+         const token = localStorage.getItem(MP_TOKEN_KEY(gameId));
+         const lobby = localStorage.getItem(MP_LOBBY_KEY(gameId));
+         if (token && lobby) {
+            localStorage.setItem(LOBBY_TOKEN_KEY(lobby), token);
+         }
          localStorage.removeItem(MP_TOKEN_KEY(gameId));
          localStorage.removeItem(MP_SEAT_KEY(gameId));
       });
@@ -1349,14 +1355,29 @@ export default function MultiPlayPage() {
                         mySeatIndex={conceded || isSpectator ? -1 : mySeat ?? 0}
                      >
                         <ButtonGroup>
-                           {lobbyCode && (
-                              <Link to={`/game/lobby/${lobbyCode}`}>
-                                 <Button
-                                    name="Play Again"
-                                    style={{ width: "250px" }}
-                                 />
-                              </Link>
-                           )}
+                           {lobbyCode &&
+                              mySeat === 0 &&
+                              !conceded &&
+                              !isSpectator && (
+                                 <Link to={`/game/lobby/${lobbyCode}`}>
+                                    <Button
+                                       name="Play Again"
+                                       style={{ width: "250px" }}
+                                    />
+                                 </Link>
+                              )}
+                           {lobbyCode &&
+                              mySeat !== 0 &&
+                              !conceded &&
+                              !isSpectator && (
+                                 <span title="Ask host to start new game">
+                                    <Button
+                                       name="Play Again"
+                                       disabled
+                                       style={{ width: "250px" }}
+                                    />
+                                 </span>
+                              )}
                            <Link to="/game/create">
                               <Button
                                  name="Create New Game"
