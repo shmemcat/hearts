@@ -108,7 +108,7 @@ function getTooltipContent(a: ComputedAchievement) {
          )}
          {nextTierInfo && (
             <span className={styles.tooltipProgress}>
-               Next: {nextTierInfo.name}
+               Next: {nextTierInfo.name} — {nextTierInfo.description}
             </span>
          )}
       </div>
