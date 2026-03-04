@@ -757,7 +757,11 @@ export default function MultiPlayPage() {
 
       const handleUnlocks = (res: Awaited<ReturnType<typeof doRecord>>) => {
          if (!res.ok) return;
-         for (const unlockId of res.data.newly_unlocked) {
+         const ids = res.data.newly_unlocked;
+         if (user?.id && ids.length > 0) {
+            markAchievementsSeen(user.id, ids);
+         }
+         for (const unlockId of ids) {
             const info = resolveUnlockId(unlockId);
             if (info) {
                addToast({
@@ -772,6 +776,9 @@ export default function MultiPlayPage() {
 
       unlockAchievement(jwtToken, "better_with_friends").then((res) => {
          if (!res.ok || res.newly_unlocked.length === 0) return;
+         if (user?.id) {
+            markAchievementsSeen(user.id, res.newly_unlocked);
+         }
          for (const id of res.newly_unlocked) {
             const info = resolveUnlockId(id);
             if (info) {

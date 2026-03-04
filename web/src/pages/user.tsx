@@ -25,7 +25,11 @@ import {
    type CategoryStats,
    type DifficultyStatsMap,
 } from "@/lib/gameApi";
-import { computeAchievements, getSeenAchievements } from "@/lib/achievements";
+import {
+   computeAchievements,
+   getSeenAchievements,
+   type ComputedAchievement,
+} from "@/lib/achievements";
 import { useToast } from "@/context/ToastContext";
 import containers from "@/styles/containers.module.css";
 import achievementStyles from "@/styles/achievements.module.css";
@@ -504,24 +508,22 @@ function AchievementsPanel({
       const storageKey = `hearts_seen_achievements_${userId}`;
       const storedSeen = localStorage.getItem(storageKey);
 
+      const achievementKey = (a: ComputedAchievement) =>
+         a.def.tiers && a.tier ? `${a.def.id}_${a.tier}` : a.def.id;
+
       const unlocked = achievements.filter((a) => a.unlocked);
-      const allKeys = unlocked.map((a) =>
-         a.tier ? `${a.def.id}_${a.tier}` : a.def.id
-      );
+      const allKeys = unlocked.map(achievementKey);
 
       if (!storedSeen) {
          // New browser — seed the seen list so old achievements don't re-toast
          localStorage.setItem(storageKey, JSON.stringify(allKeys));
       } else {
          const seen = getSeenAchievements(storedSeen);
-         const unseen = unlocked.filter((a) => {
-            const key = a.tier ? `${a.def.id}_${a.tier}` : a.def.id;
-            return !seen.has(key);
-         });
+         const unseen = unlocked.filter((a) => !seen.has(achievementKey(a)));
 
          if (unseen.length > 0) {
             const toastItems = unseen.map((a) => ({
-               achievementId: a.tier ? `${a.def.id}_${a.tier}` : a.def.id,
+               achievementId: achievementKey(a),
                name: a.def.secret
                   ? a.def.singleName ?? a.def.id
                   : a.def.tiers

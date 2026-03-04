@@ -417,6 +417,8 @@ export default function PlayGamePage() {
       state?.winner_index,
       state?.players,
       state?.human_moon_shots,
+      state?.round,
+      state?.human_hearts_broken,
       token,
       gameId,
       addToast,
@@ -526,17 +528,7 @@ export default function PlayGamePage() {
          });
       }, GAME_POLL_TIMEOUT_MS);
       return () => clearTimeout(t);
-   }, [
-      gameId,
-      state?.phase,
-      state?.whose_turn,
-      state?.game_over,
-      state?.legal_plays?.length,
-      state?.human_hand?.length,
-      busy,
-      loading,
-      setSlots,
-   ]);
+   }, [gameId, state, busy, loading, setSlots]);
 
    // ── Round banner → deal timer ─────────────────────────────────────
    useEffect(() => {
@@ -891,6 +883,9 @@ export default function PlayGamePage() {
       setConcedeModalOpen(false);
       setConceded(true);
       if (res.ok) {
+         if (user?.id && res.newly_unlocked.length > 0) {
+            markAchievementsSeen(user.id, res.newly_unlocked);
+         }
          for (const unlockId of res.newly_unlocked) {
             const info = resolveUnlockId(unlockId);
             if (info) {
@@ -903,7 +898,7 @@ export default function PlayGamePage() {
             }
          }
       }
-   }, [gameId, token, addToast]);
+   }, [gameId, token, user?.id, addToast]);
 
    // ── Early returns ──────────────────────────────────────────────────
    if (!gameId) {
