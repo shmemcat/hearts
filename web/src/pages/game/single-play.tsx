@@ -393,6 +393,7 @@ export default function PlayGamePage() {
          round_count: state.round,
          all_scores: state.players.map((p) => p.score),
          hearts_broken_count: state.human_hearts_broken,
+         utc_offset_minutes: new Date().getTimezoneOffset(),
       }).then((res) => {
          if (!res.ok) return;
          const { newly_unlocked } = res.data;

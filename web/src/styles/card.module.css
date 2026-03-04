@@ -121,6 +121,18 @@
    gap: 2px;
 }
 
+/* ── Large low-DPI screens (1440p desktop): slightly larger card text ── */
+/* max-resolution: 1.5dppx excludes Retina/HiDPI displays (MacBook ~2x DPR) */
+@media only screen and (min-width: 1280px) and (max-resolution: 1.5dppx) {
+   .card {
+      font-size: 1.15rem;
+   }
+
+   .cardMedium {
+      font-size: 1.15rem;
+   }
+}
+
 /* ── Mobile: rank + suit pinned to top-left, centered on each other ── */
 @media only screen and (max-width: 768px) {
    .card {

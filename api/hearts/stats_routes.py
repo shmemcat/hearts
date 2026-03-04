@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 from flask import Blueprint, request, jsonify, g
 
@@ -251,11 +251,19 @@ def record_game():
     is_halloween = False
     is_thanksgiving = False
     is_christmas = False
+    utc_offset_minutes = data.get("utc_offset_minutes")
     if active_game and active_game.created_at:
-        hour = active_game.created_at.hour
+        utc_dt = active_game.created_at.replace(tzinfo=timezone.utc)
+        if utc_offset_minutes is not None:
+            local_dt = utc_dt.astimezone(
+                timezone(timedelta(minutes=-int(utc_offset_minutes)))
+            )
+        else:
+            local_dt = utc_dt
+        hour = local_dt.hour
         started_after_midnight = hour < 5
         started_early_morning = 5 <= hour < 8
-        started_dt = active_game.created_at
+        started_dt = local_dt
         m, d, y = started_dt.month, started_dt.day, started_dt.year
         is_valentines = m == 2 and d == 14
         is_new_year = m == 1 and d == 1

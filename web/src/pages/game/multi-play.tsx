@@ -752,6 +752,7 @@ export default function MultiPlayPage() {
             all_scores: data.allScores,
             hearts_broken_count: data.heartsBrokenCount,
             difficulty: "multiplayer",
+            utc_offset_minutes: new Date().getTimezoneOffset(),
          });
 
       const handleUnlocks = (res: Awaited<ReturnType<typeof doRecord>>) => {

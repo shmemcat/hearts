@@ -334,6 +334,7 @@ export async function recordGameStats(
       all_scores: number[];
       hearts_broken_count: number;
       difficulty?: string;
+      utc_offset_minutes?: number;
    }
 ): Promise<
    { ok: true; data: RecordGameStatsResponse } | { ok: false; error: string }
