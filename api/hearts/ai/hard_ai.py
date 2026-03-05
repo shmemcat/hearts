@@ -221,7 +221,7 @@ class _MoonAwareRollout(PlayStrategy):
 # ---------------------------------------------------------------------------
 
 
-_MOON_THRESHOLD = 12
+_MOON_THRESHOLD = 15
 
 
 def _moon_score(
@@ -230,10 +230,13 @@ def _moon_score(
     player_index: int,
 ) -> float:
     """Score how promising a shoot-the-moon attempt looks. Higher = more promising."""
-    my_points = round_scores[player_index]
-    others_points = sum(round_scores) - my_points
+    others_points = sum(round_scores) - round_scores[player_index]
 
-    if my_points >= 10 and others_points <= 3:
+    if others_points > 0:
+        return 0.0
+
+    my_points = round_scores[player_index]
+    if my_points >= 10:
         return _MOON_THRESHOLD + 1
 
     if not hand:

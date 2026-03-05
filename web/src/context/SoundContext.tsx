@@ -105,6 +105,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
    const howlsRef = useRef<Record<SoundName, Howl[]> | null>(null);
    const musicHowlRef = useRef<Howl | null>(null);
+   const musicChannelRef = useRef<BroadcastChannel | null>(null);
    const mutedRef = useRef(muted);
    const volumeRef = useRef(volume);
    const musicMutedRef = useRef(musicMuted);
@@ -143,11 +144,40 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       });
       musicHowlRef.current = howl;
 
+      // Coordinate across tabs: only one tab plays at a time
+      const channel =
+         "BroadcastChannel" in window
+            ? new BroadcastChannel("hearts-music")
+            : null;
+      musicChannelRef.current = channel;
+
+      if (channel) {
+         channel.onmessage = (e) => {
+            if (e.data === "playing") howl.pause();
+         };
+      }
+
+      // Resume music when this tab becomes visible again
+      const handleVisibilityChange = () => {
+         if (!document.hidden && !musicMutedRef.current) {
+            howl.play();
+            channel?.postMessage("playing");
+         }
+      };
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+
       if (!musicMutedRef.current) {
          howl.play();
+         channel?.postMessage("playing");
       }
 
       return () => {
+         channel?.close();
+         musicChannelRef.current = null;
+         document.removeEventListener(
+            "visibilitychange",
+            handleVisibilityChange
+         );
          howl.unload();
          musicHowlRef.current = null;
       };
@@ -192,6 +222,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
          howl.pause();
       } else {
          howl.play();
+         musicChannelRef.current?.postMessage("playing");
       }
    }, []);
 

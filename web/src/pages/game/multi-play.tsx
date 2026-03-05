@@ -817,6 +817,7 @@ export default function MultiPlayPage() {
       if (needsRecording && !statsFinished) return;
       localStorage.removeItem(MP_TOKEN_KEY(gameId));
       localStorage.removeItem(MP_SEAT_KEY(gameId));
+      localStorage.removeItem(MP_LOBBY_KEY(gameId));
    }, [state?.game_over, statsFinished, gameId, jwtToken, mySeat, conceded]);
 
    useEffect(() => {
@@ -1578,13 +1579,30 @@ export default function MultiPlayPage() {
                                     />
                                  </span>
                               )}
-                           <Link to="/game/create">
+                           <Link
+                              to="/game/create"
+                              onClick={() => {
+                                 if (lobbyCode)
+                                    localStorage.removeItem(
+                                       LOBBY_TOKEN_KEY(lobbyCode)
+                                    );
+                              }}
+                           >
                               <Button
                                  name="Create New Game"
                                  style={{ width: "250px" }}
                               />
                            </Link>
-                           <Link to="/" onClick={() => triggerLogoFadeOut()}>
+                           <Link
+                              to="/"
+                              onClick={() => {
+                                 if (lobbyCode)
+                                    localStorage.removeItem(
+                                       LOBBY_TOKEN_KEY(lobbyCode)
+                                    );
+                                 triggerLogoFadeOut();
+                              }}
+                           >
                               <Button name="Home" style={{ width: "250px" }} />
                            </Link>
                         </ButtonGroup>
@@ -1626,13 +1644,26 @@ export default function MultiPlayPage() {
                mySeatIndex={conceded || isSpectator ? -1 : mySeat ?? 0}
             >
                <ButtonGroup padding="tight">
-                  <Link to="/game/create">
+                  <Link
+                     to="/game/create"
+                     onClick={() => {
+                        if (lobbyCode)
+                           localStorage.removeItem(LOBBY_TOKEN_KEY(lobbyCode));
+                     }}
+                  >
                      <Button
                         name="Create New Game"
                         style={{ width: "250px" }}
                      />
                   </Link>
-                  <Link to="/" onClick={() => triggerLogoFadeOut()}>
+                  <Link
+                     to="/"
+                     onClick={() => {
+                        if (lobbyCode)
+                           localStorage.removeItem(LOBBY_TOKEN_KEY(lobbyCode));
+                        triggerLogoFadeOut();
+                     }}
+                  >
                      <Button name="Home" style={{ width: "250px" }} />
                   </Link>
                </ButtonGroup>
