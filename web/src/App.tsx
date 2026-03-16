@@ -28,6 +28,7 @@ import LobbyPage from "@/pages/game/lobby";
 import MultiPlayPage from "@/pages/game/multi-play";
 import PlayMenu from "@/pages/play";
 import Leaderboard from "@/pages/leaderboard";
+import DemoGameOver from "@/pages/demo-game-over";
 import NotFound from "@/pages/404";
 
 const GEAR_ROUTES: Record<string, string | undefined> = {
@@ -145,6 +146,10 @@ export default function App() {
                                        <Route
                                           path="/game/multi-play"
                                           element={<MultiPlayPage />}
+                                       />
+                                       <Route
+                                          path="/demo/game-over"
+                                          element={<DemoGameOver />}
                                        />
                                        <Route path="*" element={<NotFound />} />
                                     </Routes>

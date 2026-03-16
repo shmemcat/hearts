@@ -4,6 +4,7 @@
 
 import { io, Socket } from "socket.io-client";
 import type { GameState, PlayEvent } from "@/types/game";
+import type { GameStartedEvent } from "@/types/lobby";
 
 let socket: Socket | null = null;
 
@@ -17,6 +18,7 @@ type PlayerConcededCb = (data: {
 }) => void;
 type ErrorCb = (message: string) => void;
 type AchievementsUnlockedCb = (data: { newly_unlocked: string[] }) => void;
+type PlayAgainStartedCb = (event: GameStartedEvent) => void;
 
 const stateListeners: StateCb[] = [];
 const playListeners: PlayCb[] = [];
@@ -28,6 +30,7 @@ const gameOverListeners: StateCb[] = [];
 const errorListeners: ErrorCb[] = [];
 const idleWarningListeners: VoidCb[] = [];
 const achievementsUnlockedListeners: AchievementsUnlockedCb[] = [];
+const playAgainStartedListeners: PlayAgainStartedCb[] = [];
 
 export function connectMulti(
    gameId: string,
@@ -81,6 +84,9 @@ export function connectMulti(
    });
    socket.on("achievements_unlocked", (data: { newly_unlocked: string[] }) => {
       achievementsUnlockedListeners.forEach((cb) => cb(data));
+   });
+   socket.on("play_again_started", (data: GameStartedEvent) => {
+      playAgainStartedListeners.forEach((cb) => cb(data));
    });
 }
 
@@ -138,3 +144,4 @@ export const onError = makeSubscriber(errorListeners);
 export const onAchievementsUnlocked = makeSubscriber(
    achievementsUnlockedListeners
 );
+export const onPlayAgainStarted = makeSubscriber(playAgainStartedListeners);

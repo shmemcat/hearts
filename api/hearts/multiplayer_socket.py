@@ -551,6 +551,7 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
         lobby = get_lobby(active.lobby_code)
         if lobby:
             lobby.status = "waiting"
+            lobby.previous_game_id = lobby.game_id or game_id
             lobby.game_id = None
             for seat in lobby.seats:
                 if seat:

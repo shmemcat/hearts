@@ -279,14 +279,25 @@ def register_lobby_socket(socketio):
                     }
                 )
 
+        game_payload = {
+            "game_id": game_id,
+            "difficulty": difficulty,
+            "seat_assignments": seat_assignments,
+            "seats": lobby.to_dict()["seats"],
+        }
+
         emit(
             "game_started",
-            {
-                "game_id": game_id,
-                "difficulty": difficulty,
-                "seat_assignments": seat_assignments,
-                "seats": lobby.to_dict()["seats"],
-            },
+            game_payload,
             room=f"lobby:{code}",
             namespace="/lobby",
         )
+
+        if lobby.previous_game_id:
+            socketio.emit(
+                "play_again_started",
+                game_payload,
+                room=f"game:{lobby.previous_game_id}",
+                namespace="/multi",
+            )
+            lobby.previous_game_id = None

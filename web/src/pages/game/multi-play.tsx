@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/Buttons";
@@ -41,6 +41,7 @@ import {
    onGameOver as onMultiGameOver,
    onError as onMultiError,
    onAchievementsUnlocked as onMultiAchievementsUnlocked,
+   onPlayAgainStarted as onMultiPlayAgainStarted,
 } from "@/lib/multiplayerSocket";
 import { reorderSlotsForTableLayout, getShortName } from "@/lib/playUtils";
 import type { CurrentTrickSlot, GameState, PlayEvent } from "@/types/game";
@@ -74,6 +75,7 @@ export default function MultiPlayPage() {
    const { token: jwtToken, user } = useAuth();
    const { play: playSound } = useSound();
    const { addToast } = useToast();
+   const navigate = useNavigate();
 
    const [playerToken] = useState<string | null>(() =>
       gameId ? localStorage.getItem(MP_TOKEN_KEY(gameId)) : null
@@ -526,6 +528,27 @@ export default function MultiPlayPage() {
          }
       });
 
+      const unsubPlayAgain = onMultiPlayAgainStarted((event) => {
+         const newGameId = event.game_id;
+         if (playerToken && lobbyCode) {
+            const assignment = event.seat_assignments.find(
+               (a) => a.player_token === playerToken
+            );
+            if (assignment) {
+               localStorage.setItem(MP_TOKEN_KEY(newGameId), playerToken);
+               localStorage.setItem(
+                  MP_SEAT_KEY(newGameId),
+                  String(assignment.seat_index)
+               );
+            }
+            localStorage.setItem(MP_LOBBY_KEY(newGameId), lobbyCode);
+            localStorage.setItem(LOBBY_TOKEN_KEY(lobbyCode), playerToken);
+            navigate(
+               `/game/multi-play?game_id=${encodeURIComponent(newGameId)}`
+            );
+         }
+      });
+
       return () => {
          unsubState();
          unsubPlay();
@@ -537,8 +560,19 @@ export default function MultiPlayPage() {
          unsubGameOver();
          unsubError();
          unsubAchievements();
+         unsubPlayAgain();
       };
-   }, [gameId, enqueue, isActive, setSlots, addToast, user?.id]);
+   }, [
+      gameId,
+      enqueue,
+      isActive,
+      setSlots,
+      addToast,
+      user?.id,
+      navigate,
+      playerToken,
+      lobbyCode,
+   ]);
 
    // ── Watchdog: nudge server if game appears stuck ──────────────────
    useEffect(() => {
@@ -1597,6 +1631,16 @@ export default function MultiPlayPage() {
                         winnerIndex={state.winner_index}
                         mySeatIndex={conceded || isSpectator ? -1 : mySeat ?? 0}
                      >
+                        {lobbyCode && !conceded && !isSpectator && (
+                           <p
+                              className="text-sm opacity-60"
+                              style={{ textAlign: "center" }}
+                           >
+                              {mySeat === 0
+                                 ? 'To make a new lobby with the same players, click "Play Again"'
+                                 : "To play again, stay on this page"}
+                           </p>
+                        )}
                         <ButtonGroup padding="tight">
                            {lobbyCode &&
                               mySeat === 0 &&
@@ -1615,7 +1659,7 @@ export default function MultiPlayPage() {
                               !isSpectator && (
                                  <span title="Ask host to start new game">
                                     <Button
-                                       name="Play Again"
+                                       name="Waiting for Host..."
                                        disabled
                                        style={{ width: "250px" }}
                                     />

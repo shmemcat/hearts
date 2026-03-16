@@ -37,6 +37,7 @@ class Lobby:
     player_tokens: Dict[str, int] = field(default_factory=dict)
     status: str = "waiting"  # "waiting" | "playing" | "finished"
     game_id: Optional[str] = None
+    previous_game_id: Optional[str] = None
     last_activity: float = field(default_factory=time.time)
     created_at: float = field(default_factory=time.time)
     _disconnect_timers: Dict[str, Any] = field(default_factory=dict)
