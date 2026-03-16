@@ -31,6 +31,7 @@ import {
    faTurkey,
    faGift,
    faUserGroup,
+   faWhale,
 } from "@fortawesome/pro-solid-svg-icons";
 import type { UserStatsResponse } from "@/lib/gameApi";
 
@@ -208,6 +209,14 @@ const SECRET_ACHIEVEMENTS: AchievementDef[] = [
       tiers: null,
       singleName: "Marathon",
       singleDescription: "Finish a game that goes 10+ rounds",
+   },
+   {
+      id: "biggest_loser",
+      secret: true,
+      icon: faWhale,
+      tiers: null,
+      singleName: "The Biggest Loser",
+      singleDescription: "Score 125 points in a game",
    },
    // ── Moon & hearts mechanics ───────────────────────────────────────
    {
@@ -521,6 +530,7 @@ export function computeAchievements(
       { def: secretById.demolition, unlocked: stats.demolition },
       { def: secretById.speed_demon, unlocked: stats.speed_demon },
       { def: secretById.marathon, unlocked: stats.marathon },
+      { def: secretById.biggest_loser, unlocked: stats.biggest_loser },
       // Moon & hearts mechanics
       { def: secretById.double_moon, unlocked: stats.double_moon },
       { def: secretById.eclipse, unlocked: stats.eclipse },

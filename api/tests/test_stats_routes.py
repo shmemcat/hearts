@@ -52,6 +52,7 @@ class TestGetStats:
         assert stats["best_score"] is None
         assert stats["worst_score"] is None
         assert stats["average_score"] is None
+        assert stats["biggest_loser"] is False
 
     def test_401_without_jwt(self, auth_client):
         r = auth_client.get("/stats")
@@ -225,3 +226,20 @@ class TestRecordGame:
         )
         stats = r.get_json()["stats"]
         assert stats["average_score"] == 20.0
+
+    def test_biggest_loser_unlocks_at_125_points(self, auth_client):
+        _, token = _create_user_and_token(auth_client)
+        headers = auth_headers(token)
+        r = auth_client.post(
+            "/stats/record",
+            json={
+                "game_id": "game-125",
+                "final_score": 125,
+                "won": False,
+            },
+            headers=headers,
+        )
+        assert r.status_code == 200
+        payload = r.get_json()
+        assert payload["stats"]["biggest_loser"] is True
+        assert "biggest_loser" in payload["newly_unlocked"]

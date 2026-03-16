@@ -1,0 +1,63 @@
+.wrap {
+   position: relative;
+   display: inline-flex;
+}
+
+.particles {
+   position: absolute;
+   inset: -24px;
+   pointer-events: none;
+   z-index: 1;
+}
+
+.p {
+   position: absolute;
+   font-size: 20px;
+   color: var(--header, #888);
+   opacity: 0;
+   line-height: 1;
+   animation: smokePuff 0.65s ease-out forwards;
+}
+
+/* bottom-left edge */
+.p:nth-child(1) {
+   --sx: 35px;
+   --sy: 110px;
+   --dx: -14px;
+   --dy: 16px;
+   animation-delay: 0ms;
+}
+/* right middle edge */
+.p:nth-child(2) {
+   --sx: 105px;
+   --sy: 80px;
+   --dx: 18px;
+   --dy: 0px;
+   animation-delay: 0ms;
+}
+/* top-left-ish edge */
+.p:nth-child(3) {
+   --sx: 35px;
+   --sy: 60px;
+   --dx: -12px;
+   --dy: -16px;
+   animation-delay: 0ms;
+}
+
+@keyframes smokePuff {
+   0% {
+      left: var(--sx);
+      top: var(--sy);
+      opacity: 0.7;
+      transform: translate(-50%, -50%) scale(0.6);
+   }
+   60% {
+      opacity: 0.35;
+   }
+   100% {
+      left: calc(var(--sx) + var(--dx));
+      top: calc(var(--sy) + var(--dy));
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.5);
+   }
+}

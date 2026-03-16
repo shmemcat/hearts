@@ -24,11 +24,13 @@ type SoundName =
    | "cardPlace"
    | "heartDelta"
    | "heartsBroken"
+   | "queenThrown"
    | "playerJoin"
    | "roundEnd"
    | "gameEnd"
    | "shootTheMoon"
-   | "soundOn";
+   | "soundOn"
+   | "notification";
 
 const SOUND_SOURCES: Record<SoundName, string[]> = {
    cardFan: ["/sounds/card-fan-1.mp3", "/sounds/card-fan-2.mp3"],
@@ -46,11 +48,13 @@ const SOUND_SOURCES: Record<SoundName, string[]> = {
    cardPlace: ["/sounds/card-place-1.mp3", "/sounds/card-place-2.mp3"],
    heartDelta: ["/sounds/pop.mp3", "/sounds/plopp.mp3"],
    heartsBroken: ["/sounds/hearts-broken.mp3"],
+   queenThrown: ["/sounds/queen-thrown.mp3"],
    playerJoin: ["/sounds/join-ding.mp3"],
    roundEnd: ["/sounds/round-end.mp3"],
    gameEnd: ["/sounds/game-end.mp3"],
    shootTheMoon: ["/sounds/shoot-the-moon.mp3"],
    soundOn: ["/sounds/sound-on.mp3"],
+   notification: ["/sounds/notification.mp3"],
 };
 
 function pickRandom<T>(arr: T[]): T {

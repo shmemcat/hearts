@@ -253,6 +253,7 @@ export type UserStatsResponse = {
    thankful: boolean;
    christmas_spirit: boolean;
    better_with_friends: boolean;
+   biggest_loser: boolean;
 };
 
 export async function fetchStats(

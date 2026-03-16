@@ -173,6 +173,7 @@ def _compute_newly_unlocked(
         "heartbreaker",
         "monthly_star",
         "hall_of_fame",
+        "biggest_loser",
     ]
     for field in bool_fields:
         if not old_snapshot.get(field) and getattr(stats, field):
@@ -312,6 +313,7 @@ def record_game():
         "spooky": stats.spooky,
         "thankful": stats.thankful,
         "christmas_spirit": stats.christmas_spirit,
+        "biggest_loser": stats.biggest_loser,
     }
 
     stats.games_played += 1
@@ -323,6 +325,8 @@ def record_game():
         stats.best_score = final_score
     if stats.worst_score is None or final_score > stats.worst_score:
         stats.worst_score = final_score
+    if final_score == 125 and not stats.biggest_loser:
+        stats.biggest_loser = True
 
     if won:
         stats.current_win_streak += 1

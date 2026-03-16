@@ -114,6 +114,9 @@ class UserStats(db.Model):
     better_with_friends = db.Column(
         db.Boolean, default=False, nullable=False, server_default="0"
     )
+    biggest_loser = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
 
     user = db.relationship("User", back_populates="stats")
 
@@ -157,6 +160,7 @@ class UserStats(db.Model):
             "thankful": self.thankful,
             "christmas_spirit": self.christmas_spirit,
             "better_with_friends": self.better_with_friends,
+            "biggest_loser": self.biggest_loser,
         }
 
 

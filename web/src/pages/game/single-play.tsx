@@ -627,11 +627,16 @@ export default function PlayGamePage() {
    const prevSlotsRef = useRef(displaySlots);
    useEffect(() => {
       const prev = prevSlotsRef.current;
-      const appeared = displaySlots.some(
+      const newSlots = displaySlots.filter(
          (s, i) => s != null && prev[i] == null
       );
       prevSlotsRef.current = displaySlots;
-      if (appeared) playSoundRef.current("cardSlide");
+      if (newSlots.length === 0) return;
+      if (newSlots.some((s) => s!.card.toLowerCase() === "qs")) {
+         playSoundRef.current("queenThrown");
+      } else {
+         playSoundRef.current("cardSlide");
+      }
    }, [displaySlots]);
 
    // 3. Trick sweep (cards collected toward winner)

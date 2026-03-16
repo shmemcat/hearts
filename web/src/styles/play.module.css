@@ -36,6 +36,32 @@
    transition: opacity 0.3s ease-in;
 }
 
+@keyframes gentleShake {
+   0%,
+   100% {
+      transform: translateX(0);
+   }
+   10% {
+      transform: translateX(-3px);
+   }
+   30% {
+      transform: translateX(3px);
+   }
+   50% {
+      transform: translateX(-2px);
+   }
+   70% {
+      transform: translateX(2px);
+   }
+   90% {
+      transform: translateX(-1px);
+   }
+}
+
+.phaseHintShake {
+   animation: gentleShake 0.5s ease-in-out 0s 4;
+}
+
 .gameOverBackdrop {
    position: fixed;
    inset: 0;

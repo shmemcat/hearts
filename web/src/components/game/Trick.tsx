@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback, useMemo } from "react";
 
 import { Card } from "@/components/game/Card";
+import { QueenSmoke } from "@/components/game/QueenSmoke";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { CurrentTrickSlot } from "@/types/game";
 import styles from "./Trick.module.css";
@@ -194,10 +195,19 @@ export const Trick: React.FC<TrickProps> = ({
                            ref={cardRefCallbacks[index]}
                            className={styles.trickSlotCard}
                         >
-                           <Card
-                              code={slot.card}
-                              size={isMobile ? "large" : "medium"}
-                           />
+                           {slot.card.toLowerCase() === "qs" ? (
+                              <QueenSmoke>
+                                 <Card
+                                    code={slot.card}
+                                    size={isMobile ? "large" : "medium"}
+                                 />
+                              </QueenSmoke>
+                           ) : (
+                              <Card
+                                 code={slot.card}
+                                 size={isMobile ? "large" : "medium"}
+                              />
+                           )}
                         </div>
                      )}
                   </div>
@@ -218,7 +228,13 @@ export const Trick: React.FC<TrickProps> = ({
             <div key={i} className={styles.trickSlot}>
                <span className={styles.trickSlotLabel}>{labels[i]}</span>
                {slot ? (
-                  <Card code={slot.card} size="medium" />
+                  slot.card.toLowerCase() === "qs" ? (
+                     <QueenSmoke>
+                        <Card code={slot.card} size="medium" />
+                     </QueenSmoke>
+                  ) : (
+                     <Card code={slot.card} size="medium" />
+                  )
                ) : (
                   <div className={styles.trickSlotEmpty} aria-hidden="true" />
                )}

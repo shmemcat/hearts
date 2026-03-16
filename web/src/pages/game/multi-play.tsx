@@ -124,6 +124,7 @@ export default function MultiPlayPage() {
       enteringCodes?: Set<string>;
       enterDir?: "left" | "right" | "above";
    } | null>(null);
+   const [nudgeShake, setNudgeShake] = useState(false);
 
    const liveSeat: number | null =
       state?.my_seat ?? (savedSeat != null ? parseInt(savedSeat, 10) : null);
@@ -829,6 +830,46 @@ export default function MultiPlayPage() {
       }
    }, [passTransition?.phase]);
 
+   // ── Inactivity nudge: remind player it's their turn after 15s ──
+   const INACTIVITY_NUDGE_MS = 15_000;
+   const SHAKE_DURATION_MS = 2_000;
+
+   const nudgePhase = state?.phase;
+   const nudgeTurn = state?.whose_turn;
+   const nudgeGameOver = state?.game_over;
+
+   useEffect(() => {
+      if (isSpectator || conceded) return;
+      if (!nudgePhase || nudgeGameOver) return;
+
+      const isMyPlayTurn = nudgePhase === "playing" && nudgeTurn === mySeat;
+      const isMyPassTurn = nudgePhase === "passing" && !passSubmitted;
+
+      if (!isMyPlayTurn && !isMyPassTurn) {
+         setNudgeShake(false);
+         return;
+      }
+
+      const nudgeTimer = setTimeout(() => {
+         playSoundRef.current("notification");
+         setNudgeShake(true);
+         setTimeout(() => setNudgeShake(false), SHAKE_DURATION_MS);
+      }, INACTIVITY_NUDGE_MS);
+
+      return () => {
+         clearTimeout(nudgeTimer);
+         setNudgeShake(false);
+      };
+   }, [
+      nudgePhase,
+      nudgeTurn,
+      nudgeGameOver,
+      mySeat,
+      passSubmitted,
+      isSpectator,
+      conceded,
+   ]);
+
    // ── Round summary continue ───────────────────────────────────────
    handleContinueRoundRef.current = () => {
       setRoundSummary(null);
@@ -1456,6 +1497,7 @@ export default function MultiPlayPage() {
                               ? null
                               : phaseHintText
                         }
+                        shake={nudgeShake}
                      />
                   </div>
 
