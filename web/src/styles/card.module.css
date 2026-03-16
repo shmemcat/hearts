@@ -131,6 +131,10 @@
    .cardMedium {
       font-size: 1.15rem;
    }
+
+   .cardLabel {
+      gap: 6px;
+   }
 }
 
 /* ── Mobile: rank + suit pinned to top-left, centered on each other ── */

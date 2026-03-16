@@ -8,7 +8,6 @@ own hand). Play/trick events are broadcast to the entire room.
 
 import logging
 import eventlet
-from datetime import date
 from typing import Any, Dict, Optional, Set, Tuple
 
 from flask import current_app, request
@@ -29,8 +28,6 @@ from hearts.multiplayer_game_ops import (
 from hearts.jwt_utils import get_current_user
 from hearts.stats_routes import (
     _compute_newly_unlocked,
-    _easter_date,
-    _thanksgiving_date,
     _is_in_all_time_top_10,
     _recorded_games,
 )
@@ -385,30 +382,6 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
         round_count = runner.state.round
 
         active = ActiveGame.query.filter_by(game_id=game_id).first()
-        started_after_midnight = False
-        started_early_morning = False
-        is_valentines = False
-        is_new_year = False
-        is_st_patricks = False
-        is_easter = False
-        is_independence = False
-        is_halloween = False
-        is_thanksgiving = False
-        is_christmas = False
-        if active and active.created_at:
-            hour = active.created_at.hour
-            started_after_midnight = hour < 5
-            started_early_morning = 5 <= hour < 8
-            started_dt = active.created_at
-            m, d, y = started_dt.month, started_dt.day, started_dt.year
-            is_valentines = m == 2 and d == 14
-            is_new_year = m == 1 and d == 1
-            is_st_patricks = m == 3 and d == 17
-            is_easter = date(y, m, d) == _easter_date(y)
-            is_independence = m == 7 and d == 4
-            is_halloween = m == 10 and d == 31
-            is_thanksgiving = date(y, m, d) == _thanksgiving_date(y)
-            is_christmas = m == 12 and d == 25
 
         unlocked_per_seat: Dict[int, list] = {}
 
@@ -498,10 +471,6 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
                 us.worst_score = player_score
 
             # Boolean achievements
-            if started_after_midnight and not us.night_owl:
-                us.night_owl = True
-            if started_early_morning and not us.early_bird:
-                us.early_bird = True
             if won and player_score == 7 and not us.lucky_seven:
                 us.lucky_seven = True
             if seat_moon_shots >= 2 and not us.double_moon:
@@ -520,22 +489,6 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
                 us.speed_demon = True
             if round_count >= 10 and not us.marathon:
                 us.marathon = True
-            if is_valentines and not us.lonely_heart:
-                us.lonely_heart = True
-            if is_new_year and not us.new_year:
-                us.new_year = True
-            if is_st_patricks and not us.lucky_clover:
-                us.lucky_clover = True
-            if is_easter and not us.easter_egg:
-                us.easter_egg = True
-            if is_independence and not us.fireworks:
-                us.fireworks = True
-            if is_halloween and not us.spooky:
-                us.spooky = True
-            if is_thanksgiving and not us.thankful:
-                us.thankful = True
-            if is_christmas and not us.christmas_spirit:
-                us.christmas_spirit = True
 
             if won and not us.hall_of_fame:
                 if _is_in_all_time_top_10(user_id, "multiplayer", "multiplayer"):

@@ -234,8 +234,49 @@ def record_game():
     dedup_key = f"{g.current_user.id}:{game_id}"
     if dedup_key in _recorded_games:
         stats = _get_or_create_stats(g.current_user.id)
+        newly_unlocked: list[str] = []
+        utc_off = data.get("utc_offset_minutes")
+        active_game = ActiveGame.query.filter_by(game_id=game_id).first()
+        if active_game and active_game.created_at and utc_off is not None:
+            utc_dt = active_game.created_at.replace(tzinfo=timezone.utc)
+            local_dt = utc_dt.astimezone(timezone(timedelta(minutes=-int(utc_off))))
+            hour = local_dt.hour
+            m, d, y = local_dt.month, local_dt.day, local_dt.year
+            if hour < 5 and not stats.night_owl:
+                stats.night_owl = True
+                newly_unlocked.append("night_owl")
+            if 5 <= hour < 8 and not stats.early_bird:
+                stats.early_bird = True
+                newly_unlocked.append("early_bird")
+            if m == 2 and d == 14 and not stats.lonely_heart:
+                stats.lonely_heart = True
+                newly_unlocked.append("lonely_heart")
+            if m == 1 and d == 1 and not stats.new_year:
+                stats.new_year = True
+                newly_unlocked.append("new_year")
+            if m == 3 and d == 17 and not stats.lucky_clover:
+                stats.lucky_clover = True
+                newly_unlocked.append("lucky_clover")
+            if date(y, m, d) == _easter_date(y) and not stats.easter_egg:
+                stats.easter_egg = True
+                newly_unlocked.append("easter_egg")
+            if m == 7 and d == 4 and not stats.fireworks:
+                stats.fireworks = True
+                newly_unlocked.append("fireworks")
+            if m == 10 and d == 31 and not stats.spooky:
+                stats.spooky = True
+                newly_unlocked.append("spooky")
+            if date(y, m, d) == _thanksgiving_date(y) and not stats.thankful:
+                stats.thankful = True
+                newly_unlocked.append("thankful")
+            if m == 12 and d == 25 and not stats.christmas_spirit:
+                stats.christmas_spirit = True
+                newly_unlocked.append("christmas_spirit")
         db.session.commit()
-        return jsonify({"stats": stats.to_dict(), "newly_unlocked": []}), 200
+        return (
+            jsonify({"stats": stats.to_dict(), "newly_unlocked": newly_unlocked}),
+            200,
+        )
     _recorded_games.add(dedup_key)
 
     active_game = ActiveGame.query.filter_by(game_id=game_id).first()
