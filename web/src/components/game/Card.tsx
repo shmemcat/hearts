@@ -1,7 +1,8 @@
 import React from "react";
 
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useCardStyle, type CardStyle } from "@/context/CardStyleContext";
-import { SUIT_RED, SUIT_SYMBOL } from "@/lib/constants";
+import { SUIT_RED, SUIT_SYMBOL, SUIT_ICON } from "@/lib/constants";
 import styles from "@/styles/card.module.css";
 
 /** Parse card code "2c" | "10d" | "Js" | "Ah" into rank and suit. */
@@ -39,7 +40,7 @@ export const Card: React.FC<CardProps> = ({
 
    const { rank, suit } = parseCode(code);
    const isRed = SUIT_RED.has(suit);
-   const symbol = SUIT_SYMBOL[suit] ?? "?";
+   const suitIcon = SUIT_ICON[suit];
    const isImage = cardStyle === "flourish";
 
    const handleClick = () => {
@@ -82,8 +83,16 @@ export const Card: React.FC<CardProps> = ({
                <span className={isRed ? styles.rankRed : styles.rankBlack}>
                   {rank}
                </span>
-               <span className={isRed ? styles.suitRed : styles.suitBlack}>
-                  {symbol}
+               <span
+                  className={`${isRed ? styles.suitRed : styles.suitBlack} ${
+                     styles.suitIcon
+                  }`}
+               >
+                  {suitIcon ? (
+                     <FontAwesomeIcon icon={suitIcon} />
+                  ) : (
+                     SUIT_SYMBOL[suit] ?? "?"
+                  )}
                </span>
             </div>
          )}

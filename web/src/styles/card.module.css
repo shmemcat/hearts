@@ -10,9 +10,9 @@
    flex-direction: column;
    align-items: center;
    justify-content: center;
-   gap: 2px;
+   gap: 3px;
    font-weight: 700;
-   font-size: clamp(1.15rem, 0.78rem + 0.35vw, 1.3rem);
+   font-size: clamp(1.1rem, 0.75rem + 0.35vw, 1.25rem);
    cursor: pointer;
    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -28,7 +28,7 @@
    height: 101px;
    border-radius: 8px;
    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-   font-size: clamp(1.15rem, 0.78rem + 0.35vw, 1.3rem);
+   font-size: clamp(1.1rem, 0.75rem + 0.35vw, 1.25rem);
 }
 
 .cardSmall {
@@ -118,22 +118,12 @@
    display: flex;
    flex-direction: column;
    align-items: center;
-   gap: clamp(2px, 0.3vw, 6px);
+   gap: 6px;
 }
 
-/* ── Firefox renders glyphs thinner than Chrome/Safari at the same px size ── */
-@supports (-moz-appearance: none) {
-   .card {
-      font-size: clamp(1.25rem, 0.88rem + 0.35vw, 1.4rem);
-   }
-
-   .cardMedium {
-      font-size: clamp(1.25rem, 0.88rem + 0.35vw, 1.4rem);
-   }
-
-   .cardLabel {
-      gap: clamp(3px, 0.35vw, 7px);
-   }
+.suitIcon {
+   font-size: 0.85em;
+   line-height: 1;
 }
 
 /* ── Mobile: rank + suit pinned to top-left, centered on each other ── */
@@ -143,11 +133,10 @@
       justify-content: flex-start;
       font-size: 1.25rem;
       padding: 2px 2px;
-      gap: 0;
    }
 
    .cardLabel {
-      gap: 0;
+      gap: 4px;
    }
 
    .cardImage {

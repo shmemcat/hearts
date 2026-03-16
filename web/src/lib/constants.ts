@@ -1,4 +1,11 @@
 import type { CurrentTrickSlot } from "@/types/game";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import {
+   faClub,
+   faDiamond,
+   faSpade,
+   faHeart,
+} from "@fortawesome/pro-solid-svg-icons";
 
 /* ── Validation ──────────────────────────────────────────────────────── */
 
@@ -30,6 +37,13 @@ export const SUIT_SYMBOL: Record<string, string> = {
 };
 
 export const SUIT_RED = new Set(["d", "h"]);
+
+export const SUIT_ICON: Record<string, IconDefinition> = {
+   c: faClub,
+   d: faDiamond,
+   s: faSpade,
+   h: faHeart,
+};
 
 export const RANK_ORDER: Record<string, number> = {
    "2": 2,
