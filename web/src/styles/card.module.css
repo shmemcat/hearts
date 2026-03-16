@@ -12,7 +12,7 @@
    justify-content: center;
    gap: 2px;
    font-weight: 700;
-   font-size: 1.08rem;
+   font-size: clamp(1.08rem, 0.78rem + 0.35vw, 1.3rem);
    cursor: pointer;
    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -28,7 +28,7 @@
    height: 101px;
    border-radius: 8px;
    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-   font-size: 1.1rem;
+   font-size: clamp(1.1rem, 0.78rem + 0.35vw, 1.3rem);
 }
 
 .cardSmall {
@@ -118,23 +118,7 @@
    display: flex;
    flex-direction: column;
    align-items: center;
-   gap: 2px;
-}
-
-/* ── Large low-DPI screens (1440p desktop): slightly larger card text ── */
-/* max-resolution: 1.5dppx excludes Retina/HiDPI displays (MacBook ~2x DPR) */
-@media only screen and (min-width: 1280px) and (max-resolution: 1.5dppx) {
-   .card {
-      font-size: 1.15rem;
-   }
-
-   .cardMedium {
-      font-size: 1.15rem;
-   }
-
-   .cardLabel {
-      gap: 6px;
-   }
+   gap: clamp(2px, 0.3vw, 6px);
 }
 
 /* ── Mobile: rank + suit pinned to top-left, centered on each other ── */
