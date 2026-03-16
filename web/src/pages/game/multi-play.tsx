@@ -127,6 +127,7 @@ export default function MultiPlayPage() {
       enterDir?: "left" | "right" | "above";
    } | null>(null);
    const [nudgeShake, setNudgeShake] = useState(false);
+   const [nudgeResetKey, setNudgeResetKey] = useState(0);
 
    const liveSeat: number | null =
       state?.my_seat ?? (savedSeat != null ? parseInt(savedSeat, 10) : null);
@@ -170,6 +171,14 @@ export default function MultiPlayPage() {
    const passTransitionRef = useRef(passTransition);
    passTransitionRef.current = passTransition;
    const eventBufferRef = useRef<QueueItem[]>([]);
+
+   // ── Premove ───────────────────────────────────────────────────────
+   const [premoveCard, setPremoveCardState] = useState<string | null>(null);
+   const premoveCardRef = useRef<string | null>(null);
+   const setPremoveCard = useCallback((code: string | null) => {
+      premoveCardRef.current = code;
+      setPremoveCardState(code);
+   }, []);
 
    // ── Play queue (animation) ────────────────────────────────────────
    const applyPendingState = useCallback(() => {
@@ -671,6 +680,11 @@ export default function MultiPlayPage() {
       }
    }, [trickResult]);
 
+   // Reset inactivity nudge timer when a new trick begins
+   useEffect(() => {
+      if (trickResult) setNudgeResetKey((k) => k + 1);
+   }, [trickResult]);
+
    // ── Track when hearts are visually broken ──────────────────────
    useEffect(() => {
       const hasHeart = displaySlots.some(
@@ -898,6 +912,7 @@ export default function MultiPlayPage() {
       nudgePhase,
       nudgeTurn,
       nudgeGameOver,
+      nudgeResetKey,
       mySeat,
       passSubmitted,
       isSpectator,
@@ -969,6 +984,7 @@ export default function MultiPlayPage() {
       sendMultiPass(cards);
       setPassSubmitted(true);
       setIdleWarning(false);
+      setNudgeResetKey((k) => k + 1);
    }, [passSelection, isSpectator, conceded]);
 
    // ── Card click handler ────────────────────────────────────────────
@@ -992,7 +1008,16 @@ export default function MultiPlayPage() {
          }
          if (state.phase !== "playing" || state.game_over) return;
          if (passTransition || noPassHold) return;
-         if (state.whose_turn !== mySeat) return;
+
+         // Not our turn → toggle premove
+         if (state.whose_turn !== mySeat) {
+            setPremoveCard(premoveCardRef.current === code ? null : code);
+            playSoundRef.current("cardPlace");
+            return;
+         }
+
+         // Our turn → clear any premove and play normally
+         setPremoveCard(null);
          if (!state.legal_plays.includes(code)) return;
 
          showImmediately({
@@ -1018,6 +1043,7 @@ export default function MultiPlayPage() {
 
          sendMultiPlay(code);
          setIdleWarning(false);
+         setNudgeResetKey((k) => k + 1);
       },
       [
          state,
@@ -1028,8 +1054,69 @@ export default function MultiPlayPage() {
          noPassHold,
          mySeat,
          showImmediately,
+         setPremoveCard,
       ]
    );
+
+   // ── Premove auto-play: fire queued card when it becomes our turn ──
+   const stateWhoseTurn = state?.whose_turn;
+   const statePhase = state?.phase;
+   const stateGameOver = state?.game_over;
+   const stateLegalPlays = state?.legal_plays;
+
+   useEffect(() => {
+      if (isSpectator || conceded) return;
+      if (statePhase !== "playing" || stateGameOver) return;
+      if (stateWhoseTurn !== mySeat || mySeat === null) return;
+      if (passTransition || noPassHold) return;
+
+      const code = premoveCardRef.current;
+      if (!code) return;
+
+      setPremoveCard(null);
+
+      if (!stateLegalPlays?.includes(code)) return;
+
+      showImmediately({ player_index: mySeat, card: code });
+      lastHumanCardRef.current = code;
+
+      setState((prev) =>
+         prev
+            ? {
+                 ...prev,
+                 my_hand: (prev.my_hand ?? prev.human_hand)?.filter(
+                    (c: string) => c !== code
+                 ),
+                 human_hand: (prev.human_hand ?? prev.my_hand)?.filter(
+                    (c: string) => c !== code
+                 ),
+                 legal_plays: [],
+              }
+            : prev
+      );
+
+      sendMultiPlay(code);
+      setIdleWarning(false);
+   }, [
+      stateWhoseTurn,
+      statePhase,
+      stateGameOver,
+      stateLegalPlays,
+      mySeat,
+      isSpectator,
+      conceded,
+      passTransition,
+      noPassHold,
+      showImmediately,
+      setPremoveCard,
+   ]);
+
+   // ── Premove cleanup: clear on phase/round changes ─────────────────
+   useEffect(() => {
+      if (statePhase !== "playing" || stateGameOver) {
+         setPremoveCard(null);
+      }
+   }, [statePhase, stateGameOver, setPremoveCard]);
 
    // ── Concede handler ───────────────────────────────────────────────
    const handleConcede = useCallback(() => {
@@ -1603,6 +1690,7 @@ export default function MultiPlayPage() {
                                  exitDirection={passTransition?.exitDir}
                                  enteringCodes={passTransition?.enteringCodes}
                                  enterDirection={passTransition?.enterDir}
+                                 premoveCode={premoveCard}
                               />
                            )}
                         </div>

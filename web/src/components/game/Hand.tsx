@@ -64,6 +64,8 @@ export interface HandProps {
    /** Cards animating into hand (pass transition). */
    enteringCodes?: Set<string>;
    enterDirection?: "left" | "right" | "above";
+   /** Card code queued as a premove (shown as selected). */
+   premoveCode?: string | null;
 }
 
 export const Hand: React.FC<HandProps> = ({
@@ -77,6 +79,7 @@ export const Hand: React.FC<HandProps> = ({
    exitDirection,
    enteringCodes,
    enterDirection,
+   premoveCode,
 }) => {
    const isMobile = useIsMobile();
    const { mobileLayout } = useMobileLayout();
@@ -228,6 +231,7 @@ export const Hand: React.FC<HandProps> = ({
                      <Card
                         code={code}
                         disabled={disabled}
+                        selected={premoveCode === code}
                         onClick={
                            onCardClick ? () => onCardClick(code) : undefined
                         }
@@ -380,6 +384,7 @@ export const Hand: React.FC<HandProps> = ({
                   <Card
                      code={code}
                      disabled={disabled}
+                     selected={premoveCode === code}
                      onClick={
                         effectiveOnCardClick
                            ? () => effectiveOnCardClick(code)
