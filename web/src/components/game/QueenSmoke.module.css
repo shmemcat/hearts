@@ -22,15 +22,15 @@
 /* bottom-left edge */
 .p:nth-child(1) {
    --sx: 35px;
-   --sy: 110px;
+   --sy: 95px;
    --dx: -14px;
    --dy: 16px;
    animation-delay: 0ms;
 }
 /* right middle edge */
 .p:nth-child(2) {
-   --sx: 105px;
-   --sy: 80px;
+   --sx: 85px;
+   --sy: 65px;
    --dx: 18px;
    --dy: 0px;
    animation-delay: 0ms;
@@ -38,7 +38,7 @@
 /* top-left-ish edge */
 .p:nth-child(3) {
    --sx: 35px;
-   --sy: 60px;
+   --sy: 55px;
    --dx: -12px;
    --dy: -16px;
    animation-delay: 0ms;
