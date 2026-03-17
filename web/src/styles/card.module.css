@@ -119,6 +119,7 @@
    flex-direction: column;
    align-items: center;
    gap: 6px;
+   letter-spacing: 0;
 }
 
 .suitIcon {
