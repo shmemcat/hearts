@@ -153,6 +153,25 @@ describe("UserPage - Guest", () => {
 });
 
 describe("UserPage - Authenticated", () => {
+   it("keeps higher achievement tiers seen when current stats show a lower tier", async () => {
+      setAuthToken();
+      localStorage.setItem(
+         "hearts_seen_achievements_1",
+         JSON.stringify(["newcomer_gold", "consistent_gold", "night_owl"])
+      );
+      renderWithProviders(<UserPage />, { route: "/user" });
+      await screen.findByText("Achievements");
+      expect(
+         screen.queryByText("Achievement Unlocked!")
+      ).not.toBeInTheDocument();
+      const seen = JSON.parse(
+         localStorage.getItem("hearts_seen_achievements_1")!
+      );
+      expect(seen).toContain("newcomer_gold");
+      expect(seen).toContain("consistent_gold");
+      expect(seen).toContain("night_owl");
+   });
+
    function setAuthToken() {
       const token = makeJwt({
          sub: "1",

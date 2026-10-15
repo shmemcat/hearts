@@ -24,6 +24,18 @@ function setup() {
 }
 
 describe("usePlayQueue", () => {
+   it("cancels the old game's queue when its screen unmounts", () => {
+      const { result, unmount, onIdle } = setup();
+      act(() =>
+         result.current.enqueue({
+            type: "play",
+            event: { player_index: 2, card: "Qs" },
+         })
+      );
+      unmount();
+      act(() => vi.advanceTimersByTime(CARD_DELAY_MS * 10));
+      expect(onIdle).not.toHaveBeenCalled();
+   });
    it("initializes with empty display slots and not busy", () => {
       const { result } = setup();
       expect(result.current.displaySlots).toEqual([null, null, null, null]);

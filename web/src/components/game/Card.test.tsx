@@ -37,15 +37,21 @@ describe("Card", () => {
       ).toBeInTheDocument();
    });
 
-   it("displays rank and suit symbol in standard style", () => {
+   it("displays rank and suit icon in standard style", () => {
       renderCard({ code: "Ah" });
       expect(screen.getByText("A")).toBeInTheDocument();
-      expect(screen.getByText("♥")).toBeInTheDocument();
+      expect(screen.getByRole("img", { hidden: true })).toHaveAttribute(
+         "data-icon",
+         "heart"
+      );
    });
 
-   it("displays suit symbol for clubs", () => {
+   it("displays suit icon for clubs", () => {
       renderCard({ code: "Kc" });
-      expect(screen.getByText("♣")).toBeInTheDocument();
+      expect(screen.getByRole("img", { hidden: true })).toHaveAttribute(
+         "data-icon",
+         "club"
+      );
    });
 
    it("fires onClick when clicked", async () => {

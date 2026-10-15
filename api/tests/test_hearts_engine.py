@@ -30,13 +30,23 @@ from hearts.game.transitions import (
 from hearts.game.runner import GameRunner
 from hearts.ai import RandomPassStrategy, RandomPlayStrategy
 
-
 # -----------------------------------------------------------------------------
 # Rules: get_legal_plays
 # -----------------------------------------------------------------------------
 
 
 class TestGetLegalPlays:
+    @pytest.mark.parametrize("safe_code", ["2d", "2s", "2c", None])
+    def test_first_trick_no_blood_exception(self, safe_code):
+        points = [Card(Suit.HEARTS, rank) for rank in range(2, 14)] + [
+            Card.from_code("Qs")
+        ]
+        hand = points if safe_code is None else points[1:] + [Card.from_code(safe_code)]
+        legal = get_legal_plays(hand, [(0, two_of_clubs())], False, first_trick=True)
+        assert set(legal) == (
+            set(points) if safe_code is None else {Card.from_code(safe_code)}
+        )
+
     def test_first_lead_of_round_must_play_2c_if_in_hand(self):
         hand = [two_of_clubs(), Card(Suit.HEARTS, 14), Card(Suit.CLUBS, 10)]
         legal = get_legal_plays(hand, [], False, first_lead_of_round=True)
@@ -175,6 +185,21 @@ class TestApplyPasses:
 
 
 class TestApplyPlay:
+    @pytest.mark.parametrize("card_code", ["2h", "Qs"])
+    def test_first_trick_accepts_points_when_entire_hand_is_points(self, card_code):
+        points = [Card(Suit.HEARTS, rank) for rank in range(2, 14)] + [
+            Card.from_code("Qs")
+        ]
+        others = [c for c in deck_52() if c not in points and c != two_of_clubs()]
+        hands = [[two_of_clubs()] + others[:12], points, others[12:25], others[25:]]
+        state = initial_state_after_deal(hands, round_num=4)
+        state = apply_play(state, 0, two_of_clubs())
+        card = Card.from_code(card_code)
+        state = apply_play(state, 1, card)
+        assert state.current_trick[-1] == (1, card)
+        assert card not in state.hand(1)
+        assert state.hearts_broken is (card.suit == Suit.HEARTS)
+
     def test_removes_card_from_hand_and_adds_to_trick(self, state_playing_after_pass):
         state = state_playing_after_pass
         player = state.whose_turn

@@ -372,7 +372,10 @@ class MultiplayerRunner:
                     "icon": self._seats[i].icon,
                 }
             )
-        my_hand = [c.to_code() for c in s.hand(seat_index)]
+        # Submitted cards still belong to the engine hand until every player
+        # has passed, but must not reappear when this player reconnects.
+        pending_pass = self._pending_passes.get(seat_index, [])
+        my_hand = [c.to_code() for c in s.hand(seat_index) if c not in pending_pass]
         legal_plays: List[str] = []
         if (
             s.phase == Phase.PLAYING

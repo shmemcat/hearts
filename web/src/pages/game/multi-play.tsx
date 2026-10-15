@@ -57,7 +57,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
 import { useToast } from "@/context/ToastContext";
-import { markAchievementsSeen, resolveUnlockId } from "@/lib/achievements";
+import { resolveUnlockId } from "@/lib/achievements";
 import { recordGameStats, unlockAchievement } from "@/lib/gameApi";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import handStyles from "@/components/game/Hand.module.css";
@@ -71,8 +71,12 @@ const LOBBY_TOKEN_KEY = (code: string) => `hearts_lobby_token_${code}`;
 export default function MultiPlayPage() {
    const [searchParams] = useSearchParams();
    const gameId = searchParams.get("game_id") ?? "";
+   return <MultiplayerGame key={gameId} gameId={gameId} />;
+}
+
+function MultiplayerGame({ gameId }: { gameId: string }) {
    const isMobile = useIsMobile();
-   const { token: jwtToken, user } = useAuth();
+   const { token: jwtToken } = useAuth();
    const { play: playSound } = useSound();
    const { addToast } = useToast();
    const navigate = useNavigate();
@@ -118,6 +122,7 @@ export default function MultiPlayPage() {
    );
    const [dealingHand, setDealingHand] = useState(false);
    const [roundEndHold, setRoundEndHold] = useState(false);
+   const [roundFinished, setRoundFinished] = useState(false);
    const [passTransition, setPassTransition] = useState<{
       phase: "exiting" | "gap" | "entering";
       displayHand: string[];
@@ -259,6 +264,7 @@ export default function MultiPlayPage() {
       const newHand = pending.my_hand ?? pending.human_hand ?? [];
 
       if (
+         pending.phase === "playing" &&
          passedSet &&
          oldHand &&
          newHand.length > 0 &&
@@ -280,9 +286,6 @@ export default function MultiPlayPage() {
             (p: { score: number }) => p.score
          );
          setPassSubmitted(pending.pass_submitted ?? false);
-         if (pending.phase === "passing") {
-            resetRef.current();
-         }
 
          const elapsed = Date.now() - passExitStartRef.current;
          const exitRemaining = Math.max(0, PASS_EXIT_MS - elapsed);
@@ -367,6 +370,18 @@ export default function MultiPlayPage() {
 
    const resetRef = useRef(reset);
    resetRef.current = reset;
+
+   // Keep the final-trick hint after the collection animation clears its cards.
+   const myHandEmpty = (state?.my_hand ?? state?.human_hand ?? []).length === 0;
+   useEffect(() => {
+      if (
+         state?.phase === "playing" &&
+         myHandEmpty &&
+         displaySlots.every((slot) => slot?.card)
+      ) {
+         setRoundFinished(true);
+      }
+   }, [state?.phase, myHandEmpty, displaySlots]);
 
    // ── WebSocket connect / disconnect ─────────────────────────────────
    useEffect(() => {
@@ -521,9 +536,6 @@ export default function MultiPlayPage() {
 
       const unsubAchievements = onMultiAchievementsUnlocked((data) => {
          const { newly_unlocked } = data;
-         if (user?.id && newly_unlocked.length > 0) {
-            markAchievementsSeen(user.id, newly_unlocked);
-         }
          for (const unlockId of newly_unlocked) {
             const info = resolveUnlockId(unlockId);
             if (info) {
@@ -577,7 +589,6 @@ export default function MultiPlayPage() {
       isActive,
       setSlots,
       addToast,
-      user?.id,
       navigate,
       playerToken,
       lobbyCode,
@@ -654,6 +665,11 @@ export default function MultiPlayPage() {
    useEffect(() => {
       if (!roundBanner) return;
       const t = setTimeout(() => {
+         // A pass may have completed while the initial banner was visible.
+         // Apply that hand before revealing cards from the initial snapshot.
+         if (!passedCardsRef.current && !pendingRoundEndRef.current) {
+            applyPendingRef.current();
+         }
          setRoundBanner(null);
          const s = stateRef.current;
          if (s?.pass_direction === "none") {
@@ -807,9 +823,6 @@ export default function MultiPlayPage() {
       const handleUnlocks = (res: Awaited<ReturnType<typeof doRecord>>) => {
          if (!res.ok) return;
          const ids = res.data.newly_unlocked;
-         if (user?.id && ids.length > 0) {
-            markAchievementsSeen(user.id, ids);
-         }
          for (const unlockId of ids) {
             const info = resolveUnlockId(unlockId);
             if (info) {
@@ -825,9 +838,6 @@ export default function MultiPlayPage() {
 
       unlockAchievement(jwtToken, "better_with_friends").then((res) => {
          if (!res.ok || res.newly_unlocked.length === 0) return;
-         if (user?.id) {
-            markAchievementsSeen(user.id, res.newly_unlocked);
-         }
          for (const id of res.newly_unlocked) {
             const info = resolveUnlockId(id);
             if (info) {
@@ -878,16 +888,31 @@ export default function MultiPlayPage() {
       }
    }, [passTransition?.phase]);
 
-   // ── Inactivity nudge: remind player it's their turn after 15s ──
+   // ── Inactivity nudge: count only time when the player can act ──
    const INACTIVITY_NUDGE_MS = 15_000;
    const SHAKE_DURATION_MS = 2_000;
 
    const nudgePhase = state?.phase;
    const nudgeTurn = state?.whose_turn;
    const nudgeGameOver = state?.game_over;
+   const canAct =
+      !loading &&
+      !busy &&
+      !roundBanner &&
+      !dealingHand &&
+      !noPassHold &&
+      !passTransition &&
+      !roundSummary &&
+      !roundEndHold &&
+      !shootTheMoon &&
+      !pendingRoundEndRef.current &&
+      !terminated &&
+      (nudgePhase === "passing"
+         ? !passSubmitted
+         : (state?.legal_plays.length ?? 0) > 0);
 
    useEffect(() => {
-      if (isSpectator || conceded) return;
+      if (isSpectator || conceded || !canAct) return;
       if (!nudgePhase || nudgeGameOver) return;
 
       const isMyPlayTurn = nudgePhase === "playing" && nudgeTurn === mySeat;
@@ -898,14 +923,16 @@ export default function MultiPlayPage() {
          return;
       }
 
+      let shakeTimer: ReturnType<typeof setTimeout> | undefined;
       const nudgeTimer = setTimeout(() => {
          playSoundRef.current("notification");
          setNudgeShake(true);
-         setTimeout(() => setNudgeShake(false), SHAKE_DURATION_MS);
+         shakeTimer = setTimeout(() => setNudgeShake(false), SHAKE_DURATION_MS);
       }, INACTIVITY_NUDGE_MS);
 
       return () => {
          clearTimeout(nudgeTimer);
+         clearTimeout(shakeTimer);
          setNudgeShake(false);
       };
    }, [
@@ -917,6 +944,7 @@ export default function MultiPlayPage() {
       passSubmitted,
       isSpectator,
       conceded,
+      canAct,
    ]);
 
    // ── Round summary continue ───────────────────────────────────────
@@ -941,6 +969,7 @@ export default function MultiPlayPage() {
       setRoundBanner({ round: nextRound });
       animationHoldRef.current = true;
       setHeartsPerPlayer([0, 0, 0, 0]);
+      setRoundFinished(false);
       setHeartsVisuallyBroken(false);
       setPassSelection(new Set());
       setPassSubmitted(false);
@@ -1247,11 +1276,16 @@ export default function MultiPlayPage() {
          phaseHintText = `Select 3 cards to pass ${state.pass_direction}`;
       }
    } else if (state?.phase === "playing") {
-      const allTrickCardsPlayed = slots.every((s) => s?.card);
-      if (myHand.length === 0 && (allTrickCardsPlayed || roundEndHold)) {
+      const allTrickCardsPlayed = slots.every((slot) => slot?.card);
+      if (
+         myHand.length === 0 &&
+         (roundFinished || allTrickCardsPlayed || roundEndHold)
+      ) {
          phaseHintText = "Round over";
+      } else if (passTransition || (busy && whoseTurn == null)) {
+         phaseHintText = "";
       } else {
-         const effectiveTurn = whoseTurn ?? state.whose_turn;
+         const effectiveTurn = whoseTurn;
          if (effectiveTurn == null) {
             phaseHintText = "";
          } else if (effectiveTurn === mySeat) {

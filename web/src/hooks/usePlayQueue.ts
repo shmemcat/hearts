@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { CurrentTrickSlot, PlayEvent } from "@/types/game";
 import {
    HOLD_MS,
@@ -235,6 +235,12 @@ export function usePlayQueue({ onIdle }: UsePlayQueueOptions) {
 
    /** Synchronous check — true when the queue is draining (no React-state lag). */
    const isActive = useCallback(() => processingRef.current, []);
+
+   useEffect(() => {
+      return () => {
+         if (timerRef.current) clearTimeout(timerRef.current);
+      };
+   }, []);
 
    return {
       displaySlots,

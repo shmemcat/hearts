@@ -611,8 +611,8 @@ function parseSeenAchievements(raw: string | null): Set<string> {
 
 /**
  * Mark achievement IDs as seen in localStorage so they won't be re-toasted
- * when the user visits the user page. Call this when showing achievement
- * toasts from game pages (single-play, multi-play).
+ * when the user visits the user page. ToastProvider handles this for every
+ * notification; the profile also uses it to seed and merge seen history.
  */
 export function markAchievementsSeen(
    userId: string,
@@ -633,4 +633,19 @@ export function markAchievementsSeen(
  */
 export function getSeenAchievements(raw: string | null): Set<string> {
    return parseSeenAchievements(raw);
+}
+
+/** A previously celebrated higher tier also covers a lower displayed tier. */
+export function hasSeenAchievement(seen: Set<string>, id: string): boolean {
+   if (seen.has(id)) return true;
+   const tiers: Tier[] = ["bronze", "silver", "gold"];
+   for (const def of TIERED_ACHIEVEMENTS) {
+      const tierIndex = tiers.findIndex((tier) => `${def.id}_${tier}` === id);
+      if (tierIndex >= 0) {
+         return tiers
+            .slice(tierIndex + 1)
+            .some((tier) => seen.has(`${def.id}_${tier}`));
+      }
+   }
+   return false;
 }

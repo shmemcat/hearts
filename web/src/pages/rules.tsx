@@ -204,9 +204,9 @@ function Play() {
             Each player must follow suit if possible. If a player is void of the
             suit led, a card of any other suit may be discarded. However, if a
             player has no clubs when the first trick is led, a heart or the
-            queen of spades cannot be played. The highest card of the suit led
-            wins a trick and the winner of that trick leads next. There is no
-            trump suit.
+            queen of spades cannot be played unless no alternative cards are
+            available. The highest card of the suit led wins a trick and the
+            winner of that trick leads next. There is no trump suit.
          </span>
          <span className="block mb-4">
             Hearts may not be led until they have been &quot;broken&quot; — that

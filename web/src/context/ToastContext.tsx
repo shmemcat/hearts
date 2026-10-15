@@ -7,6 +7,12 @@ import React, {
    useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useAuth } from "@/context/AuthContext";
+import {
+   getSeenAchievements,
+   hasSeenAchievement,
+   markAchievementsSeen,
+} from "@/lib/achievements";
 import styles from "@/styles/achievements.module.css";
 import {
    TOAST_DURATION_MS,
@@ -32,9 +38,31 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+   const { user } = useAuth();
+   const userId = user?.id;
    const [toasts, setToasts] = useState<AchievementToast[]>([]);
+   const announcedRef = useRef(new Set<string>());
    const timerRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(
       new Map()
+   );
+
+   // Claim and persist before scheduling a toast so socket, HTTP and profile
+   // notifications cannot announce the same achievement twice.
+   const claimToast = useCallback(
+      (achievementId: string) => {
+         const key = `${userId ?? "guest"}:${achievementId}`;
+         if (announcedRef.current.has(key)) return false;
+         if (userId) {
+            const seen = getSeenAchievements(
+               localStorage.getItem(`hearts_seen_achievements_${userId}`)
+            );
+            if (hasSeenAchievement(seen, achievementId)) return false;
+            markAchievementsSeen(userId, [achievementId]);
+         }
+         announcedRef.current.add(key);
+         return true;
+      },
+      [userId]
    );
 
    const removeToast = useCallback((id: string) => {
@@ -67,25 +95,29 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
    const addToast = useCallback(
       (toast: Omit<AchievementToast, "id">) => {
+         if (!claimToast(toast.achievementId)) return;
          const id = `${toast.achievementId}-${Date.now()}`;
          setToasts((prev) => [...prev, { ...toast, id }]);
          scheduleRemoval(id);
       },
-      [scheduleRemoval]
+      [scheduleRemoval, claimToast]
    );
 
    const addToasts = useCallback(
       (items: Omit<AchievementToast, "id">[]) => {
-         if (items.length === 0) return;
+         const unseen = items.filter((toast) =>
+            claimToast(toast.achievementId)
+         );
+         if (unseen.length === 0) return;
 
          const toShow =
-            items.length > MAX_VISIBLE_TOASTS
-               ? items.slice(0, MAX_VISIBLE_TOASTS)
-               : items;
-         const extra = items.length - toShow.length;
+            unseen.length > MAX_VISIBLE_TOASTS
+               ? unseen.slice(0, MAX_VISIBLE_TOASTS)
+               : unseen;
+         const extra = unseen.length - toShow.length;
 
          toShow.forEach((toast, i) => {
-            setTimeout(() => {
+            const timer = setTimeout(() => {
                const id = `${toast.achievementId}-${Date.now()}`;
                const isLast = i === toShow.length - 1 && extra > 0;
                const entry: AchievementToast = isLast
@@ -98,14 +130,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                setToasts((prev) => [...prev, entry]);
                scheduleRemoval(id);
             }, i * TOAST_STAGGER_MS);
+            timerRefs.current.set(`stagger-${toast.achievementId}`, timer);
          });
       },
-      [scheduleRemoval]
+      [scheduleRemoval, claimToast]
    );
 
    useEffect(() => {
+      const timers = timerRefs.current;
       return () => {
-         timerRefs.current.forEach((timer) => clearTimeout(timer));
+         timers.forEach((timer) => clearTimeout(timer));
       };
    }, []);
 

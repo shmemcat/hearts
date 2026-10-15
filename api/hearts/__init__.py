@@ -2,6 +2,7 @@ import os
 from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
+from sqlalchemy.engine import make_url
 
 from hearts.extensions import db, limiter
 from flask_migrate import Migrate
@@ -16,9 +17,11 @@ _cors_origins = [
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins=_cors_origins, async_mode="eventlet")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-    "DATABASE_URL", "sqlite:///hearts.db"
-)
+_database_url = make_url(os.environ.get("DATABASE_URL", "sqlite:///hearts.db"))
+# SQLAlchemy 2.1 defaults to psycopg 3; this project installs psycopg2.
+if _database_url.drivername == "postgresql":
+    _database_url = _database_url.set(drivername="postgresql+psycopg2")
+app.config["SQLALCHEMY_DATABASE_URI"] = _database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["FRONTEND_URL"] = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 app.config["SMTP2GO_API_KEY"] = os.environ.get("SMTP2GO_API_KEY", "")

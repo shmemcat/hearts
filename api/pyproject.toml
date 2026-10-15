@@ -7,7 +7,8 @@ requires-python = ">=3.9"
 dependencies = [
     "flask>=2.2.2,<3.1.0",
     "werkzeug>=2.2.0,<3.1.0",
-    "gunicorn>=21.0.0",
+    # Gunicorn 26 removed the Eventlet worker used by Flask-SocketIO.
+    "gunicorn>=21.0.0,<26",
     "flask-sqlalchemy>=3.1.0",
     "psycopg2-binary>=2.9.0",
     "argon2-cffi>=23.1.0",

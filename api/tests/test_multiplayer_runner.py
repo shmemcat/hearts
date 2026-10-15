@@ -82,6 +82,24 @@ class TestNewGame:
 
 
 class TestSubmitPass:
+    def test_reconnect_hides_submitted_cards_until_passes_complete(self):
+        runner = _find_runner_at_phase(Phase.PASSING)
+        original_hand = runner.state.hand(0)
+        passed = original_hand[:3]
+        runner.submit_pass(0, passed)
+        restored = MultiplayerRunner.from_dict(runner.to_dict())
+        view = restored.get_state_for_player(0)
+        assert view["pass_submitted"] is True
+        assert len(view["my_hand"]) == 10
+        assert not set(view["my_hand"]) & {c.to_code() for c in passed}
+        assert restored.state.hand(0) == original_hand
+        assert len(restored.get_state_for_player(1)["my_hand"]) == 13
+        restored.submit_pass(1, restored.state.hand(1)[:3])
+        view = restored.get_state_for_player(0)
+        assert view["phase"] == "playing"
+        assert view["pass_submitted"] is False
+        assert len(view["my_hand"]) == 13
+
     def test_returns_waiting_when_not_all_submitted(self):
         runner = _find_runner_at_phase(Phase.PASSING)
         hand0 = list(runner.state.hands[0])

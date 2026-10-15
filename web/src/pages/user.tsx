@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
@@ -28,6 +28,8 @@ import {
 import {
    computeAchievements,
    getSeenAchievements,
+   hasSeenAchievement,
+   markAchievementsSeen,
    type ComputedAchievement,
 } from "@/lib/achievements";
 import { useToast } from "@/context/ToastContext";
@@ -497,14 +499,9 @@ function AchievementsPanel({
    userId: string;
 }) {
    const { addToasts } = useToast();
-   const toastedRef = useRef(false);
-
-   if (!stats) return null;
-
-   const achievements = computeAchievements(stats);
-
-   if (!toastedRef.current) {
-      toastedRef.current = true;
+   useEffect(() => {
+      if (!stats) return;
+      const achievements = computeAchievements(stats);
       const storageKey = `hearts_seen_achievements_${userId}`;
       const storedSeen = localStorage.getItem(storageKey);
 
@@ -516,10 +513,12 @@ function AchievementsPanel({
 
       if (!storedSeen) {
          // New browser — seed the seen list so old achievements don't re-toast
-         localStorage.setItem(storageKey, JSON.stringify(allKeys));
+         markAchievementsSeen(userId, allKeys);
       } else {
          const seen = getSeenAchievements(storedSeen);
-         const unseen = unlocked.filter((a) => !seen.has(achievementKey(a)));
+         const unseen = unlocked.filter(
+            (a) => !hasSeenAchievement(seen, achievementKey(a))
+         );
 
          if (unseen.length > 0) {
             const toastItems = unseen.map((a) => ({
@@ -533,10 +532,14 @@ function AchievementsPanel({
                tier: a.tier,
             }));
             addToasts(toastItems);
-            localStorage.setItem(storageKey, JSON.stringify(allKeys));
          }
+         // Preserve tiers and achievements that are no longer in this snapshot.
+         markAchievementsSeen(userId, allKeys);
       }
-   }
+   }, [stats, userId, addToasts]);
+
+   if (!stats) return null;
+   const achievements = computeAchievements(stats);
 
    return (
       <div className={achievementStyles.achievementsPanel}>

@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
 import { useToast } from "@/context/ToastContext";
 import { unlockAchievement } from "@/lib/gameApi";
-import { resolveUnlockId, markAchievementsSeen } from "@/lib/achievements";
+import { resolveUnlockId } from "@/lib/achievements";
 
 import { useNavigate } from "react-router-dom";
 import { motion, useAnimationControls } from "framer-motion";
@@ -197,7 +197,7 @@ const SoundButton: React.FC = () => {
       musicVolume,
       setMusicVolume,
    } = useSound();
-   const { token, user } = useAuth();
+   const { token } = useAuth();
    const { addToast } = useToast();
    const [animation, setAnimation] = React.useState(0);
    const [mounted, setMounted] = React.useState(false);
@@ -224,9 +224,6 @@ const SoundButton: React.FC = () => {
       _geezerFired = true;
       unlockAchievement(token, "geezer").then((res) => {
          if (!res.ok || res.newly_unlocked.length === 0) return;
-         if (user?.id) {
-            markAchievementsSeen(user.id, res.newly_unlocked);
-         }
          for (const id of res.newly_unlocked) {
             const info = resolveUnlockId(id);
             if (info) {
@@ -239,7 +236,7 @@ const SoundButton: React.FC = () => {
             }
          }
       });
-   }, [token, user, addToast]);
+   }, [token, addToast]);
 
    if (!mounted) return <></>;
 

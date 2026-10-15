@@ -35,7 +35,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
 import { useToast } from "@/context/ToastContext";
-import { markAchievementsSeen, resolveUnlockId } from "@/lib/achievements";
+import { resolveUnlockId } from "@/lib/achievements";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
    connect as connectGameSocket,
@@ -69,7 +69,7 @@ import { reorderSlotsForTableLayout, getShortName } from "@/lib/playUtils";
 export default function PlayGamePage() {
    const [searchParams] = useSearchParams();
    const gameId = searchParams.get("game_id") ?? "";
-   const { token, user } = useAuth();
+   const { token } = useAuth();
    const isMobile = useIsMobile();
    const { play: playSound } = useSound();
    const { addToast } = useToast();
@@ -397,9 +397,6 @@ export default function PlayGamePage() {
       }).then((res) => {
          if (!res.ok) return;
          const { newly_unlocked } = res.data;
-         if (user?.id && newly_unlocked.length > 0) {
-            markAchievementsSeen(user.id, newly_unlocked);
-         }
          for (const unlockId of newly_unlocked) {
             const info = resolveUnlockId(unlockId);
             if (info) {
@@ -422,7 +419,6 @@ export default function PlayGamePage() {
       token,
       gameId,
       addToast,
-      user?.id,
    ]);
 
    // ── AI turn: advance when it's not the human's turn ────────────────
@@ -888,9 +884,6 @@ export default function PlayGamePage() {
       setConcedeModalOpen(false);
       setConceded(true);
       if (res.ok) {
-         if (user?.id && res.newly_unlocked.length > 0) {
-            markAchievementsSeen(user.id, res.newly_unlocked);
-         }
          for (const unlockId of res.newly_unlocked) {
             const info = resolveUnlockId(unlockId);
             if (info) {
@@ -903,7 +896,7 @@ export default function PlayGamePage() {
             }
          }
       }
-   }, [gameId, token, user?.id, addToast]);
+   }, [gameId, token, addToast]);
 
    // ── Early returns ──────────────────────────────────────────────────
    if (!gameId) {
