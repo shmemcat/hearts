@@ -1,0 +1,6 @@
+* text=auto
+
+# These files are executed by Linux containers or Git's shell on Windows.
+*.sh text eol=lf
+.husky/* text eol=lf
+Dockerfile* text eol=lf

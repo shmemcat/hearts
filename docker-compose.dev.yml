@@ -5,9 +5,13 @@
 
 services:
   api:
+    volumes:
+      - ./api/hearts:/app/hearts
+      - ./api/migrations:/app/migrations
     environment:
       CORS_ORIGINS: http://localhost:3001
       FRONTEND_URL: http://localhost:3001
+    command: gunicorn --reload -c gunicorn_conf.py hearts:app
 
   web:
     image: hearts-web-dev
@@ -23,6 +27,7 @@ services:
       - web_node_modules:/app/node_modules
     environment:
       - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     restart: 'no'
 

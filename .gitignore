@@ -32,6 +32,8 @@ yarn-error.log*
 # pycache
 *.pyc
 */__pycache__/
+.venv/
+.pytest_cache/
 
 # SQLite dev databases
 *.db

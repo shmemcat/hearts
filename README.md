@@ -110,7 +110,7 @@ Additional multiplayer features:
 ### Prerequisites
 
 - Docker & Docker Compose v2
-- Node.js 20+ (for local frontend dev)
+- Node.js 20.19+ or 22.12+ (for local frontend dev and Git hooks)
 - Python 3.9+ (for local backend dev, managed via [uv](https://docs.astral.sh/uv/))
 
 ### Environment Variables
@@ -125,12 +125,8 @@ The root `.env` file is read by Docker Compose and configures Postgres, the Flas
 | `JWT_SECRET`                | api     | Runtime    | Yes        |
 | `CORS_ORIGINS`              | api     | Runtime    | Yes (prod) |
 | `FRONTEND_URL`              | api     | Runtime    | Yes (prod) |
-| `MAIL_SERVER`               | api     | Runtime    | For email  |
-| `MAIL_PORT`                 | api     | Runtime    | For email  |
-| `MAIL_USE_TLS`              | api     | Runtime    | For email  |
-| `MAIL_USERNAME`             | api     | Runtime    | For email  |
-| `MAIL_PASSWORD`             | api     | Runtime    | For email  |
-| `MAIL_DEFAULT_SENDER`       | api     | Runtime    | For email  |
+| `SMTP2GO_API_KEY`           | api     | Runtime    | For email  |
+| `SMTP2GO_FROM_EMAIL`        | api     | Runtime    | For email  |
 | `FONTAWESOME_PACKAGE_TOKEN` | web     | Build-time | Yes        |
 
 ### Development
@@ -164,6 +160,82 @@ The root `.env` file is read by Docker Compose and configures Postgres, the Flas
    ```bash
    docker compose down
    ```
+
+### Windows setup (PowerShell)
+
+Install Git, Node.js, Docker Desktop (including Docker Compose), and
+[uv](https://docs.astral.sh/uv/getting-started/installation/). Docker Desktop uses
+Linux containers through WSL 2. If Virtual Machine Platform or WSL is missing,
+run `wsl --install --no-distribution` from an administrator PowerShell and restart
+Windows when prompted. Complete Docker Desktop's first-run setup and wait for the
+engine to start.
+
+From this checkout:
+
+```powershell
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+```
+
+Set a random local `JWT_SECRET` and your `FONTAWESOME_PACKAGE_TOKEN` in `.env`.
+The Font Awesome Pro token comes from your Font Awesome account or your previous
+development machine. Keep `.env` untracked. Email is optional for guest games;
+account verification and password resets require SMTP2GO credentials. The local
+database starts empty and is independent of production.
+
+```powershell
+npm ci
+uv sync --project api --python 3.11 --extra dev
+npm run web:install
+npm run up:build
+```
+
+Open <http://localhost:3001>. Both API and frontend source changes reload in the
+development containers. `npm run web:install` reads the token from `.env` and
+installs the pinned frontend dependencies on Windows for the editor, tests, and
+Git hooks. Host Python is used for tests and Black; the running API and Postgres
+use Linux containers. Reopen your terminal after installing tools so its PATH
+includes them.
+
+For subsequent sessions, start Docker Desktop and run `npm run up`. Stop the
+stack with `npm run down`; this preserves the local database volume.
+
+```powershell
+npm --prefix web run test:run
+npm --prefix web run build
+uv run --project api --extra dev pytest
+```
+
+Git's pre-commit hook runs frontend formatters/linting and Python's Black via uv.
+The repository's `.gitattributes` keeps shell scripts compatible with Linux
+containers when checked out on Windows.
+
+### Git and releases
+
+The SSH remote is `git@github.com:shmemcat/hearts.git`. For normal development:
+
+```powershell
+git switch -c my-change
+git add <changed-files>
+git commit -m "Describe the change"
+git push -u origin my-change
+```
+
+To intentionally release, start from the commit you want deployed, check the
+latest remote tags with `git fetch --tags`, choose a new version, then run:
+
+```powershell
+# Replace X.Y.Z with the new version number.
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+Pushing a `v*` tag triggers `.github/workflows/release.yml`, which builds and
+publishes API and web images to `ghcr.io/shmemcat` with the version and `latest`
+tags. The configured production Watchtower checks for updated images every
+300 seconds. Ordinary branch pushes do not trigger this release workflow.
+The web image build also requires the repository's
+`FONTAWESOME_PACKAGE_TOKEN` Actions secret. The live site is
+<https://hearts.shmem.dev>.
 
 ### Migrations
 
