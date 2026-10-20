@@ -53,7 +53,7 @@ export const Card: React.FC<CardProps> = ({
          type="button"
          className={[
             styles.card,
-            isImage ? styles.cardImage : "",
+            isImage ? styles.cardImage : styles.cardStandard,
             size === "small"
                ? styles.cardSmall
                : size === "medium"

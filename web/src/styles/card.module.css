@@ -2,7 +2,7 @@
    width: 72px;
    min-width: 72px;
    height: 100px;
-   background: var(--contentbox);
+   background: var(--cardbackground, var(--contentbox));
    border: 2px solid var(--cardborder);
    border-radius: 8px;
    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
@@ -12,9 +12,18 @@
    justify-content: center;
    gap: 3px;
    font-weight: 700;
-   font-size: clamp(1.1rem, 0.75rem + 0.35vw, 1.25rem);
+   font-size: 1.25rem;
    cursor: pointer;
    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Standard faces and suits stay light; borders follow the shared deck palette. */
+.cardStandard {
+   --cardbackground: #fff3f3;
+   --cardblacksuit: hsl(0, 0%, 18%);
+   --cardblacksuitdisabled: hsl(0, 0%, 72%);
+   --cardredsuit: hsl(0, 65%, 50%);
+   --cardredsuitdisabled: hsl(0, 40%, 78%);
 }
 
 .card:hover:not(:disabled) {
@@ -28,7 +37,6 @@
    height: 101px;
    border-radius: 8px;
    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-   font-size: clamp(1.1rem, 0.75rem + 0.35vw, 1.25rem);
 }
 
 .cardSmall {
@@ -132,7 +140,6 @@
    .card {
       align-items: flex-start;
       justify-content: flex-start;
-      font-size: 1.25rem;
       padding: 2px 2px;
    }
 
