@@ -1,3 +1,4 @@
+import { cardsFetch as fetch } from "@/lib/sharedAccount";
 import { Helmet } from "react-helmet-async";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";

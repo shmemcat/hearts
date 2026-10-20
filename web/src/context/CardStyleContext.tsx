@@ -1,7 +1,8 @@
+import { cardsFetch as fetch, getAuthToken } from "@/lib/sharedAccount";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 import { getApiUrl } from "@/lib/api";
-import { CARD_STYLE_KEY, STORAGE_KEY } from "@/lib/constants";
+import { CARD_STYLE_KEY } from "@/lib/constants";
 import { useAuth } from "@/context/AuthContext";
 
 export type CardStyle = "standard" | "flourish";
@@ -36,7 +37,7 @@ export function CardStyleProvider({ children }: { children: React.ReactNode }) {
       if (status === "authenticated" && !preferences) {
          if (stored && VALID.has(stored)) {
             setCardStyleState(stored as CardStyle);
-            const token = localStorage.getItem(STORAGE_KEY);
+            const token = getAuthToken();
             if (token) {
                fetch(`${getApiUrl()}/preferences`, {
                   method: "PATCH",
@@ -60,10 +61,7 @@ export function CardStyleProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== "undefined")
          localStorage.setItem(CARD_STYLE_KEY, style);
 
-      const token =
-         typeof window !== "undefined"
-            ? localStorage.getItem(STORAGE_KEY)
-            : null;
+      const token = typeof window !== "undefined" ? getAuthToken() : null;
       if (token) {
          fetch(`${getApiUrl()}/preferences`, {
             method: "PATCH",

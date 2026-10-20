@@ -25,7 +25,7 @@ from hearts.multiplayer_game_ops import (
     make_game_callbacks,
     advance_if_bot_turn,
 )
-from hearts.jwt_utils import get_current_user
+from hearts.jwt_utils import get_current_user, get_user_from_token
 from hearts.stats_routes import (
     _compute_newly_unlocked,
     _is_in_all_time_top_10,
@@ -35,39 +35,13 @@ from hearts.stats_routes import (
 _RECONNECT_TIMEOUT_SECONDS = 120
 _IDLE_TIMEOUT_SECONDS = 600
 _IDLE_WARNING_SECONDS = 540
-_STALE_GAME_SECONDS = 30 * 60  # 30 minutes with no DB update → game is abandoned
+_STALE_GAME_SECONDS = 30 * 60  # 30 minutes with no DB update â†’ game is abandoned
 
 
 def _get_user_from_query_token():
-    """Try to authenticate via auth_token query param (JWT passed by the client)."""
-    import os
-    import jwt as pyjwt
-
-    auth_token = (request.args.get("auth_token") or "").strip()
-    if not auth_token:
-        logger.debug("_get_user_from_query_token: no auth_token in query params")
-        return None
-    secret = os.environ.get("JWT_SECRET")
-    if not secret:
-        logger.warning("_get_user_from_query_token: JWT_SECRET env var not set")
-        return None
-    try:
-        payload = pyjwt.decode(auth_token, secret, algorithms=["HS256"])
-        user_id = payload.get("sub")
-        if not user_id:
-            logger.warning("_get_user_from_query_token: JWT has no 'sub' claim")
-            return None
-        from hearts.models import User
-
-        user = User.query.get(int(user_id))
-        if user:
-            logger.info("_get_user_from_query_token: authenticated user_id=%s", user_id)
-        else:
-            logger.warning("_get_user_from_query_token: no User for id=%s", user_id)
-        return user
-    except Exception:
-        logger.exception("_get_user_from_query_token: failed to decode JWT")
-        return None
+    """Compatibility for existing multiplayer clients; apply normal JWT revocation."""
+    token = (request.args.get("auth_token") or "").strip()
+    return get_user_from_token(token) if token else None
 
 
 # game_id -> MultiplayerRunner
@@ -85,7 +59,7 @@ _spectator_sids: Dict[str, Set[str]] = {}
 # player_token -> eventlet.GreenThread for disconnect timers
 _disconnect_timers: Dict[str, Any] = {}
 
-# game_id -> {seat_index -> jwt_user_id} — tracked at connect time
+# game_id -> {seat_index -> jwt_user_id} â€” tracked at connect time
 _game_auth: Dict[str, Dict[int, int]] = {}
 
 # game_id -> {seat_index -> eventlet.GreenThread} for idle kick timers
@@ -541,7 +515,7 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
 
     except Exception:
         logger.exception(
-            "_on_game_complete: failed to record stats for game=%s — "
+            "_on_game_complete: failed to record stats for game=%s â€” "
             "HTTP fallback will handle recording",
             game_id,
         )

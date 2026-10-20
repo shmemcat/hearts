@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlsplit
 from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
@@ -23,6 +24,32 @@ if _database_url.drivername == "postgresql":
     _database_url = _database_url.set(drivername="postgresql+psycopg2")
 app.config["SQLALCHEMY_DATABASE_URI"] = _database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+_cards_url = os.environ.get("CARDS_PUBLIC_URL", "").rstrip("/")
+if _cards_url:
+    _cards_parts = urlsplit(_cards_url)
+    if _cards_parts.scheme != "https" and not (
+        _cards_parts.scheme == "http"
+        and _cards_parts.hostname in {"localhost", "127.0.0.1"}
+    ):
+        raise RuntimeError("CARDS_PUBLIC_URL requires HTTPS except on localhost.")
+    if (
+        not _cards_parts.hostname
+        or _cards_parts.path
+        or _cards_parts.query
+        or _cards_parts.fragment
+        or _cards_parts.username is not None
+        or _cards_parts.password is not None
+    ):
+        raise RuntimeError(
+            "CARDS_PUBLIC_URL must be an origin without a path or credentials."
+        )
+app.config["CARDS_PUBLIC_URL"] = _cards_url
+app.config["CARDS_ACCOUNT_ENABLED"] = bool(_cards_url)
+app.config["CARDS_COOKIE_SECURE"] = _cards_url.startswith("https://")
+app.config["CARDS_EMAIL_TRANSPORT"] = os.environ.get("CARDS_EMAIL_TRANSPORT", "smtp2go")
+app.config["CARDS_EMAIL_OUTBOX"] = os.environ.get(
+    "CARDS_EMAIL_OUTBOX", os.path.join(app.instance_path, "cards-outbox")
+)
 app.config["FRONTEND_URL"] = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 app.config["SMTP2GO_API_KEY"] = os.environ.get("SMTP2GO_API_KEY", "")
 app.config["SMTP2GO_FROM_EMAIL"] = os.environ.get(
@@ -45,6 +72,11 @@ from hearts.multiplayer_socket import register_multiplayer_socket  # noqa: E402
 from hearts.leaderboard_routes import leaderboard_bp  # noqa: E402
 
 app.register_blueprint(auth_bp)
+from hearts.account_routes import account_bp  # noqa: E402
+from hearts.account_sessions import protect_cookie_requests  # noqa: E402
+
+app.register_blueprint(account_bp)
+app.before_request(protect_cookie_requests)
 app.register_blueprint(games_bp)
 app.register_blueprint(stats_bp)
 app.register_blueprint(prefs_bp)

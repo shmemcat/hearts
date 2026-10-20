@@ -1,63 +1,82 @@
 # Hearts API
 
-Flask API for the Hearts app (auth, health).
+Flask/SQLAlchemy API for Hearts gameplay, accounts, statistics, and preferences.
+It also supplies shared Cards accounts for the hub and Euchre.
 
-## Environment variables
+## Configuration
 
-- **DATABASE_URL** – Postgres connection string (e.g. `postgresql://user:pass@localhost:5432/hearts`).
-- **JWT_SECRET** – Secret for signing JWTs (set a long random string).
-- **CORS_ORIGINS** – Comma-separated origins (e.g. `http://localhost:3000`).
-- **FRONTEND_URL** – Base URL for verification and reset links in emails (e.g. `http://localhost:3000`).
+- `DATABASE_URL`: existing Hearts PostgreSQL connection string in production.
+- `JWT_SECRET`: retain the existing long signing secret for legacy compatibility.
+- `CORS_ORIGINS`: comma-separated allowed public origins.
+- `FRONTEND_URL`: origin for legacy verification/recovery links.
+- `SMTP2GO_API_KEY`, `SMTP2GO_FROM_EMAIL`: existing SMTP2GO REST provider and
+  verified sender. `MAIL_SERVER` and other SMTP settings are not used.
+- `CARDS_PUBLIC_URL`: hub origin. Blank disables the shared API. Use
+  `http://localhost:3000` locally or `https://cards.shmem.dev` publicly. HTTPS is
+  required except on localhost/127.0.0.1; paths and credentials are rejected.
+- `CARDS_EMAIL_TRANSPORT`: `smtp2go` (default), or `file` for local tests only.
+- `CARDS_EMAIL_OUTBOX`: local sandbox directory for file delivery.
 
-### Email (verification + password reset)
+## Shared account endpoints
 
-Set these so the API can send mail (e.g. Gmail, SendGrid SMTP):
+Mount the API behind `/api/`, stripping that prefix at the proxy.
 
-- **MAIL_SERVER** – SMTP host (e.g. `smtp.gmail.com`).
-- **MAIL_PORT** – Usually `587` for TLS.
-- **MAIL_USE_TLS** – `true` or `1`.
-- **MAIL_USERNAME** – SMTP user (often your email).
-- **MAIL_PASSWORD** – SMTP password or app password.
-- **MAIL_DEFAULT_SENDER** – From address (e.g. `noreply@yourdomain.com`).
+- `GET /account/session`: user (or null) and CSRF token, with no-store.
+- `POST /account/login`: username or email and password; rotates the cookie.
+- `POST /account/logout`: revokes login and rotates to a guest session.
+- `POST /account/register`: creates an unverified user and sends a link.
+- `POST /account/verify-email`: consumes a verification token.
+- `POST /account/resend-verification`: requests another verification link.
+- `POST /account/forgot-password`: requests a one-hour recovery link.
+- `POST /account/reset-password`: consumes a token and revokes existing logins.
 
-For local testing without real email, use a local SMTP catcher (e.g. MailHog) and set `MAIL_SERVER`, `MAIL_PORT`, and `MAIL_USE_TLS` accordingly.
+All POSTs require Origin and X-CSRF-Token from the session response. Cookies are
+HttpOnly, host-only, SameSite=Lax, Path=/, and Secure on HTTPS. Session identifiers
+and new email tokens are hashed at rest. Account bodies are limited to 16 KiB and
+routes are rate limited. SMTP2GO delivery uses a bounded worker queue to keep
+provider latency out of recovery responses. Monitor mail errors; failed or
+interrupted delivery can be requested again.
 
-## Endpoints
+Existing `/login`, `/register`, `/verify-email`, `/forgot-password`,
+`/reset-password`, and bearer APIs remain compatible. `/me` and game/profile APIs
+accept the shared cookie or a valid legacy JWT. Cookie mutations also require
+CSRF. Reset invalidates old shared sessions and JWTs, including multiplayer JWTs.
 
-- **GET /health** – Health check.
-- **POST /register** – Register (rate limited). Sends verification email.
-- **POST /login** – Login (rate limited). Returns JWT; requires verified email for new users.
-- **POST /verify-email** – Verify email with token from link.
-- **POST /forgot-password** – Send reset link (rate limited).
-- **POST /reset-password** – Set new password with token from link.
-- **GET /me** – Current user (requires `Authorization: Bearer <jwt>`).
+## Local development
 
-## Local development (UV)
+The Cards repo's `npm run dev:accounts` starts this API with a separate, fresh
+**Cards/.local/accounts.sqlite** database and localhost URLs. It reuses the API
+Python environment and only mail configuration from Hearts' root `.env`; it does
+not import production database credentials.
 
-```bash
-uv lock
-uv sync
-export DATABASE_URL=postgresql://...
-export JWT_SECRET=...
-uv run gunicorn --bind 0.0.0.0:5000 hearts:app
-```
+For the PostgreSQL/Docker workflow:
 
-## Docker
-
-From repo root: `docker compose up -d`. API is at http://localhost:5001.
-
-### Migrations
-
-With the api container running, apply migrations:
-
-```bash
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 docker compose exec api flask db upgrade
 ```
 
-Or use the `upgrade` alias from anywhere (if defined in your shell). Create a new migration after changing models:
+The API is exposed on port 5001. Point hub and game proxies at that one API instead
+of running the SQLite runner alongside it.
 
-```bash
-docker compose exec api flask db migrate -m "description"
+## Migrations and live users
+
+Back up and test a restored copy before deploying. Run `flask db upgrade` using
+the existing live configuration. Migration **017** adds `users.auth_version`
+default 0 and `account_sessions`; it leaves users, hashes, profiles, games, and
+stats intact. Never replace live with the development database. Further cutover
+notes are in the Cards repo's `docs/integration.md`.
+
+## Account tests
+
+Set the test database before importing the app:
+
+```powershell
+$env:DATABASE_URL='sqlite://'
+python -m pytest tests/test_shared_accounts.py tests/test_auth_routes.py -q
 ```
 
-Then commit the new file in `migrations/versions/` and run `upgrade` again.
+Tests cover identity/stats preservation, migration upgrade/downgrade, CSRF,
+cookies, rotation/expiry, shared logout, legacy compatibility, verification, and
+reset expiry/replay/revocation. They use isolated data and local mail, not live
+accounts or real email delivery.

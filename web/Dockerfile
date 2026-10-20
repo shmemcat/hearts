@@ -11,6 +11,8 @@ COPY .npmrc ./
 RUN npm ci
 
 COPY . .
+ARG VITE_SHARED_ACCOUNTS=false
+ENV VITE_SHARED_ACCOUNTS=${VITE_SHARED_ACCOUNTS}
 RUN npm run build
 
 # Runtime: serve SPA + reverse-proxy API via nginx

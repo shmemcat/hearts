@@ -1,11 +1,8 @@
+import { cardsFetch as fetch, getAuthToken } from "@/lib/sharedAccount";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 import { getApiUrl } from "@/lib/api";
-import {
-   HARD_LEVEL_KEY,
-   HARD_LEVEL_CHANGED_KEY,
-   STORAGE_KEY,
-} from "@/lib/constants";
+import { HARD_LEVEL_KEY, HARD_LEVEL_CHANGED_KEY } from "@/lib/constants";
 import { useAuth } from "@/context/AuthContext";
 
 export type HardLevel = "hard" | "harder" | "hardest";
@@ -45,7 +42,7 @@ export function HardLevelProvider({ children }: { children: React.ReactNode }) {
          if (stored && VALID_LEVELS.has(stored)) {
             setHardLevelState(stored as HardLevel);
             if (storedChanged) setHasChanged(true);
-            const token = localStorage.getItem(STORAGE_KEY);
+            const token = getAuthToken();
             if (token) {
                fetch(`${getApiUrl()}/preferences`, {
                   method: "PATCH",
@@ -73,10 +70,7 @@ export function HardLevelProvider({ children }: { children: React.ReactNode }) {
          localStorage.setItem(HARD_LEVEL_CHANGED_KEY, "1");
       }
 
-      const token =
-         typeof window !== "undefined"
-            ? localStorage.getItem(STORAGE_KEY)
-            : null;
+      const token = typeof window !== "undefined" ? getAuthToken() : null;
       if (token) {
          fetch(`${getApiUrl()}/preferences`, {
             method: "PATCH",

@@ -11,6 +11,7 @@ class User(db.Model):
     username = db.Column(db.String(64), unique=True, nullable=False, index=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
+    auth_version = db.Column(db.Integer, nullable=False, default=0, server_default="0")
     profile_icon = db.Column(
         db.String(64), default="user", nullable=False, server_default="user"
     )

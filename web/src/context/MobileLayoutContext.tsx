@@ -1,7 +1,8 @@
+import { cardsFetch as fetch, getAuthToken } from "@/lib/sharedAccount";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 import { getApiUrl } from "@/lib/api";
-import { MOBILE_LAYOUT_KEY, STORAGE_KEY } from "@/lib/constants";
+import { MOBILE_LAYOUT_KEY } from "@/lib/constants";
 import { useAuth } from "@/context/AuthContext";
 
 export type MobileLayout = "single" | "double";
@@ -43,10 +44,7 @@ export function MobileLayoutProvider({
       if (status === "authenticated" && !preferences) {
          if (stored && VALID.has(stored)) {
             setMobileLayoutState(stored as MobileLayout);
-            const token =
-               typeof window !== "undefined"
-                  ? localStorage.getItem(STORAGE_KEY)
-                  : null;
+            const token = typeof window !== "undefined" ? getAuthToken() : null;
             if (token) {
                fetch(`${getApiUrl()}/preferences`, {
                   method: "PATCH",
@@ -71,10 +69,7 @@ export function MobileLayoutProvider({
       if (typeof window !== "undefined")
          localStorage.setItem(MOBILE_LAYOUT_KEY, layout);
 
-      const token =
-         typeof window !== "undefined"
-            ? localStorage.getItem(STORAGE_KEY)
-            : null;
+      const token = typeof window !== "undefined" ? getAuthToken() : null;
       if (token) {
          fetch(`${getApiUrl()}/preferences`, {
             method: "PATCH",

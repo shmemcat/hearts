@@ -10,7 +10,9 @@ from hearts.email_templates import verification_email_html, password_reset_email
 SMTP2GO_API_URL = "https://api.smtp2go.com/v3/email/send"
 
 
-def _send(to_email: str, subject: str, html_content: str) -> bool:
+def _send(
+    to_email: str, subject: str, html_content: str, sender_name: str = "Hearts"
+) -> bool:
     """Send an email via SMTP2GO REST API. Returns True on success."""
     api_key = current_app.config.get("SMTP2GO_API_KEY")
     from_email = current_app.config.get("SMTP2GO_FROM_EMAIL", "noreply@shmem.dev")
@@ -23,7 +25,7 @@ def _send(to_email: str, subject: str, html_content: str) -> bool:
         {
             "api_key": api_key,
             "to": [to_email],
-            "sender": f"Hearts <{from_email}>",
+            "sender": f"{sender_name} <{from_email}>",
             "subject": subject,
             "html_body": html_content,
         }

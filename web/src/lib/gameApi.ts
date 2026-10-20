@@ -1,3 +1,4 @@
+import { cardsFetch as fetch } from "@/lib/sharedAccount";
 /**
  * Client for game API: start, get state, submit pass, submit play.
  */

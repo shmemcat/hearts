@@ -1,3 +1,4 @@
+import { cardsFetch as fetch } from "@/lib/sharedAccount";
 /**
  * REST client for lobby endpoints.
  */

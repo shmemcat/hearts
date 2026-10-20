@@ -1,3 +1,4 @@
+import { cardsFetch as fetch } from "@/lib/sharedAccount";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -38,6 +39,7 @@ import achievementStyles from "@/styles/achievements.module.css";
 import deleteStyles from "@/components/DeleteAccountModal.module.css";
 
 export default function UserPage() {
+   const { error: accountError } = useAuth();
    return (
       <>
          <Helmet>
@@ -45,6 +47,7 @@ export default function UserPage() {
          </Helmet>
          <PageLayout title="USER">
             <UserInfo />
+            {accountError && <p role="alert">{accountError}</p>}
          </PageLayout>
       </>
    );

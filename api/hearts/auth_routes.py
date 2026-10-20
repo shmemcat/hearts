@@ -132,6 +132,7 @@ def login():
     secret = os.environ.get("JWT_SECRET")
     payload = {
         "sub": str(user.id),
+        "av": user.auth_version,
         "username": user.username,
         "email": user.email,
         "exp": datetime.utcnow() + timedelta(days=7),
@@ -222,6 +223,7 @@ def reset_password():
         return jsonify({"error": "Invalid reset link"}), 400
 
     user.password_hash = hash_password(new_password)
+    user.auth_version += 1
     db.session.delete(reset)
     db.session.commit()
     return jsonify({"message": "Password updated"}), 200

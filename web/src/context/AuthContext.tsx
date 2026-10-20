@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 import { getApiUrl } from "@/lib/api";
 import { STORAGE_KEY } from "@/lib/constants";
+import { sharedAccountsEnabled } from "@/lib/sharedAccount";
+import { SharedAuthProvider } from "./SharedAuthProvider";
 
 type User = {
    id: string;
@@ -52,14 +54,23 @@ function isTokenExpired(token: string): boolean {
 }
 
 type AuthContextValue = AuthState & {
+   error?: string;
    login: (email: string, password: string) => Promise<{ error?: string }>;
    logout: () => void;
    updateUser: (partial: Partial<User>) => void;
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+   return sharedAccountsEnabled() ? (
+      <SharedAuthProvider>{children}</SharedAuthProvider>
+   ) : (
+      <LegacyAuthProvider>{children}</LegacyAuthProvider>
+   );
+}
+
+function LegacyAuthProvider({ children }: { children: React.ReactNode }) {
    const [state, setState] = useState<AuthState>({
       user: null,
       token: null,
