@@ -26,6 +26,14 @@
    --cardredsuitdisabled: hsl(0, 40%, 78%);
 }
 
+/* Dark-mode standard cards soften inactive outlines and ink without tinting faces. */
+:global([data-theme="dark"]) .cardStandard {
+   --cardborder: hsl(12, 6%, 33%);
+   --cardborderdisabled: #b3a9af;
+   --cardblacksuitdisabled: #99929a;
+   --cardredsuitdisabled: #c18e98;
+}
+
 .card:hover:not(:disabled) {
    transform: translateY(-6px);
    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
