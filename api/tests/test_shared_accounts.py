@@ -1,6 +1,8 @@
 """Shared identity, CSRF, recovery and compatibility with existing Hearts records."""
 
 import secrets
+import json
+from pathlib import Path
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -75,6 +77,96 @@ def sign_in(client, username="existing_hearts"):
     return post(
         client, "login", {"username": username, "password": EXISTING_USER_PASSWORD}
     )
+
+
+def test_shared_profile_requires_login_and_csrf(accounts, existing_user):
+    assert post(accounts, "profile", {"profile_icon": "cat"}).status_code == 401
+    sign_in(accounts)
+    assert (
+        accounts.post("/account/profile", json={"profile_icon": "cat"}).status_code
+        == 403
+    )
+    result = post(accounts, "profile", {"profile_icon": "sparkles"})
+    assert result.status_code == 200
+    assert result.json["user"]["id"] == "42"
+    assert result.json["user"]["profile_icon"] == "sparkles"
+    assert accounts.get("/account/session").json["user"]["profile_icon"] == "sparkles"
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        {"profile_icon": "not-an-icon"},
+        {"profile_icon": []},
+        {"email": "bad"},
+        {"email": []},
+        {},
+    ],
+)
+def test_shared_profile_rejects_invalid_changes(accounts, existing_user, data):
+    sign_in(accounts)
+    assert post(accounts, "profile", data).status_code == 400
+    assert accounts.get("/account/session").json["user"]["email_verified"] is True
+
+
+def test_shared_email_change_requires_verification_and_revokes_sessions(
+    accounts, existing_user
+):
+    from hearts.account_sessions import AccountSession
+    from hearts.email_utils import hash_token
+    from hearts.models import User
+
+    sign_in(accounts)
+    other = accounts.application.test_client()
+    sign_in(other)
+    result = post(accounts, "profile", {"email": "NEW@example.test"})
+    assert result.status_code == 200
+    assert result.json["user"] is None
+    assert "Verify your new address" in result.json["message"]
+    assert accounts.get("/account/session").json["user"] is None
+    assert other.get("/account/session").json["user"] is None
+    assert AccountSession.query.filter_by(user_id=42).count() == 0
+    user = User.query.filter_by(id=42).one()
+    assert user.email == "new@example.test"
+    assert user.email_verified is False
+    assert user.auth_version == 1
+    from hearts import app
+
+    outbox = list(Path(app.config["CARDS_EMAIL_OUTBOX"]).glob("*.json"))
+    mail = json.loads(outbox[0].read_text())
+    token = parse_qs(urlsplit(mail["url"]).query)["token"][0]
+    assert user.verification_token == hash_token(token)
+    assert post(accounts, "verify-email", {"token": token}).status_code == 200
+    assert sign_in(accounts).status_code == 200
+
+
+def test_shared_deletion_confirms_password_and_removes_all_user_data(
+    accounts, existing_user
+):
+    from hearts.extensions import db
+    from hearts.account_sessions import AccountSession
+    from hearts.models import User, UserStats, DifficultyStats, GameResult
+
+    db.session.add(DifficultyStats(user_id=42, category="easy", games_played=1))
+    db.session.add(GameResult(user_id=42, difficulty="easy", won=True))
+    db.session.commit()
+    sign_in(accounts)
+    assert (
+        accounts.post(
+            "/account/delete", json={"password": EXISTING_USER_PASSWORD}
+        ).status_code
+        == 403
+    )
+    assert post(accounts, "delete", {"password": "wrong-password"}).status_code == 401
+    assert User.query.count() == 1
+    assert (
+        post(accounts, "delete", {"password": EXISTING_USER_PASSWORD}).status_code
+        == 200
+    )
+    assert User.query.count() == 0
+    for model in (UserStats, DifficultyStats, GameResult, AccountSession):
+        assert model.query.filter_by(user_id=42).count() == 0
+    assert accounts.get("/account/session").json["user"] is None
 
 
 def test_existing_hearts_identity_and_stats_are_preserved(accounts, existing_user):

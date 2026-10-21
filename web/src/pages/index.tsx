@@ -6,6 +6,8 @@ import { Button } from "@/components/Buttons";
 import { HeartsLogo } from "@/components/HeartsLogo";
 import { Navbar } from "@/components/Navbar";
 import { motion } from "framer-motion";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCards } from "@fortawesome/pro-regular-svg-icons";
 
 export default function Home() {
    return (
@@ -51,6 +53,22 @@ export default function Home() {
                   </Link>
                </div>
             </motion.div>
+            <motion.a
+               className={containers["cards-hub-link"]}
+               href={
+                  import.meta.env.DEV
+                     ? "http://localhost:3000/"
+                     : "https://cards.shmem.dev/"
+               }
+               aria-label="Cards home"
+               title="Cards home"
+               initial={{ opacity: 0, y: -12 }}
+               animate={{ opacity: 1, y: 0 }}
+               exit={{ opacity: 0, y: 12 }}
+               transition={{ duration: 0.25, ease: "easeOut" }}
+            >
+               <FontAwesomeIcon icon={faCards} />
+            </motion.a>
          </main>
       </>
    );

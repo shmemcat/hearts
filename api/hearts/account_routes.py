@@ -17,9 +17,11 @@ from hearts.account_sessions import (
     current_session,
     new_session,
     session_response,
+    session_user,
     valid_csrf,
 )
 from hearts.auth_routes import _validate_email, _validate_password, _validate_username
+from hearts.auth_routes import VALID_PROFILE_ICONS, delete_user_account
 from hearts.auth_utils import hash_password, verify_password
 from hearts.email_templates import password_reset_email_html, verification_email_html
 from hearts.email_utils import _send, hash_token
@@ -160,6 +162,78 @@ def login():
 
 @account_bp.post("/logout")
 def logout():
+    return session_response(rotate=True)
+
+
+@account_bp.post("/profile")
+@limiter.limit("30 per minute")
+def update_account_profile():
+    user = session_user()
+    if not user:
+        return jsonify(error="Sign in to customize your profile."), 401
+    data = body()
+    if not any(key in data for key in ("profile_icon", "email")):
+        return jsonify(error="No changes provided."), 400
+    icon = field(data, "profile_icon").strip()
+    if "profile_icon" in data and icon not in VALID_PROFILE_ICONS:
+        return jsonify(error="Choose a valid profile icon."), 400
+    email = field(data, "email").strip().lower()
+    if "email" in data and (len(email) > 255 or not _validate_email(email)):
+        return jsonify(error="Enter a valid email address."), 400
+    if "email" in data:
+        existing = User.query.filter_by(email=email).first()
+        if existing and existing.id != user.id:
+            return jsonify(error="That email is already registered."), 409
+    email_changed = "email" in data and email != user.email
+    if "profile_icon" in data:
+        user.profile_icon = icon
+    token = None
+    if email_changed:
+        token = secrets.token_urlsafe(32)
+        user.email = email
+        user.email_verified = False
+        user.verification_token = hash_token(token)
+        user.verification_expires = datetime.utcnow() + timedelta(hours=24)
+        user.auth_version += 1
+        current = current_session()
+        AccountSession.query.filter(
+            AccountSession.user_id == user.id,
+            AccountSession.token_hash != current.token_hash,
+        ).delete(synchronize_session=False)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify(error="That email is already registered."), 409
+    if token:
+        send_account_email(user, token, "verify")
+    response = session_response(rotate=email_changed)
+    payload = response.get_json()
+    payload["message"] = (
+        "Verification email sent. Verify your new address, then sign in again."
+        if email_changed
+        else "Profile saved."
+    )
+    response.set_data(current_app.json.dumps(payload))
+    return response
+
+
+@account_bp.post("/delete")
+@limiter.limit("3 per minute")
+def delete_shared_account():
+    if not session_user():
+        return jsonify(error="Sign in to delete your account."), 401
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        data = {}
+    password = field(data, "password")
+    if not password or len(password) > 1024:
+        return jsonify(error="Please enter your password."), 400
+    # Reuse Hearts' password confirmation and deletion of account-owned data.
+    response = current_app.make_response(delete_user_account(session_user(), password))
+    if response.status_code != 200:
+        return response
+    request.environ["cards.session"] = None
     return session_response(rotate=True)
 
 

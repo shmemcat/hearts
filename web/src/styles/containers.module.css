@@ -30,6 +30,7 @@
 }
 
 .content-border-container-menu {
+   position: relative;
    width: 1030px;
    margin: 0 auto;
    border-radius: 20px;
@@ -39,6 +40,32 @@
    margin-top: 20px;
    margin-bottom: 20px;
    padding-bottom: 120px;
+}
+
+.cards-hub-link {
+   position: absolute;
+   bottom: 16px;
+   left: 16px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   width: 48px;
+   height: 48px;
+   border-radius: 8px;
+   color: var(--lightpink);
+   font-size: 28px;
+   line-height: 1;
+   text-decoration: none;
+   transition: color 0.15s ease;
+}
+
+.cards-hub-link:hover {
+   color: var(--hoverpink);
+}
+
+.cards-hub-link:focus-visible {
+   outline: 2px solid currentColor;
+   outline-offset: 3px;
 }
 
 .title-container {

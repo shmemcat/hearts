@@ -5,6 +5,7 @@ POST /resend-verification, DELETE /account.
 """
 
 import os
+import secrets
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -137,6 +138,23 @@ class TestRegister:
 
 
 class TestLogin:
+    @pytest.mark.parametrize("verified", [True, False])
+    def test_login_accepts_email_and_keeps_verification_required(
+        self, auth_client, verified
+    ):
+        password = secrets.token_urlsafe(24)
+        register = _register_and_verify if verified else _register
+        register(auth_client, password=password)
+        response = auth_client.post(
+            "/login", json={"username": "  ALICE@EXAMPLE.COM  ", "password": password}
+        )
+        assert response.status_code == (200 if verified else 403)
+        if verified:
+            assert response.json["user"]["username"] == "alice"
+            assert response.json["token"]
+        else:
+            assert response.json["code"] == "EMAIL_NOT_VERIFIED"
+
     def test_login_success(self, auth_client):
         _register_and_verify(auth_client)
         r = auth_client.post(

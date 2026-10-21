@@ -27,7 +27,7 @@ describe("UserPage - Guest", () => {
       renderWithProviders(<UserPage />, { route: "/user" });
       await waitFor(() => {
          expect(
-            screen.getByText("Sign in with your username and password.")
+            screen.getByRole("form", { name: "Sign in" })
          ).toBeInTheDocument();
       });
    });
@@ -35,7 +35,9 @@ describe("UserPage - Guest", () => {
    it("shows username and password inputs", async () => {
       renderWithProviders(<UserPage />, { route: "/user" });
       await waitFor(() => {
-         expect(screen.getByPlaceholderText("Username")).toBeInTheDocument();
+         expect(
+            screen.getByPlaceholderText("Username or email")
+         ).toBeInTheDocument();
          expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
       });
    });
@@ -44,14 +46,15 @@ describe("UserPage - Guest", () => {
       const user = userEvent.setup();
       renderWithProviders(<UserPage />, { route: "/user" });
       await waitFor(() => {
-         expect(screen.getByPlaceholderText("Username")).toBeInTheDocument();
+         expect(
+            screen.getByPlaceholderText("Username or email")
+         ).toBeInTheDocument();
       });
       await user.click(screen.getByRole("button", { name: "Sign In" }));
       await waitFor(() => {
-         expect(screen.getByPlaceholderText("Username")).toHaveAttribute(
-            "aria-invalid",
-            "true"
-         );
+         expect(
+            screen.getByPlaceholderText("Username or email")
+         ).toHaveAttribute("aria-invalid", "true");
       });
    });
 
@@ -59,9 +62,14 @@ describe("UserPage - Guest", () => {
       const user = userEvent.setup();
       renderWithProviders(<UserPage />, { route: "/user" });
       await waitFor(() => {
-         expect(screen.getByPlaceholderText("Username")).toBeInTheDocument();
+         expect(
+            screen.getByPlaceholderText("Username or email")
+         ).toBeInTheDocument();
       });
-      await user.type(screen.getByPlaceholderText("Username"), "testuser");
+      await user.type(
+         screen.getByPlaceholderText("Username or email"),
+         "testuser"
+      );
       await user.click(screen.getByRole("button", { name: "Sign In" }));
       await waitFor(() => {
          expect(screen.getByPlaceholderText("Password")).toHaveAttribute(
@@ -80,9 +88,14 @@ describe("UserPage - Guest", () => {
       });
       renderWithProviders(<UserPage />, { route: "/user" });
       await waitFor(() => {
-         expect(screen.getByPlaceholderText("Username")).toBeInTheDocument();
+         expect(
+            screen.getByPlaceholderText("Username or email")
+         ).toBeInTheDocument();
       });
-      await user.type(screen.getByPlaceholderText("Username"), "testuser");
+      await user.type(
+         screen.getByPlaceholderText("Username or email"),
+         "testuser"
+      );
       await user.type(screen.getByPlaceholderText("Password"), "wrongpass");
       await user.click(screen.getByRole("button", { name: "Sign In" }));
       await waitFor(() => {
@@ -104,7 +117,44 @@ describe("UserPage - Guest", () => {
       });
    });
 
-   it("shows resend verification link on unverified email error", async () => {
+   it("has an always-visible resend verification text link below create account", async () => {
+      renderWithProviders(<UserPage />, { route: "/user" });
+      const resend = await screen.findByRole("link", {
+         name: "Resend verification",
+      });
+      expect(resend).toHaveAttribute("href", "/resend-verification");
+      expect(
+         screen
+            .getByRole("link", { name: "Create an account" })
+            .compareDocumentPosition(resend) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+         screen.getByRole("textbox", { name: "Username or email" })
+      ).toHaveAttribute("autocomplete", "username");
+   });
+
+   it("submits an email address from the sign-in field", async () => {
+      const user = userEvent.setup();
+      const password = crypto.randomUUID();
+      mockFetch.mockResolvedValueOnce({
+         ok: false,
+         status: 401,
+         json: async () => ({ error: "Invalid credentials" }),
+      });
+      renderWithProviders(<UserPage />, { route: "/user" });
+      await user.type(
+         await screen.findByPlaceholderText("Username or email"),
+         "  EMILY@example.test  "
+      );
+      await user.type(screen.getByPlaceholderText("Password"), password);
+      await user.click(screen.getByRole("button", { name: "Sign In" }));
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({
+         username: "EMILY@example.test",
+         password,
+      });
+   });
+
+   it("keeps the resend verification link available after an unverified email error", async () => {
       const user = userEvent.setup();
       mockFetch.mockResolvedValueOnce({
          ok: false,
@@ -117,19 +167,24 @@ describe("UserPage - Guest", () => {
       });
       renderWithProviders(<UserPage />, { route: "/user" });
       await waitFor(() => {
-         expect(screen.getByPlaceholderText("Username")).toBeInTheDocument();
+         expect(
+            screen.getByPlaceholderText("Username or email")
+         ).toBeInTheDocument();
       });
-      await user.type(screen.getByPlaceholderText("Username"), "testuser");
+      await user.type(
+         screen.getByPlaceholderText("Username or email"),
+         "testuser"
+      );
       await user.type(screen.getByPlaceholderText("Password"), "pass1234");
       await user.click(screen.getByRole("button", { name: "Sign In" }));
       await waitFor(() => {
          expect(
-            screen.getByText("Resend verification email")
+            screen.getByRole("link", { name: "Resend verification" })
          ).toBeInTheDocument();
       });
    });
 
-   it("does not show resend link on regular login error", async () => {
+   it("keeps the resend verification link available after a regular login error", async () => {
       const user = userEvent.setup();
       mockFetch.mockResolvedValueOnce({
          ok: false,
@@ -138,17 +193,22 @@ describe("UserPage - Guest", () => {
       });
       renderWithProviders(<UserPage />, { route: "/user" });
       await waitFor(() => {
-         expect(screen.getByPlaceholderText("Username")).toBeInTheDocument();
+         expect(
+            screen.getByPlaceholderText("Username or email")
+         ).toBeInTheDocument();
       });
-      await user.type(screen.getByPlaceholderText("Username"), "testuser");
+      await user.type(
+         screen.getByPlaceholderText("Username or email"),
+         "testuser"
+      );
       await user.type(screen.getByPlaceholderText("Password"), "wrongpass");
       await user.click(screen.getByRole("button", { name: "Sign In" }));
       await waitFor(() => {
          expect(screen.getByText("Invalid credentials")).toBeInTheDocument();
       });
       expect(
-         screen.queryByText("Resend verification email")
-      ).not.toBeInTheDocument();
+         screen.getByRole("link", { name: "Resend verification" })
+      ).toBeInTheDocument();
    });
 });
 

@@ -334,6 +334,12 @@ h3 {
    margin-bottom: 16px;
 }
 
+.sign-in-form {
+   width: min(100%, 340px);
+   max-width: 340px;
+   gap: 18px;
+}
+
 .sparkle-container {
    position: relative;
    display: inline-block;

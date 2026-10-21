@@ -59,7 +59,6 @@ function UserInfo() {
    const [username, setUsername] = useState("");
    const [password, setPassword] = useState("");
    const [error, setError] = useState("");
-   const [isVerificationError, setIsVerificationError] = useState(false);
    const [fieldError, setFieldError] = useState<{
       username?: string;
       password?: string;
@@ -82,11 +81,10 @@ function UserInfo() {
    const handleSignIn = async (e: React.FormEvent) => {
       e.preventDefault();
       setError("");
-      setIsVerificationError(false);
       setFieldError({});
       const trimmedUsername = username.trim();
       if (!trimmedUsername) {
-         setFieldError({ username: "Please enter your username." });
+         setFieldError({ username: "Please enter your username or email." });
          return;
       }
       if (!password) {
@@ -98,9 +96,6 @@ function UserInfo() {
       setLoading(false);
       if (result.error) {
          setError(result.error);
-         if (result.error.toLowerCase().includes("verify")) {
-            setIsVerificationError(true);
-         }
          return;
       }
       setUsername("");
@@ -173,12 +168,21 @@ function UserInfo() {
 
    return (
       <>
-         <div>Sign in with your username and password.</div>
-
-         <FormContainer onSubmit={handleSignIn} noValidate>
+         <FormContainer
+            onSubmit={handleSignIn}
+            topMargin={false}
+            className="sign-in-form"
+            aria-label="Sign in"
+            noValidate
+         >
             <FormInput
                type="text"
-               placeholder="Username"
+               name="username"
+               aria-label="Username or email"
+               placeholder="Username or email"
+               maxLength={255}
+               autoCapitalize="none"
+               spellCheck={false}
                value={username}
                onChange={(e) => {
                   setUsername(e.target.value);
@@ -191,6 +195,8 @@ function UserInfo() {
             />
             <FormInput
                type="password"
+               name="password"
+               aria-label="Password"
                placeholder="Password"
                value={password}
                onChange={(e) => {
@@ -202,18 +208,7 @@ function UserInfo() {
                autoComplete="current-password"
                error={fieldError.password}
             />
-            {error && (
-               <>
-                  <ErrorMessage>{error}</ErrorMessage>
-                  {isVerificationError && (
-                     <div className="mt-1">
-                        <StyledLink href="/resend-verification">
-                           Resend verification email
-                        </StyledLink>
-                     </div>
-                  )}
-               </>
-            )}
+            {error && <ErrorMessage>{error}</ErrorMessage>}
             <div>
                <Button
                   name={loading ? "Signing in…" : "Sign In"}
@@ -225,6 +220,9 @@ function UserInfo() {
          <div className="mt-4 flex flex-col items-center gap-2">
             <StyledLink href="/forgot-password">Forgot password?</StyledLink>
             <StyledLink href="/register">Create an account</StyledLink>
+            <StyledLink href="/resend-verification">
+               Resend verification
+            </StyledLink>
          </div>
 
          <ButtonGroup className="pt-7">

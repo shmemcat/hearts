@@ -105,10 +105,12 @@ def login():
     password = data.get("password") or ""
 
     if not username or not password:
-        return jsonify({"error": "Username and password required"}), 401
+        return jsonify({"error": "Username or email and password required"}), 401
 
     try:
         user = User.query.filter_by(username=username).first()
+        if user is None and _validate_email(username):
+            user = User.query.filter_by(email=username.lower()).first()
     except Exception:
         return (
             jsonify({"error": "Unable to reach the server. Please try again later."}),
@@ -116,7 +118,7 @@ def login():
         )
 
     if not user or not verify_password(password, user.password_hash):
-        return jsonify({"error": "Invalid username or password"}), 401
+        return jsonify({"error": "Invalid username, email, or password"}), 401
 
     if not user.email_verified:
         return (
@@ -528,19 +530,30 @@ def me():
 def delete_account():
     data = request.get_json() or {}
     password = data.get("password") or ""
+    return delete_user_account(g.current_user, password)
 
-    if not password:
+
+def delete_user_account(user, password):
+    if not isinstance(password, str) or not password:
         return jsonify({"error": "Password required"}), 400
 
-    user = g.current_user
     if not verify_password(password, user.password_hash):
         return jsonify({"error": "Incorrect password"}), 401
 
-    PasswordResetToken.query.filter_by(user_id=user.id).delete()
-    ActiveGame.query.filter_by(user_id=user.id).delete()
-    UserStats.query.filter_by(user_id=user.id).delete()
-    UserPreferences.query.filter_by(user_id=user.id).delete()
-    db.session.delete(user)
+    from hearts.account_sessions import AccountSession
+    from hearts.models import DifficultyStats, GameResult
+
+    for model in (
+        PasswordResetToken,
+        ActiveGame,
+        UserStats,
+        UserPreferences,
+        DifficultyStats,
+        GameResult,
+        AccountSession,
+    ):
+        model.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+    User.query.filter_by(id=user.id).delete(synchronize_session="fetch")
     db.session.commit()
 
     return jsonify({"message": "Account deleted"}), 200
