@@ -280,6 +280,35 @@ class GameResult(db.Model):
     user = db.relationship("User", backref=db.backref("game_results", lazy="dynamic"))
 
 
+class EuchreGameResult(db.Model):
+    __tablename__ = "euchre_game_results"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    game_id = db.Column(db.String(64), nullable=False)
+    difficulty = db.Column(db.String(16), nullable=False)
+    won = db.Column(db.Boolean, nullable=False)
+    conceded = db.Column(db.Boolean, nullable=False)
+    score = db.Column(db.Integer, nullable=False)
+    opponent_score = db.Column(db.Integer, nullable=False)
+    completed_at = db.Column(db.DateTime, nullable=False)
+    recorded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id", "game_id", name="uq_euchre_game_result_user_game"
+        ),
+        db.Index(
+            "ix_euchre_results_category_completed", "difficulty", "won", "completed_at"
+        ),
+    )
+
+
 class PasswordResetToken(db.Model):
     __tablename__ = "password_reset_tokens"
 

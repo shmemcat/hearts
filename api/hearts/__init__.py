@@ -76,6 +76,9 @@ from hearts.account_routes import account_bp  # noqa: E402
 from hearts.account_sessions import protect_cookie_requests  # noqa: E402
 
 app.register_blueprint(account_bp)
+from hearts.euchre_routes import euchre_bp  # noqa: E402
+
+app.register_blueprint(euchre_bp)
 app.before_request(protect_cookie_requests)
 app.register_blueprint(games_bp)
 app.register_blueprint(stats_bp)

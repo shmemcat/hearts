@@ -541,7 +541,7 @@ def delete_user_account(user, password):
         return jsonify({"error": "Incorrect password"}), 401
 
     from hearts.account_sessions import AccountSession
-    from hearts.models import DifficultyStats, GameResult
+    from hearts.models import DifficultyStats, GameResult, EuchreGameResult
 
     for model in (
         PasswordResetToken,
@@ -550,6 +550,7 @@ def delete_user_account(user, password):
         UserPreferences,
         DifficultyStats,
         GameResult,
+        EuchreGameResult,
         AccountSession,
     ):
         model.query.filter_by(user_id=user.id).delete(synchronize_session=False)
