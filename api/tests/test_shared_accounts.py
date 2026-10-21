@@ -1,5 +1,6 @@
 """Shared identity, CSRF, recovery and compatibility with existing Hearts records."""
 
+import secrets
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -8,6 +9,12 @@ from urllib.parse import parse_qs, urlsplit
 import pytest
 
 ORIGIN = "http://localhost:3000"
+
+# Isolated test users get fresh passwords on every test run.
+EXISTING_USER_PASSWORD = secrets.token_urlsafe(24)
+RESET_PASSWORD = secrets.token_urlsafe(24)
+REGISTERED_USER_PASSWORD = secrets.token_urlsafe(24)
+REPLAY_PASSWORD = secrets.token_urlsafe(24)
 
 
 @pytest.fixture
@@ -46,7 +53,7 @@ def existing_user(accounts):
         username="existing_hearts",
         email="hearts@example.test",
         email_verified=True,
-        password_hash=hash_password("ExistingPass123"),
+        password_hash=hash_password(EXISTING_USER_PASSWORD),
     )
     db.session.add(user)
     db.session.flush()
@@ -65,7 +72,9 @@ def post(client, path, data=None, origin=ORIGIN):
 
 
 def sign_in(client, username="existing_hearts"):
-    return post(client, "login", {"username": username, "password": "ExistingPass123"})
+    return post(
+        client, "login", {"username": username, "password": EXISTING_USER_PASSWORD}
+    )
 
 
 def test_existing_hearts_identity_and_stats_are_preserved(accounts, existing_user):
@@ -135,7 +144,7 @@ def test_origin_and_csrf_are_required(accounts, existing_user, origin):
     assert (
         accounts.post(
             "/account/login",
-            json={"username": "existing_hearts", "password": "ExistingPass123"},
+            json={"username": "existing_hearts", "password": EXISTING_USER_PASSWORD},
             headers=headers,
         ).status_code
         == 403
@@ -156,7 +165,7 @@ def test_all_three_local_sites_share_the_same_cookie_session(
     response = post(
         accounts,
         "login",
-        {"username": "existing_hearts", "password": "ExistingPass123"},
+        {"username": "existing_hearts", "password": EXISTING_USER_PASSWORD},
         origin=origin,
     )
     assert response.json["user"]["id"] == "42"
@@ -233,12 +242,12 @@ def test_reset_is_single_use_invalidates_all_sessions_and_old_jwts(
     assert mail["url"].startswith(ORIGIN + "/user/?")
     assert "Cards" in mail["subject"]
     response = post(
-        accounts, "reset-password", {"token": token, "password": "UpdatedPass123"}
+        accounts, "reset-password", {"token": token, "password": RESET_PASSWORD}
     )
     assert response.status_code == 200
     assert (
         post(
-            accounts, "reset-password", {"token": token, "password": "UpdatedPass456"}
+            accounts, "reset-password", {"token": token, "password": REPLAY_PASSWORD}
         ).status_code
         == 400
     )
@@ -253,7 +262,7 @@ def test_reset_is_single_use_invalidates_all_sessions_and_old_jwts(
         post(
             accounts,
             "login",
-            {"username": "existing_hearts", "password": "UpdatedPass123"},
+            {"username": "existing_hearts", "password": RESET_PASSWORD},
         ).status_code
         == 200
     )
@@ -281,7 +290,7 @@ def test_reset_expiration_and_legacy_verification_links(accounts, existing_user)
         post(
             accounts,
             "reset-password",
-            {"token": "expired", "password": "UpdatedPass123"},
+            {"token": "expired", "password": RESET_PASSWORD},
         ).status_code
         == 400
     )
@@ -306,7 +315,7 @@ def test_registration_verifies_with_hashed_one_use_token(accounts):
             {
                 "username": "new_player",
                 "email": "new@example.test",
-                "password": "NewPlayer123",
+                "password": REGISTERED_USER_PASSWORD,
             },
         ).status_code
         == 201
@@ -319,14 +328,18 @@ def test_registration_verifies_with_hashed_one_use_token(accounts):
     assert user.verification_token != token
     assert (
         post(
-            accounts, "login", {"username": "new_player", "password": "NewPlayer123"}
+            accounts,
+            "login",
+            {"username": "new_player", "password": REGISTERED_USER_PASSWORD},
         ).status_code
         == 403
     )
     assert post(accounts, "verify-email", {"token": token}).status_code == 200
     assert (
         post(
-            accounts, "login", {"username": "new_player", "password": "NewPlayer123"}
+            accounts,
+            "login",
+            {"username": "new_player", "password": REGISTERED_USER_PASSWORD},
         ).status_code
         == 200
     )

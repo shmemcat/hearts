@@ -34,7 +34,7 @@ describe("shared account transport", () => {
          .mockResolvedValueOnce(response(session));
       const result = await api.sharedAccountRequest("login", {
          username: "existing_hearts",
-         password: "example-only",
+         password: crypto.randomUUID(),
       });
       expect(result.user?.id).toBe("42");
       expect(mockFetch.mock.calls[1][1].headers["X-CSRF-Token"]).toBe(
