@@ -17,6 +17,16 @@ def clean_lobby_store():
 
 
 class TestCreateEndpoint:
+    def test_shared_host_invitation_includes_hearts_prefix(self, client, monkeypatch):
+        monkeypatch.setitem(
+            client.application.config, "CARDS_PUBLIC_URL", "https://cards.shmem.dev"
+        )
+        response = client.post("/lobbies/create", json={"host_name": "Alice"})
+        data = response.get_json()
+        assert (
+            data["url"] == f"https://cards.shmem.dev/hearts/game/lobby/{data['code']}"
+        )
+
     def test_returns_201_with_code_url_token(self, client):
         resp = client.post("/lobbies/create", json={"host_name": "Alice"})
         assert resp.status_code == 201

@@ -30,14 +30,18 @@ export function SharedAuthProvider({
    }, []);
    useEffect(() => {
       void refresh();
+      const changed = (event: Event) =>
+         setSession((event as CustomEvent<SharedSession>).detail);
       const recheck = () => {
          if (document.visibilityState !== "hidden") void refresh();
       };
       window.addEventListener("focus", recheck);
       window.addEventListener("pageshow", recheck);
+      window.addEventListener("cards:session", changed);
       return () => {
          window.removeEventListener("focus", recheck);
          window.removeEventListener("pageshow", recheck);
+         window.removeEventListener("cards:session", changed);
       };
    }, [refresh]);
    const login = async (username: string, password: string) => {

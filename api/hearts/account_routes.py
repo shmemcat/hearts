@@ -27,6 +27,7 @@ from hearts.email_templates import password_reset_email_html, verification_email
 from hearts.email_utils import _send, hash_token
 from hearts.extensions import db, limiter
 from hearts.models import PasswordResetToken, User
+from hearts.account_security import change_email, reset_password_with_token
 
 account_bp = Blueprint("cards_account", __name__, url_prefix="/account")
 _dummy_password_hash = None
@@ -189,17 +190,8 @@ def update_account_profile():
         user.profile_icon = icon
     token = None
     if email_changed:
-        token = secrets.token_urlsafe(32)
-        user.email = email
-        user.email_verified = False
-        user.verification_token = hash_token(token)
-        user.verification_expires = datetime.utcnow() + timedelta(hours=24)
-        user.auth_version += 1
         current = current_session()
-        AccountSession.query.filter(
-            AccountSession.user_id == user.id,
-            AccountSession.token_hash != current.token_hash,
-        ).delete(synchronize_session=False)
+        token = change_email(user, email, keep_session=current.token_hash)
     try:
         db.session.commit()
     except IntegrityError:
@@ -353,27 +345,6 @@ def reset_password():
         return jsonify(error=error or "Password is too long."), 400
     if not token or len(token) > 256:
         return jsonify(error="This reset link is invalid or expired."), 400
-    reset = PasswordResetToken.query.filter_by(token_hash=hash_token(token)).first()
-    if not reset or reset.expires_at <= datetime.utcnow():
+    if not reset_password_with_token(token, password):
         return jsonify(error="This reset link is invalid or expired."), 400
-    # Serialize different reset links for the same account before consuming any
-    # token, then recheck it after the lock (another reset may have removed it).
-    user = User.query.filter_by(id=reset.user_id).with_for_update(of=User).first()
-    if not user:
-        return jsonify(error="This reset link is invalid or expired."), 400
-    reset = (
-        PasswordResetToken.query.populate_existing()
-        .filter_by(token_hash=hash_token(token))
-        .with_for_update()
-        .first()
-    )
-    if not reset or reset.expires_at <= datetime.utcnow():
-        return jsonify(error="This reset link is invalid or expired."), 400
-    user.password_hash = hash_password(password)
-    user.auth_version += 1
-    PasswordResetToken.query.filter_by(user_id=user.id).delete(
-        synchronize_session=False
-    )
-    AccountSession.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    db.session.commit()
     return jsonify(message="Password updated. Sign in with your new password.")

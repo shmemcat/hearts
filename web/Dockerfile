@@ -12,7 +12,9 @@ RUN npm ci
 
 COPY . .
 ARG VITE_SHARED_ACCOUNTS=false
+ARG VITE_BASE_PATH=/
 ENV VITE_SHARED_ACCOUNTS=${VITE_SHARED_ACCOUNTS}
+ENV VITE_BASE_PATH=${VITE_BASE_PATH}
 RUN npm run build
 
 # Runtime: serve SPA + reverse-proxy API via nginx

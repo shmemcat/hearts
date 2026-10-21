@@ -54,6 +54,8 @@ jobs:
           push: true
           build-args: |
             FONTAWESOME_PACKAGE_TOKEN=${{ secrets.FONTAWESOME_PACKAGE_TOKEN }}
+            VITE_SHARED_ACCOUNTS=${{ vars.VITE_SHARED_ACCOUNTS || 'false' }}
+            VITE_BASE_PATH=${{ vars.VITE_BASE_PATH || '/' }}
           tags: |
             ghcr.io/shmemcat/hearts-web:latest
             ghcr.io/shmemcat/hearts-web:${{ steps.tag.outputs.version }}

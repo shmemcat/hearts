@@ -13,7 +13,11 @@ export type SharedUser = {
       mobile_layout: string;
    } | null;
 };
-export type SharedSession = { user: SharedUser | null; csrf_token: string };
+export type SharedSession = {
+   user: SharedUser | null;
+   csrf_token: string;
+   message?: string;
+};
 // A compatibility marker for existing game API arguments, never an authentication credential.
 export const COOKIE_SESSION = "cards-session";
 let observedSession: SharedSession | undefined;
@@ -66,9 +70,12 @@ export function getSharedSession(): Promise<SharedSession> {
 
 export async function sharedAccountRequest(
    path: string,
-   data: unknown = {}
+   data: unknown = {},
+   expectedUserId?: string
 ): Promise<SharedSession> {
    const session = await getSharedSession();
+   if (expectedUserId && session.user?.id !== expectedUserId)
+      throw new Error("Your account changed. Please refresh and try again.");
    const response = await globalThis.fetch(`${getApiUrl()}/account/${path}`, {
       method: "POST",
       credentials: "same-origin",
@@ -84,6 +91,7 @@ export async function sharedAccountRequest(
    if (typeof result.csrf_token !== "string")
       throw new Error("Unexpected account response.");
    observedSession = result;
+   window.dispatchEvent(new CustomEvent("cards:session", { detail: result }));
    return result;
 }
 

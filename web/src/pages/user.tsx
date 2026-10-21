@@ -1,4 +1,8 @@
-import { cardsFetch as fetch } from "@/lib/sharedAccount";
+import {
+   cardsFetch as fetch,
+   sharedAccountsEnabled,
+   sharedAccountRequest,
+} from "@/lib/sharedAccount";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -69,14 +73,22 @@ function UserInfo() {
    const [diffStats, setDiffStats] = useState<DifficultyStatsMap | null>(null);
 
    useEffect(() => {
-      if (!token) return;
+      setStats(null);
+      setDiffStats(null);
+      if (!token) {
+         return;
+      }
+      let current = true;
       fetchStats(token).then((res) => {
-         if (res.ok) setStats(res.data);
+         if (current && res.ok) setStats(res.data);
       });
       fetchDifficultyStats(token).then((res) => {
-         if (res.ok) setDiffStats(res.data);
+         if (current && res.ok) setDiffStats(res.data);
       });
-   }, [token]);
+      return () => {
+         current = false;
+      };
+   }, [token, user?.id]);
 
    const handleSignIn = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -105,6 +117,20 @@ function UserInfo() {
    const handleDeleteAccount = async (
       pw: string
    ): Promise<{ error?: string }> => {
+      if (sharedAccountsEnabled()) {
+         try {
+            await sharedAccountRequest("delete", { password: pw }, user?.id);
+            navigate("/");
+            return {};
+         } catch (error) {
+            return {
+               error:
+                  error instanceof Error
+                     ? error.message
+                     : "Unable to delete your account.",
+            };
+         }
+      }
       const res = await fetch(`${getApiUrl()}/account`, {
          method: "DELETE",
          headers: {

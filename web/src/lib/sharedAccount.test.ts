@@ -25,6 +25,38 @@ afterEach(() => {
 });
 
 describe("shared account transport", () => {
+   it("rejects changes when another tab has switched accounts", async () => {
+      const api = await import("./sharedAccount");
+      mockFetch.mockResolvedValueOnce(
+         response({ ...session, user: { ...session.user, id: "99" } })
+      );
+      await expect(
+         api.sharedAccountRequest("profile", { profile_icon: "cat" }, "42")
+      ).rejects.toThrow("Your account changed");
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+   });
+
+   it("announces a revoked profile session to the current app", async () => {
+      const api = await import("./sharedAccount");
+      const changed = vi.fn();
+      window.addEventListener("cards:session", changed);
+      const guest = {
+         user: null,
+         csrf_token: "rotated",
+         message: "Verify your new address",
+      };
+      mockFetch
+         .mockResolvedValueOnce(response(session))
+         .mockResolvedValueOnce(response(guest));
+      await api.sharedAccountRequest(
+         "profile",
+         { email: "new@example.test" },
+         "42"
+      );
+      expect(changed.mock.calls[0][0].detail).toEqual(guest);
+      expect(api.getAuthToken()).toBeNull();
+      window.removeEventListener("cards:session", changed);
+   });
    it("uses an HttpOnly session and stores no browser token", async () => {
       const api = await import("./sharedAccount");
       mockFetch

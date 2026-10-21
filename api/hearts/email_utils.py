@@ -2,6 +2,7 @@ import hashlib
 import json
 import urllib.request
 import urllib.error
+from urllib.parse import urlencode
 
 from flask import current_app
 
@@ -40,18 +41,29 @@ def _send(
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             body = json.loads(resp.read())
+            result = body.get("data", {})
+            success = (
+                200 <= resp.status < 300
+                and result.get("succeeded") == 1
+                and result.get("failed", 0) == 0
+                and not result.get("failures")
+                and not result.get("error")
+            )
             current_app.logger.info(
                 "SMTP2GO %s for %s: %s",
                 resp.status,
                 to_email,
-                body.get("data", {}).get("succeeded", 0),
+                result.get("succeeded", 0),
             )
-            return 200 <= resp.status < 300
+            if not success:
+                # Do not log provider response bodies: they can echo private links.
+                current_app.logger.error(
+                    "SMTP2GO rejected an email (request_id=%s)",
+                    body.get("request_id", "unknown"),
+                )
+            return success
     except urllib.error.HTTPError as exc:
-        err_body = exc.read().decode(errors="replace") if exc.fp else ""
-        current_app.logger.exception(
-            "SMTP2GO %s for %s: %s", exc.code, to_email, err_body
-        )
+        current_app.logger.error("SMTP2GO HTTP error %s", exc.code)
         return False
     except Exception:
         current_app.logger.exception("Failed to send email to %s", to_email)
@@ -59,6 +71,15 @@ def _send(
 
 
 def send_verification_email(email: str, token: str) -> bool:
+    cards = current_app.config.get("CARDS_PUBLIC_URL")
+    if cards:
+        link = f"{cards}/user/?{urlencode({'view': 'verify', 'token': token})}"
+        html = (
+            verification_email_html(link)
+            .replace("Hearts", "Cards")
+            .replace("HEARTS", "CARDS")
+        )
+        return _send(email, "Verify your Cards account", html, sender_name="Cards")
     base_url = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
     link = f"{base_url}/verify-email?token={token}"
     html = verification_email_html(link)
@@ -66,6 +87,15 @@ def send_verification_email(email: str, token: str) -> bool:
 
 
 def send_password_reset_email(email: str, token: str) -> bool:
+    cards = current_app.config.get("CARDS_PUBLIC_URL")
+    if cards:
+        link = f"{cards}/user/?{urlencode({'view': 'reset', 'token': token})}"
+        html = (
+            password_reset_email_html(link)
+            .replace("Hearts", "Cards")
+            .replace("HEARTS", "CARDS")
+        )
+        return _send(email, "Reset your Cards password", html, sender_name="Cards")
     base_url = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
     link = f"{base_url}/reset-password?token={token}"
     html = password_reset_email_html(link)

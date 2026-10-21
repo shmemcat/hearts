@@ -1,4 +1,8 @@
-import { cardsFetch as fetch } from "@/lib/sharedAccount";
+import {
+   cardsFetch as fetch,
+   sharedAccountsEnabled,
+   sharedAccountRequest,
+} from "@/lib/sharedAccount";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -37,6 +41,7 @@ export default function ProfilePage() {
 
 function ProfileContent() {
    const { user, token, status, updateUser } = useAuth();
+   const [profileNotice, setProfileNotice] = useState("");
 
    if (status === "loading") {
       return <div className="mt-8">Loading…</div>;
@@ -45,7 +50,9 @@ function ProfileContent() {
    if (!user || !token) {
       return (
          <div className="mt-8 flex flex-col items-center gap-4">
-            <div>Sign in to customize your profile.</div>
+            <div role="status">
+               {profileNotice || "Sign in to customize your profile."}
+            </div>
             <Link to="/user">
                <Button name="Sign In" />
             </Link>
@@ -56,17 +63,20 @@ function ProfileContent() {
    return (
       <>
          <IconPickerSection
+            userId={user.id}
             currentIcon={user.profile_icon ?? "user"}
             token={token}
             onIconChange={(icon) => updateUser({ profile_icon: icon })}
          />
          <EmailSection
+            userId={user.id}
             currentEmail={user.email}
             emailVerified={user.email_verified ?? false}
             token={token}
-            onEmailChange={(email, verified) =>
-               updateUser({ email, email_verified: verified })
-            }
+            onEmailChange={(email, verified, message) => {
+               setProfileNotice(message || "");
+               updateUser({ email, email_verified: verified });
+            }}
          />
          <ButtonGroup padding="loose">
             <Link to="/user">
@@ -81,10 +91,12 @@ function ProfileContent() {
 }
 
 function IconPickerSection({
+   userId,
    currentIcon,
    token,
    onIconChange,
 }: {
+   userId: string;
    currentIcon: string;
    token: string;
    onIconChange: (icon: string) => void;
@@ -109,6 +121,16 @@ function IconPickerSection({
          saveTimer.current = setTimeout(async () => {
             if (key === lastSaved.current) return;
             try {
+               if (sharedAccountsEnabled()) {
+                  await sharedAccountRequest(
+                     "profile",
+                     { profile_icon: key },
+                     userId
+                  );
+                  lastSaved.current = key;
+                  onIconChange(key);
+                  return;
+               }
                const res = await fetch(`${getApiUrl()}/profile`, {
                   method: "PATCH",
                   headers: {
@@ -126,7 +148,7 @@ function IconPickerSection({
             }
          }, 400);
       },
-      [selected, token, onIconChange]
+      [selected, token, onIconChange, userId]
    );
 
    const iconsByCategory = PROFILE_ICON_CATEGORIES.map((cat) => ({
@@ -217,15 +239,17 @@ function IconPickerSection({
 }
 
 function EmailSection({
+   userId,
    currentEmail,
    emailVerified,
    token,
    onEmailChange,
 }: {
+   userId: string;
    currentEmail: string;
    emailVerified: boolean;
    token: string;
-   onEmailChange: (email: string, verified: boolean) => void;
+   onEmailChange: (email: string, verified: boolean, message?: string) => void;
 }) {
    const [email, setEmail] = useState(currentEmail);
    const [verified, setVerified] = useState(emailVerified);
@@ -245,6 +269,20 @@ function EmailSection({
       setSaving(true);
       setMessage("");
       try {
+         if (sharedAccountsEnabled()) {
+            const result = await sharedAccountRequest(
+               "profile",
+               { email: email.trim() },
+               userId
+            );
+            onEmailChange(
+               result.user?.email || email.trim(),
+               result.user?.email_verified || false,
+               result.message
+            );
+            setMessage(result.message || "Profile saved.");
+            return;
+         }
          const res = await fetch(`${getApiUrl()}/profile`, {
             method: "PATCH",
             headers: {

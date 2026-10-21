@@ -26,6 +26,8 @@ services:
       CARDS_PUBLIC_URL: ${CARDS_PUBLIC_URL:-}
       SMTP2GO_API_KEY: ${SMTP2GO_API_KEY:-}
       SMTP2GO_FROM_EMAIL: ${SMTP2GO_FROM_EMAIL:-noreply@shmem.dev}
+      ADMIN_KEY: ${ADMIN_KEY:-}
+      TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-0}
     depends_on:
       - db
     restart: unless-stopped
@@ -37,6 +39,7 @@ services:
       args:
         - FONTAWESOME_PACKAGE_TOKEN=${FONTAWESOME_PACKAGE_TOKEN:-}
         - VITE_SHARED_ACCOUNTS=${VITE_SHARED_ACCOUNTS:-false}
+        - VITE_BASE_PATH=${VITE_BASE_PATH:-/}
     ports:
       - '3000:80'
     depends_on:
