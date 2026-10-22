@@ -3,7 +3,12 @@
  */
 
 import { io, Socket } from "socket.io-client";
-import type { LobbyState, JoinAckEvent, GameStartedEvent } from "@/types/lobby";
+import type {
+   LobbyState,
+   JoinAckEvent,
+   GameStartedEvent,
+   LobbySessionEvent,
+} from "@/types/lobby";
 
 let socket: Socket | null = null;
 
@@ -12,31 +17,53 @@ type JoinAckCb = (event: JoinAckEvent) => void;
 type GameStartedCb = (event: GameStartedEvent) => void;
 type ErrorCb = (message: string) => void;
 type LobbyClosedCb = () => void;
+type LobbySessionCb = (event: LobbySessionEvent) => void;
 
 const lobbyUpdateListeners: LobbyUpdateCb[] = [];
 const joinAckListeners: JoinAckCb[] = [];
 const gameStartedListeners: GameStartedCb[] = [];
 const errorListeners: ErrorCb[] = [];
 const lobbyClosedListeners: LobbyClosedCb[] = [];
+const lobbySessionListeners: LobbySessionCb[] = [];
+const disconnectListeners: LobbyClosedCb[] = [];
 
 export function connectLobby(code: string, playerToken?: string): void {
    disconnect();
    const query: Record<string, string> = { lobby_code: code };
    if (playerToken) query.player_token = playerToken;
 
-   socket = io("/lobby", {
+   const connection = io("/lobby", {
       path: "/socket.io",
       query,
+      auth: { ...query },
       forceNew: true,
       transports: ["websocket", "polling"],
-      autoConnect: true,
+      autoConnect: false,
    });
+   socket = connection;
+
+   const rememberToken = (token: string | null) => {
+      const identity: Record<string, string> = { lobby_code: code };
+      if (token) identity.player_token = token;
+      connection.auth = { ...identity };
+      connection.io.opts.query = identity;
+   };
 
    socket.on("lobby_update", (data: LobbyState) => {
       lobbyUpdateListeners.forEach((cb) => cb(data));
    });
    socket.on("join_ack", (data: JoinAckEvent) => {
+      // The server already assigned this connection its seat. Keep the token
+      // for automatic reconnects without opening a second connection.
+      rememberToken(data.player_token);
       joinAckListeners.forEach((cb) => cb(data));
+   });
+   socket.on("lobby_session", (data: LobbySessionEvent) => {
+      rememberToken(data.player_token);
+      lobbySessionListeners.forEach((cb) => cb(data));
+   });
+   socket.on("disconnect", () => {
+      disconnectListeners.forEach((cb) => cb());
    });
    socket.on("game_started", (data: GameStartedEvent) => {
       gameStartedListeners.forEach((cb) => cb(data));
@@ -49,12 +76,13 @@ export function connectLobby(code: string, playerToken?: string): void {
          typeof data?.message === "string" ? data.message : "Lobby error";
       errorListeners.forEach((cb) => cb(msg));
    });
+   connection.connect();
 }
 
 export function disconnect(): void {
    if (socket) {
       socket.removeAllListeners();
-      if (socket.connected) socket.disconnect();
+      socket.disconnect();
       socket = null;
    }
 }
@@ -95,3 +123,5 @@ export const onJoinAck = makeSubscriber(joinAckListeners);
 export const onGameStarted = makeSubscriber(gameStartedListeners);
 export const onLobbyClosed = makeSubscriber(lobbyClosedListeners);
 export const onError = makeSubscriber(errorListeners);
+export const onLobbySession = makeSubscriber(lobbySessionListeners);
+export const onDisconnect = makeSubscriber(disconnectListeners);

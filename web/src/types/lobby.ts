@@ -24,6 +24,11 @@ export type JoinAckEvent = {
    player_token: string;
 };
 
+export type LobbySessionEvent = {
+   seat_index: number | null;
+   player_token: string | null;
+};
+
 export type GameStartedEvent = {
    game_id: string;
    difficulty: string;

@@ -17,6 +17,13 @@ It also supplies shared Cards accounts for the hub and Euchre.
 - `CARDS_EMAIL_TRANSPORT`: `smtp2go` (default), or `file` for local tests only.
 - `CARDS_EMAIL_OUTBOX`: local sandbox directory for file delivery.
 
+Verification and recovery emails use the shared Cards branding and a centered
+layout with Soft slate colors by default. Supporting clients switch to the
+Midnight palette with `prefers-color-scheme`; Outlook's recoloring hooks are also
+included. Clients that force their own dark colors may override the palette.
+The default layout and colors are inline so the emails remain usable when a
+client strips the style block. No remote fonts or images are required.
+
 ## Shared account endpoints
 
 Mount the API behind `/api/`, stripping that prefix at the proxy.

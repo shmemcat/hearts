@@ -12,7 +12,8 @@ from flask_migrate import Migrate
 _cors_origins = [
     o.strip()
     for o in os.environ.get(
-        "CORS_ORIGINS", "http://localhost:3000,http://localhost:3001"
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://localhost:3001,http://localhost:3002",
     ).split(",")
     if o.strip()
 ]
@@ -96,6 +97,9 @@ app.register_blueprint(leaderboard_bp)
 register_game_socket(socketio)
 register_lobby_socket(socketio)
 register_multiplayer_socket(socketio)
+from hearts.euchre_multiplayer import register_euchre_socket  # noqa: E402
+
+register_euchre_socket(socketio)
 
 
 @app.route("/health")

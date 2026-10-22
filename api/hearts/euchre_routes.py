@@ -146,11 +146,38 @@ def rankings(category, now, monthly=False):
 @limiter.limit("120 per minute")
 def leaderboard():
     category = request.args.get("category", "easy")
-    if category == "multiplayer":
-        return jsonify(monthly=[], all_time=[])
-    if category not in BOT_DIFFICULTIES:
+    if category not in BOT_DIFFICULTIES | {"multiplayer"}:
         return jsonify(error="Choose a valid leaderboard category."), 400
     now = datetime.utcnow()
     return jsonify(
         monthly=rankings(category, now, monthly=True), all_time=rankings(category, now)
+    )
+
+
+@euchre_bp.get("/multiplayer-results")
+@limiter.limit("120 per minute")
+def multiplayer_results():
+    user = session_user()
+    if not user:
+        return jsonify(error="Sign in to view your Euchre multiplayer statistics."), 401
+    rows = (
+        EuchreGameResult.query.filter_by(user_id=user.id, difficulty="multiplayer")
+        .order_by(EuchreGameResult.completed_at)
+        .all()
+    )
+    return jsonify(
+        results=[
+            dict(
+                id=r.game_id,
+                difficulty="multiplayer",
+                won=r.won,
+                conceded=r.conceded,
+                scores=[r.score, r.opponent_score],
+                finishedAt=r.completed_at.isoformat() + "Z",
+                marches=r.marches,
+                loners=r.loners,
+                euchres=r.euchres,
+            )
+            for r in rows
+        ]
     )

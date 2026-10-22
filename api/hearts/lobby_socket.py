@@ -44,9 +44,14 @@ def _emit_lobby_update_to(lobby: Lobby, sid: str) -> None:
 def register_lobby_socket(socketio):
 
     @socketio.on("connect", namespace="/lobby")
-    def on_connect():
-        code = (request.args.get("lobby_code") or "").strip().upper()
-        player_token = (request.args.get("player_token") or "").strip() or None
+    def on_connect(auth=None):
+        # Namespace auth is refreshed on every reconnect. Transport query
+        # parameters can belong to an earlier namespace/session.
+        credentials = auth if isinstance(auth, dict) else request.args
+        raw_code = credentials.get("lobby_code")
+        raw_token = credentials.get("player_token")
+        code = raw_code.strip().upper() if isinstance(raw_code, str) else ""
+        player_token = raw_token.strip() if isinstance(raw_token, str) else None
 
         if not code:
             return False
@@ -57,30 +62,40 @@ def register_lobby_socket(socketio):
             return False
 
         join_room(f"lobby:{code}")
-        _sid_to_lobby[request.sid] = (code, player_token)
+        _sid_to_lobby[request.sid] = (code, None)
+
+        if lobby.status == "finished":
+            emit("lobby_closed", {}, namespace="/lobby")
+            return
 
         # Reconnect: if player_token matches a seat, restore their SID
         if player_token and player_token in lobby.player_tokens:
             seat_idx = lobby.player_tokens[player_token]
             seat = lobby.seats[seat_idx]
             if seat and not seat.is_ai:
+                _sid_to_lobby[request.sid] = (code, player_token)
                 seat.sid = request.sid
                 cancel_disconnect_timer(lobby, player_token)
                 lobby.touch()
+                emit(
+                    "lobby_session",
+                    {"seat_index": seat_idx, "player_token": player_token},
+                    namespace="/lobby",
+                )
                 _broadcast_lobby_update(lobby)
                 return
 
-        # Update SID for host on first connect
-        if player_token and player_token == lobby.host_token:
-            seat = lobby.seats[0]
-            if seat:
-                seat.sid = request.sid
-
+        emit(
+            "lobby_session",
+            {"seat_index": None, "player_token": None},
+            namespace="/lobby",
+        )
         _emit_lobby_update_to(lobby, request.sid)
 
     @socketio.on("disconnect", namespace="/lobby")
     def on_disconnect():
-        info = _sid_to_lobby.pop(request.sid, None)
+        sid = request.sid
+        info = _sid_to_lobby.pop(sid, None)
         if info is None:
             return
         code, player_token = info
@@ -94,19 +109,23 @@ def register_lobby_socket(socketio):
         seat_idx = lobby.player_tokens.get(player_token)
         if seat_idx is None:
             return
+        seat = lobby.seats[seat_idx]
+        if seat is None or seat.sid != sid:
+            return
 
         is_host = player_token == lobby.host_token
         timeout = _HOST_DISCONNECT_SECONDS if is_host else _GUEST_DISCONNECT_SECONDS
+        cancel_disconnect_timer(lobby, player_token)
 
         def _on_timeout():
             lobby2 = get_lobby(code)
-            if lobby2 is None:
+            if lobby2 is None or lobby2.status != "waiting":
                 return
             tok_seat = lobby2.player_tokens.get(player_token)
             if tok_seat is None:
                 return
             seat = lobby2.seats[tok_seat]
-            if seat is None or seat.sid != request.sid:
+            if seat is None or seat.sid != sid:
                 # They reconnected with a new SID already
                 return
 
@@ -114,7 +133,7 @@ def register_lobby_socket(socketio):
             lobby2.player_tokens.pop(player_token, None)
             lobby2._disconnect_timers.pop(player_token, None)
 
-            if is_host:
+            if player_token == lobby2.host_token:
                 new_host = migrate_host(code)
                 if new_host is None:
                     socketio.emit(

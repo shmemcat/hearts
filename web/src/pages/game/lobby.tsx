@@ -24,9 +24,11 @@ import {
    onJoinAck,
    onGameStarted,
    onLobbyClosed,
+   onLobbySession,
+   onDisconnect,
    onError,
 } from "@/lib/lobbySocket";
-import type { LobbyState, LobbySeat } from "@/types/lobby";
+import type { LobbyState, LobbySeat, LobbySessionEvent } from "@/types/lobby";
 import { PLAY_PAGE_LAYOUT_CLASS } from "@/lib/constants";
 import styles from "@/styles/lobby.module.css";
 
@@ -73,34 +75,16 @@ export default function LobbyPage() {
    const [copiedCode, setCopiedCode] = useState(false);
    const [copiedUrl, setCopiedUrl] = useState(false);
 
-   // Derived: am I the host?
-   const isHost = myToken != null && lobby?.host_token === myToken;
-   // Am I seated?
-   const mySeatIndex = lobby?.seats.find(
-      (s) =>
-         s.status === "human" &&
-         myToken != null &&
-         lobby.host_token === myToken &&
-         s.index === 0
-   )
-      ? 0
-      : lobby?.seats.findIndex((s) => {
-           if (s.status !== "human" || !myToken) return false;
-           // We can only check host_token for seat 0 via the lobby state.
-           // For other seats we rely on the join_ack having set myToken.
-           // The lobby_update doesn't expose individual player_tokens so we
-           // track seat via the join_ack callback.
-           return false;
-        }) ?? -1;
-   // A simpler approach: track my seat from join_ack
+   // Host controls require the server to confirm this connection's seat.
    const [mySeat, setMySeat] = useState<number | null>(null);
+   const isHost =
+      mySeat != null && myToken != null && lobby?.host_token === myToken;
 
    // On mount: check localStorage for existing seat info
    useEffect(() => {
       const savedToken = localStorage.getItem(LOBBY_TOKEN_KEY(upperCode));
-      if (savedToken) {
-         setMyToken(savedToken);
-      }
+      setMyToken(savedToken);
+      setMySeat(null);
    }, [upperCode]);
 
    // Initial REST load to check lobby exists
@@ -110,24 +94,21 @@ export default function LobbyPage() {
          setNotFound(true);
          return;
       }
+      let active = true;
       getLobbyState(upperCode).then((res) => {
+         if (!active) return;
          setLoading(false);
          if (!res.ok) {
             setNotFound(true);
             return;
          }
-         setLobby(res.data);
+         // A socket update may already be newer than this initial request.
+         setLobby((current) => current ?? res.data);
       });
+      return () => {
+         active = false;
+      };
    }, [upperCode]);
-
-   // WebSocket connection
-   useEffect(() => {
-      if (!upperCode || notFound) return;
-      const token =
-         localStorage.getItem(LOBBY_TOKEN_KEY(upperCode)) ?? undefined;
-      connectLobby(upperCode, token);
-      return () => disconnectLobby();
-   }, [upperCode, notFound]);
 
    // WebSocket event subscriptions
    useEffect(() => {
@@ -145,15 +126,20 @@ export default function LobbyPage() {
          setLobby(state);
       });
 
-      const unsubJoinAck = onJoinAck((event) => {
+      const restoreSession = (event: LobbySessionEvent) => {
          const token = event.player_token;
-         localStorage.setItem(LOBBY_TOKEN_KEY(upperCode), token);
+         if (token) {
+            localStorage.setItem(LOBBY_TOKEN_KEY(upperCode), token);
+         } else {
+            localStorage.removeItem(LOBBY_TOKEN_KEY(upperCode));
+         }
+         myTokenRef.current = token;
          setMyToken(token);
          setMySeat(event.seat_index);
-         // Reconnect socket with the new token so the server knows us
-         disconnectLobby();
-         connectLobby(upperCode, token);
-      });
+      };
+      const unsubSession = onLobbySession(restoreSession);
+      const unsubJoinAck = onJoinAck(restoreSession);
+      const unsubDisconnect = onDisconnect(() => setMySeat(null));
 
       const unsubStarted = onGameStarted((event) => {
          const gameId = event.game_id;
@@ -187,11 +173,22 @@ export default function LobbyPage() {
       return () => {
          unsubUpdate();
          unsubJoinAck();
+         unsubSession();
+         unsubDisconnect();
          unsubStarted();
          unsubClosed();
          unsubError();
       };
    }, [upperCode, navigate, playSound]);
+
+   // Subscribe before connecting so the initial session confirmation is received.
+   useEffect(() => {
+      if (!upperCode || notFound) return;
+      const token =
+         localStorage.getItem(LOBBY_TOKEN_KEY(upperCode)) ?? undefined;
+      connectLobby(upperCode, token);
+      return () => disconnectLobby();
+   }, [upperCode, notFound]);
 
    const [nameError, setNameError] = useState(false);
 
@@ -220,9 +217,9 @@ export default function LobbyPage() {
    }, [upperCode]);
 
    const handleCloseLobby = useCallback(() => {
+      setError(null);
       sendCloseLobby();
-      localStorage.removeItem(LOBBY_TOKEN_KEY(upperCode));
-   }, [upperCode]);
+   }, []);
 
    const handleStartGame = useCallback(() => {
       if (!lobby) return;
@@ -281,7 +278,7 @@ export default function LobbyPage() {
       );
    }
 
-   if (notFound || closed) {
+   if (notFound || closed || lobby?.status === "finished") {
       return (
          <>
             <Helmet>
@@ -292,7 +289,11 @@ export default function LobbyPage() {
                hideTitleBlock
                className={PLAY_PAGE_LAYOUT_CLASS}
             >
-               <p>{closed ? "Lobby has been closed." : "Lobby not found."}</p>
+               <p>
+                  {closed || lobby?.status === "finished"
+                     ? "Lobby has been closed."
+                     : "Lobby not found."}
+               </p>
                <ButtonGroup className="pt-4">
                   <Link to="/game/create">
                      <Button name="Create Game" style={{ width: "200px" }} />
@@ -542,7 +543,7 @@ export default function LobbyPage() {
                         )}
 
                         {/* Non-host seated player: leave button */}
-                        {!isVisitor &&
+                        {mySeat != null &&
                            !isHost &&
                            lobby?.status === "waiting" && (
                               <Button

@@ -298,6 +298,9 @@ class EuchreGameResult(db.Model):
     opponent_score = db.Column(db.Integer, nullable=False)
     completed_at = db.Column(db.DateTime, nullable=False)
     recorded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    marches = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    loners = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    euchres = db.Column(db.Integer, nullable=False, default=0, server_default="0")
 
     __table_args__ = (
         db.UniqueConstraint(
@@ -307,6 +310,14 @@ class EuchreGameResult(db.Model):
             "ix_euchre_results_category_completed", "difficulty", "won", "completed_at"
         ),
     )
+
+
+class EuchreTable(db.Model):
+    __tablename__ = "euchre_tables"
+
+    code = db.Column(db.String(6), primary_key=True)
+    snapshot = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
 
 class PasswordResetToken(db.Model):

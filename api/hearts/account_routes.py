@@ -59,7 +59,6 @@ def send_account_email(user, token, kind):
         if kind == "verify"
         else password_reset_email_html(url)
     )
-    html = html.replace("Hearts", "Cards").replace("HEARTS", "CARDS")
     subject = (
         "Verify your Cards account" if kind == "verify" else "Reset your Cards password"
     )

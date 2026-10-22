@@ -2,6 +2,7 @@
 
 import secrets
 import json
+from html import unescape
 from pathlib import Path
 from datetime import datetime, timedelta
 from types import SimpleNamespace
@@ -437,7 +438,8 @@ def test_registration_verifies_with_hashed_one_use_token(accounts):
     )
 
 
-def test_smtp_provider_receives_cards_links_without_changing_existing_mail(accounts):
+@pytest.mark.parametrize("kind", ["verify", "reset"])
+def test_smtp_provider_receives_cards_links_with_unmodified_tokens(accounts, kind):
     from hearts import app
     from hearts.account_routes import send_account_email
 
@@ -449,12 +451,11 @@ def test_smtp_provider_receives_cards_links_without_changing_existing_mail(accou
         ),
         patch("hearts.account_routes._send", return_value=True) as sender,
     ):
-        send_account_email(
-            SimpleNamespace(email="owner@example.test"), "test-token", "reset"
-        )
+        token = "Hearts-HEARTS-signed-token"
+        send_account_email(SimpleNamespace(email="owner@example.test"), token, kind)
     args = sender.call_args.args
     assert args[0] == "owner@example.test" and "Cards" in args[1]
-    assert ORIGIN + "/user/?view=reset" in args[2]
+    assert f"{ORIGIN}/user/?view={kind}&token={token}" in unescape(args[2])
     assert "Hearts account" not in args[2]
     assert sender.call_args.kwargs["sender_name"] == "Cards"
 
