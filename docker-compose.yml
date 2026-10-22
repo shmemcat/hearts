@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:16-alpine
     ports:
-      - '5432:5432'
+      - "5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-hearts}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hearts}
@@ -16,7 +16,7 @@ services:
       context: ./api
       dockerfile: Dockerfile
     ports:
-      - '5001:5000'
+      - "5001:5000"
     environment:
       FLASK_APP: hearts:app
       DATABASE_URL: postgresql://${POSTGRES_USER:-hearts}:${POSTGRES_PASSWORD:-hearts}@db:5432/${POSTGRES_DB:-hearts}
@@ -37,14 +37,18 @@ services:
       context: ./web
       dockerfile: Dockerfile
       args:
-        - FONTAWESOME_PACKAGE_TOKEN=${FONTAWESOME_PACKAGE_TOKEN:-}
         - VITE_SHARED_ACCOUNTS=${VITE_SHARED_ACCOUNTS:-false}
         - VITE_BASE_PATH=${VITE_BASE_PATH:-/}
+      secrets: [fontawesome_token]
     ports:
-      - '3000:80'
+      - "3000:80"
     depends_on:
       - api
     restart: unless-stopped
 
 volumes:
   postgres_data:
+
+secrets:
+  fontawesome_token:
+    environment: FONTAWESOME_PACKAGE_TOKEN
