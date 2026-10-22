@@ -50,10 +50,10 @@ A full-stack, real-time implementation of the classic Hearts card game with sing
 
 | Technology                                                                                             | Purpose                                                   |
 | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
-| [Docker](https://www.docker.com/) + Docker Compose                                                     | Containerized dev and prod environments                   |
+| [Docker](https://www.docker.com/) + Docker Compose                                                     | Local container development                   |
 | [Nginx](https://nginx.org/)                                                                            | Reverse proxy and static file serving (production)        |
 | [GitHub Actions](https://github.com/features/actions)                                                  | CI/CD -- builds and pushes images to GHCR on version tags |
-| [Watchtower](https://containrrr.dev/watchtower/)                                                       | Auto-deploys new images in production                     |
+| [Podman auto-update](https://docs.podman.io/en/latest/markdown/podman-auto-update.1.html)                                                       | Auto-deploys new images in production                     |
 | [Husky](https://typicode.github.io/husky/) + [lint-staged](https://github.com/lint-staged/lint-staged) | Pre-commit formatting and linting                         |
 
 ## Architecture
@@ -229,13 +229,24 @@ git tag vX.Y.Z
 git push origin vX.Y.Z
 ```
 
-Pushing a `v*` tag triggers `.github/workflows/release.yml`, which builds and
-publishes API and web images to `ghcr.io/shmemcat` with the version and `latest`
-tags. The configured production Watchtower checks for updated images every
-300 seconds. Ordinary branch pushes do not trigger this release workflow.
-The web image build also requires the repository's
-`FONTAWESOME_PACKAGE_TOKEN` Actions secret. The live site is
-<https://hearts.shmem.dev>.
+Pushing a `v*` tag triggers `.github/workflows/release.yml`. It tests the API
+and frontend, publishes versioned `hearts-api`, standalone `hearts-web`, and
+Cards-mounted `hearts-cards-web` images to `ghcr.io/shmemcat`, then promotes
+`latest` after all builds pass. The Cards variant uses `/hearts/` and shared
+accounts; the standalone variant retains `/` for the legacy site. A manual
+workflow run checks out an existing version tag. The repository needs its
+`FONTAWESOME_PACKAGE_TOKEN` Actions secret; Docker builds use a BuildKit secret.
+
+Production runs Podman on NixOS, whose updater checks every minute. Ordinary
+branch pushes do not deploy. These are rolling container updates, so maintain
+compatibility with the previous API/frontend. Before the first shared-account
+release, pause the updater, back up the existing database, and follow the sibling
+infra repository's `docs/cards.md` cutover sequence. The API applies additive
+migrations on startup, including when an existing `latest` watcher restarts it.
+Do not publish that first release before the maintenance window is ready.
+
+The intended home is `https://cards.shmem.dev/hearts/`; keep the existing
+`https://hearts.shmem.dev` routing until the reviewed cutover has been verified.
 
 ### Migrations
 
