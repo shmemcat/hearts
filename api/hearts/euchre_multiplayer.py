@@ -279,9 +279,11 @@ def start_match(table, difficulty):
     if difficulty not in ("easy", "medium", "hard", "harder", "hardest"):
         raise ValueError("Choose a bot difficulty.")
     table["difficulty"] = difficulty
+    bot_number = 1
     for i, s in enumerate(table["seats"]):
-        if s is None:
-            table["seats"][i] = dict(name=f"Bot {i+1}", icon="robot", bot=True)
+        if s is None or not s.get("token"):
+            table["seats"][i] = dict(name=f"Bot {bot_number}", icon="robot", bot=True)
+            bot_number += 1
     table["participants"] = [
         dict(token=s["token"], userId=s.get("userId"), seat=i, conceded=False)
         for i, s in enumerate(table["seats"])

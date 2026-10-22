@@ -87,6 +87,53 @@ def test_guest_lobbies_default_to_hard_for_fill_in_and_replacement_bots(tables):
     assert all(s["bot"] for s in table["seats"][1:])
 
 
+@pytest.mark.parametrize("human_seats", [(0,), (0, 2), (1, 3), (2, 3)])
+def test_fill_in_bots_are_numbered_consecutively_in_every_players_view(
+    tables, human_seats
+):
+    connect, tasks, mp = tables
+    host = connect()
+    code = cmd(host, "create", name="Host")["code"]
+    if human_seats[0] != 0:
+        assert cmd(host, "join", seat=human_seats[0], name="Host")["ok"]
+    players = [host]
+    for seat in human_seats[1:]:
+        guest = connect()
+        join(guest, code, seat, f"Guest {seat}")
+        players.append(guest)
+    assert cmd(host, "start")["ok"]
+    table = mp.get_table(code)
+    expected = [f"Bot {i + 1}" for i in range(4 - len(human_seats))]
+    assert [s["name"] for s in table["seats"] if s["bot"]] == expected
+    for player, seat in zip(players, human_seats):
+        view = state(player)
+        assert view["game"]["seatNames"] == [
+            table["seats"][(i + seat) % 4]["name"] for i in range(4)
+        ]
+        assert [
+            s["name"] for s in view["lobby"]["seats"] if s["status"] == "ai"
+        ] == expected
+
+
+def test_rematch_renumbers_existing_bots_after_a_human_changes_seats(tables):
+    connect, tasks, mp = tables
+    host = connect()
+    code = cmd(host, "create", name="Host")["code"]
+    assert cmd(host, "start")["ok"]
+    table = mp.get_table(code)
+    table["game"].update(
+        phase="game_over",
+        scores=[10, 4],
+        finishedAt=datetime.now(timezone.utc).isoformat(),
+    )
+    mp.record_results(table)
+    mp.save(table)
+    assert cmd(host, "rematch")["ok"]
+    assert cmd(host, "join", seat=2, name="Host")["ok"]
+    assert cmd(host, "start")["ok"]
+    assert [s["name"] for s in table["seats"]] == ["Bot 1", "Bot 2", "Host", "Bot 3"]
+
+
 @pytest.mark.parametrize("hard_level", ["hard", "harder", "hardest"])
 def test_creator_hard_preference_survives_host_changes_and_snapshot_reload(
     tables, accounts, existing_user, hard_level
@@ -218,6 +265,69 @@ def test_private_rotated_game_views_and_action_validation(tables):
     assert not cmd(clients[(turn + 1) % 4], "action", action=action, revision=rev)["ok"]
     assert cmd(clients[turn], "action", action=action, revision=rev)["ok"]
     assert not cmd(clients[turn], "action", action=action, revision=rev)["ok"]
+
+
+@pytest.mark.parametrize("dealer", range(4))
+def test_pass_out_summaries_redeal_then_rotate_after_snapshot_reload(tables, dealer):
+    connect, tasks, mp = tables
+    clients = [connect() for _ in range(4)]
+    code = cmd(clients[0], "create", name="Host")["code"]
+    for i in range(1, 4):
+        join(clients[i], code, i, f"Player {i}")
+    assert cmd(clients[0], "start", difficulty="medium")["ok"]
+    table = mp.get_table(code)
+    table["game"].update(dealer=dealer, turn=(dealer + 1) % 4, scores=[3, 5])
+    for hand in range(4):
+        original = copy.deepcopy(table["game"])
+        for _ in range(8):
+            turn = table["game"]["turn"]
+            reply = cmd(
+                clients[turn],
+                "action",
+                action=dict(type="pass"),
+                revision=table["revision"],
+            )
+            assert reply["ok"], reply
+        game = table["game"]
+        assert game["phase"] == "round_complete"
+        assert game["message"] == (
+            "No calls — Pass" if hand % 2 else "No calls — Re-deal"
+        )
+        assert game["dealer"] == original["dealer"]
+        assert game["hands"] == original["hands"]
+        assert game["handNumber"] == original["handNumber"]
+        assert game["scores"] == [3, 5] and game["results"] == []
+        for i, client in enumerate(clients):
+            view = state(client)["game"]
+            assert view["message"] == game["message"]
+            assert view["dealer"] == (game["dealer"] - i) % 4
+            assert view["scores"] == ([3, 5] if i % 2 == 0 else [5, 3])
+        assert not cmd(
+            clients[1],
+            "action",
+            action=dict(type="advance"),
+            revision=table["revision"],
+        )["ok"]
+        # Recover the pending summary and counter from the persisted snapshot.
+        mp._tables.clear()
+        table = mp.get_table(code)
+        assert table["game"] == game
+        assert cmd(
+            clients[0],
+            "action",
+            action=dict(type="advance"),
+            revision=table["revision"],
+        )["ok"]
+        game = table["game"]
+        assert game["phase"] == "bidding1"
+        assert game["dealer"] == (
+            (original["dealer"] + 1) % 4 if hand % 2 else original["dealer"]
+        )
+        assert game["turn"] == (game["dealer"] + 1) % 4
+        assert game["consecutivePassOuts"] == (0 if hand % 2 else 1)
+        assert game["handNumber"] == original["handNumber"] + 1
+        assert game["scores"] == [3, 5] and game["results"] == []
+        assert [len(h) for h in game["hands"]] == [5, 5, 5, 5]
 
 
 def test_disconnect_grace_bot_takeover_reconnect_and_host_migration(tables):

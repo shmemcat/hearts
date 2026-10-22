@@ -90,6 +90,7 @@ def new_game(difficulty="easy", rng=None):
             difficulty=difficulty,
             playerName="You",
             handNumber=1,
+            consecutivePassOuts=0,
             dealer=rng.randrange(4),
             scores=[0, 0],
             results=[],
@@ -144,12 +145,20 @@ def apply_action(original, action, rng=None):
                     message="Everyone passed. Choose another trump suit, or pass.",
                 )
             else:
-                g.update(dealer=(g["dealer"] + 1) % 4, handNumber=g["handNumber"] + 1)
-                return deal(g, rng)
+                g.update(
+                    phase="round_complete",
+                    passes=0,
+                    message=(
+                        "No calls — Pass"
+                        if g.get("consecutivePassOuts", 0) == 1
+                        else "No calls — Re-deal"
+                    ),
+                )
         else:
             g["turn"] = (seat + 1) % 4
     elif kind == "call":
         g.update(
+            consecutivePassOuts=0,
             trump=action["suit"],
             maker=seat,
             alone=action["alone"],
@@ -185,7 +194,12 @@ def apply_action(original, action, rng=None):
             g["turn"] = next_active(seat, g["sittingOut"])
     elif kind == "advance":
         if g["phase"] == "round_complete":
-            g.update(dealer=(g["dealer"] + 1) % 4, handNumber=g["handNumber"] + 1)
+            redeal = g["maker"] is None and g.get("consecutivePassOuts", 0) == 0
+            g.update(
+                dealer=g["dealer"] if redeal else (g["dealer"] + 1) % 4,
+                handNumber=g["handNumber"] + 1,
+                consecutivePassOuts=1 if redeal else 0,
+            )
             return deal(g, rng)
         if len(g["completedTricks"]) == 5:
             maker = g["maker"] % 2
