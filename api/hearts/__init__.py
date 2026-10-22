@@ -4,6 +4,7 @@ from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from sqlalchemy.engine import make_url
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from hearts.extensions import db, limiter
 from flask_migrate import Migrate
@@ -17,6 +18,13 @@ _cors_origins = [
 ]
 
 app = Flask(__name__)
+_proxy_hops = int(os.environ.get("TRUSTED_PROXY_HOPS", "0"))
+if not 0 <= _proxy_hops <= 3:
+    raise RuntimeError("TRUSTED_PROXY_HOPS must be between 0 and 3.")
+if _proxy_hops:
+    # The API must be private behind this exact number of trusted proxies.
+    # Only the client address is needed; never trust arbitrary forwarded hosts.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=_proxy_hops)
 socketio = SocketIO(app, cors_allowed_origins=_cors_origins, async_mode="eventlet")
 _database_url = make_url(os.environ.get("DATABASE_URL", "sqlite:///hearts.db"))
 # SQLAlchemy 2.1 defaults to psycopg 3; this project installs psycopg2.

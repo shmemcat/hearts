@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { gamePath } from "@/lib/paths";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/Buttons";
@@ -99,7 +100,7 @@ export default function About() {
             <div className="flex flex-col items-center justify-center w-[300px] max-w-[420px] max-md:w-full relative">
                <img
                   alt="Flourish Playing Cards Image"
-                  src="/images/Flourish.jpeg"
+                  src={gamePath("images/Flourish.jpeg")}
                   width={300}
                   height={200}
                   className="rounded-[10px] block"

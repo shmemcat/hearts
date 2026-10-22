@@ -120,7 +120,10 @@ def reset_month():
     admin_key = request.headers.get("X-Admin-Key", "")
     import os
 
-    if admin_key != os.environ.get("ADMIN_KEY", ""):
+    import secrets
+
+    expected = os.environ.get("ADMIN_KEY", "")
+    if not expected or not admin_key or not secrets.compare_digest(admin_key, expected):
         return jsonify({"error": "unauthorized"}), 403
 
     month_start = _first_of_month()

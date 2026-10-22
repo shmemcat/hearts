@@ -2,6 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_URL?: string;
+  readonly VITE_BASE_PATH?: string;
+  readonly VITE_SHARED_ACCOUNTS?: string;
 }
 
 interface ImportMeta {

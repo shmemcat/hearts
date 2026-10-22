@@ -1,4 +1,5 @@
 import React from "react";
+import { gamePath } from "@/lib/paths";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useCardStyle, type CardStyle } from "@/context/CardStyleContext";
@@ -73,7 +74,7 @@ export const Card: React.FC<CardProps> = ({
       >
          {isImage ? (
             <img
-               src={`/cards/${code}.png`}
+               src={gamePath(`cards/${code}.png`)}
                alt={`${rank} of ${suit}`}
                className={styles.cardImg}
                draggable={false}

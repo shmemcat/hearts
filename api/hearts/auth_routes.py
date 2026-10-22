@@ -160,9 +160,11 @@ def verify_email():
     if not token:
         return jsonify({"error": "Token required"}), 400
 
-    user = User.query.filter_by(
-        verification_token=token,
-    ).first()
+    user = (
+        User.query.filter(User.verification_token.in_([hash_token(token), token]))
+        .with_for_update(of=User)
+        .first()
+    )
     if not user:
         return jsonify({"error": "Invalid or expired link"}), 400
     if user.verification_expires and user.verification_expires < datetime.utcnow():
@@ -215,19 +217,10 @@ def reset_password():
     if not ok:
         return jsonify({"error": msg}), 400
 
-    token_hash = hash_token(token)
-    reset = PasswordResetToken.query.filter_by(token_hash=token_hash).first()
-    if not reset or reset.expires_at < datetime.utcnow():
+    from hearts.account_security import reset_password_with_token
+
+    if not reset_password_with_token(token, new_password):
         return jsonify({"error": "Invalid or expired reset link"}), 400
-
-    user = User.query.get(reset.user_id)
-    if not user:
-        return jsonify({"error": "Invalid reset link"}), 400
-
-    user.password_hash = hash_password(new_password)
-    user.auth_version += 1
-    db.session.delete(reset)
-    db.session.commit()
     return jsonify({"message": "Password updated"}), 200
 
 
@@ -501,9 +494,9 @@ def update_profile():
             existing = User.query.filter_by(email=new_email).first()
             if existing and existing.id != user.id:
                 return jsonify({"error": "Email already registered"}), 409
-            user.email = new_email
-            user.email_verified = False
-            user.set_verification_token()
+            from hearts.account_security import change_email
+
+            verification_token = change_email(user, new_email)
             email_changed = True
             changed = True
 
@@ -513,7 +506,7 @@ def update_profile():
     db.session.commit()
 
     if email_changed:
-        send_verification_email(user.email, user.verification_token)
+        send_verification_email(user.email, verification_token)
 
     return jsonify({"user": user.to_dict()}), 200
 

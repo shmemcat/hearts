@@ -35,7 +35,12 @@ def create():
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
 
-    frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
+    cards_url = current_app.config.get("CARDS_PUBLIC_URL")
+    frontend_url = (
+        f"{cards_url.rstrip('/')}/hearts"
+        if cards_url
+        else current_app.config.get("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    )
     url = f"{frontend_url}/game/lobby/{lobby.code}"
 
     return (

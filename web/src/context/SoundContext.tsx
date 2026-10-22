@@ -7,6 +7,7 @@ import React, {
    useState,
 } from "react";
 import { Howl } from "howler";
+import { gamePath } from "@/lib/paths";
 
 import {
    SOUND_MUTED_KEY,
@@ -129,7 +130,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
          howls[name as SoundName] = srcs.map(
             (src) =>
                new Howl({
-                  src: [src],
+                  src: [gamePath(src)],
                   preload: true,
                   volume: volumeRef.current,
                })
@@ -142,7 +143,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
    useEffect(() => {
       if (typeof window === "undefined") return;
       const howl = new Howl({
-         src: ["/sounds/music-loop.mp3"],
+         src: [gamePath("sounds/music-loop.mp3")],
          loop: true,
          preload: true,
          volume: musicVolumeRef.current,

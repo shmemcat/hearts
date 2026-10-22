@@ -538,3 +538,92 @@ def test_postgresql_account_lock_excludes_nullable_stats_join(accounts):
     sql = str(query.statement.compile(dialect=postgresql.dialect()))
     assert "LEFT OUTER JOIN user_stats" in sql
     assert sql.endswith("FOR UPDATE OF users")
+
+
+def test_legacy_reset_also_consumes_other_links_and_revokes_sessions(
+    accounts, existing_user
+):
+    from hearts.extensions import db
+    from hearts.email_utils import hash_token
+    from hearts.models import PasswordResetToken
+    from hearts.account_sessions import AccountSession
+
+    sign_in(accounts)
+    for token in ("first-link", "second-link"):
+        db.session.add(
+            PasswordResetToken(
+                user_id=42,
+                token_hash=hash_token(token),
+                expires_at=datetime.utcnow() + timedelta(hours=1),
+            )
+        )
+    db.session.commit()
+    csrf = accounts.get("/account/session").json["csrf_token"]
+    response = accounts.post(
+        "/reset-password",
+        json={"token": "first-link", "password": RESET_PASSWORD},
+        headers={"Origin": ORIGIN, "X-CSRF-Token": csrf},
+    )
+    assert response.status_code == 200
+    assert PasswordResetToken.query.filter_by(user_id=42).count() == 0
+    assert AccountSession.query.filter_by(user_id=42).count() == 0
+    assert (
+        accounts.post(
+            "/reset-password",
+            json={"token": "second-link", "password": REPLAY_PASSWORD},
+        ).status_code
+        == 400
+    )
+
+
+@pytest.mark.parametrize("shared", [False, True])
+def test_email_change_revokes_old_sessions_jwts_and_recovery_links(
+    accounts, existing_user, shared
+):
+    from hearts.extensions import db
+    from hearts.email_utils import hash_token
+    from hearts.models import PasswordResetToken
+    from tests.conftest import make_jwt
+
+    old_jwt = make_jwt(42)
+    sign_in(accounts)
+    other = accounts.application.test_client()
+    sign_in(other)
+    db.session.add(
+        PasswordResetToken(
+            user_id=42,
+            token_hash=hash_token("old-email-link"),
+            expires_at=datetime.utcnow() + timedelta(hours=1),
+        )
+    )
+    db.session.commit()
+    if shared:
+        response = post(accounts, "profile", {"email": "changed@example.test"})
+        mail = json.loads(
+            next(
+                Path(accounts.application.config["CARDS_EMAIL_OUTBOX"]).glob("*.json")
+            ).read_text()
+        )
+        raw_token = parse_qs(urlsplit(mail["url"]).query)["token"][0]
+    else:
+        csrf = accounts.get("/account/session").json["csrf_token"]
+        with patch(
+            "hearts.auth_routes.send_verification_email", return_value=True
+        ) as sender:
+            response = accounts.patch(
+                "/profile",
+                json={"email": "changed@example.test"},
+                headers={"Origin": ORIGIN, "X-CSRF-Token": csrf},
+            )
+        raw_token = sender.call_args.args[1]
+    assert response.status_code == 200
+    assert PasswordResetToken.query.filter_by(user_id=42).count() == 0
+    assert existing_user.auth_version == 1
+    verifier = accounts.application.test_client()
+    # Old and new clients can verify hashed tokens during the transition.
+    assert verifier.post("/verify-email", json={"token": raw_token}).status_code == 200
+    assert other.get("/account/session").json["user"] is None
+    assert (
+        verifier.get("/me", headers={"Authorization": "Bearer " + old_jwt}).status_code
+        == 401
+    )

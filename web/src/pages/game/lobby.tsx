@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { gamePath } from "@/lib/paths";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import React, { useEffect, useCallback, useState, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -340,7 +341,9 @@ export default function LobbyPage() {
 
    // ── Render helpers ─────────────────────────────────────────────────
 
-   const lobbyUrl = `${window.location.origin}/game/lobby/${upperCode}`;
+   const lobbyUrl = `${window.location.origin}${gamePath(
+      `game/lobby/${upperCode}`
+   )}`;
    const isVisitor = myToken == null;
    const isFull =
       lobby != null &&
