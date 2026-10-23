@@ -1,13 +1,17 @@
-name: Release
+name: Publish legacy Hearts images (manual only)
 
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Version tag to publish and deploy
+        description: Existing legacy vMAJOR.MINOR.PATCH tag to publish
+        type: string
         required: true
+      acknowledge_legacy:
+        description: Publish retained legacy images without deploying or updating latest
+        type: boolean
+        required: true
+        default: false
 
 concurrency:
   group: hearts-release
@@ -21,12 +25,18 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
     steps:
+      - name: Require explicit legacy publication
+        env:
+          ACKNOWLEDGE_LEGACY: ${{ inputs.acknowledge_legacy }}
+        run: |
+          [[ "$ACKNOWLEDGE_LEGACY" == "true" ]] || { echo "::error::Confirm legacy publication explicitly."; exit 1; }
+          [[ "$RELEASE_TAG" =~ ^v[0-9][A-Za-z0-9_.-]*$ ]]
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          ref: refs/tags/${{ inputs.release_tag || github.ref_name }}
+          ref: refs/tags/${{ inputs.release_tag }}
       - name: Validate release
         env:
           FONT_TOKEN: ${{ secrets.FONTAWESOME_PACKAGE_TOKEN }}
@@ -59,6 +69,19 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Refuse existing legacy image tags
+        run: |
+          shopt -s nocasematch
+          for name in hearts-api hearts-web hearts-cards-web; do
+            image="ghcr.io/shmemcat/$name:$RELEASE_TAG"
+            if output=$(docker buildx imagetools inspect "$image" 2>&1); then
+              echo "::error::Legacy version already exists: $image"
+              exit 1
+            elif [[ ! "$output" =~ (manifest[[:space:]]unknown|not[[:space:]]found|404) ]] || [[ "$output" =~ (unauthorized|denied|forbidden|timeout|timed[[:space:]]out|connection|no[[:space:]]such[[:space:]]host) ]]; then
+              echo "::error::Cannot establish that legacy image is unused: $image"
+              exit 1
+            fi
+          done
       - name: Publish the versioned API
         uses: docker/build-push-action@v6
         with:
@@ -97,10 +120,3 @@ jobs:
             org.opencontainers.image.source=https://github.com/shmemcat/hearts
             org.opencontainers.image.revision=${{ steps.revision.outputs.sha }}
             org.opencontainers.image.version=${{ env.RELEASE_TAG }}
-      - name: Promote successful images for automatic deployment
-        run: |
-          for name in hearts-api hearts-web hearts-cards-web; do
-            docker buildx imagetools create \
-              --tag "ghcr.io/shmemcat/$name:latest" \
-              "ghcr.io/shmemcat/$name:$RELEASE_TAG"
-          done
