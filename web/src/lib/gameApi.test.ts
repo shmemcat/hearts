@@ -40,6 +40,10 @@ describe("startGame", () => {
    it("returns ok with game_id on success", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ game_id: "abc123" }));
       const result = await startGame({ player_name: "You" });
+      expect(mockFetch).toHaveBeenCalledWith(
+         "/api/hearts/games/start",
+         expect.any(Object)
+      );
       expect(result).toEqual({ ok: true, data: { game_id: "abc123" } });
    });
 

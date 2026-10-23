@@ -56,10 +56,24 @@ describe("lobby connections", () => {
       expect(transport.io).toHaveBeenCalledWith(
          "/lobby",
          expect.objectContaining({
+            path: "/hearts/socket.io",
             auth: { lobby_code: "ABC123", player_token: "host-token" },
          })
       );
       expect(confirmed).toHaveBeenCalledWith(session);
+   });
+   it("shows a reload requirement without restarting a retired transport", async () => {
+      const { onError } = await import("./lobbySocket");
+      const error = vi.fn();
+      subscriptions.push(onError(error));
+      connectLobby("ABC123");
+      socket.handlers.connect_error({
+         data: { code: "CLIENT_RELOAD_REQUIRED" },
+      });
+      expect(socket.disconnect).toHaveBeenCalledOnce();
+      expect(error).toHaveBeenCalledWith(
+         "This page has been updated. Please reload to reconnect."
+      );
    });
 
    it("cancels an unfinished connection when leaving or returning", () => {

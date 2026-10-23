@@ -44,20 +44,22 @@ import deleteStyles from "@/components/DeleteAccountModal.module.css";
 
 export default function UserPage() {
    const { error: accountError } = useAuth();
+   const [notice, setNotice] = useState("");
    return (
       <>
          <Helmet>
             <title>User | Hearts</title>
          </Helmet>
          <PageLayout title="USER">
-            <UserInfo />
+            {notice && <p role="status">{notice}</p>}
+            <UserInfo onNotice={setNotice} />
             {accountError && <p role="alert">{accountError}</p>}
          </PageLayout>
       </>
    );
 }
 
-function UserInfo() {
+function UserInfo({ onNotice }: { onNotice: (message: string) => void }) {
    const { user, token, status, login, logout } = useAuth();
    const navigate = useNavigate();
    const [username, setUsername] = useState("");
@@ -119,8 +121,13 @@ function UserInfo() {
    ): Promise<{ error?: string }> => {
       if (sharedAccountsEnabled()) {
          try {
-            await sharedAccountRequest("delete", { password: pw }, user?.id);
-            navigate("/");
+            const result = await sharedAccountRequest(
+               "delete",
+               { password: pw },
+               user?.id
+            );
+            onNotice(result.message || "Account deleted.");
+            setShowDeleteModal(false);
             return {};
          } catch (error) {
             return {
@@ -144,7 +151,15 @@ function UserInfo() {
          return { error: (data.error as string) || "Something went wrong" };
       }
       logout();
-      navigate("/");
+      if (res.status === 202) {
+         onNotice(
+            data.message ||
+               "Account deletion is processing. Cleanup will retry automatically."
+         );
+         setShowDeleteModal(false);
+      } else {
+         navigate("/");
+      }
       return {};
    };
 

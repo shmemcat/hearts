@@ -3,6 +3,7 @@
  */
 
 import { io, Socket } from "socket.io-client";
+import { HEARTS_SOCKET_PATH, handleConnectionError } from "./transport";
 import type {
    LobbyState,
    JoinAckEvent,
@@ -33,7 +34,7 @@ export function connectLobby(code: string, playerToken?: string): void {
    if (playerToken) query.player_token = playerToken;
 
    const connection = io("/lobby", {
-      path: "/socket.io",
+      path: HEARTS_SOCKET_PATH,
       query,
       auth: { ...query },
       forceNew: true,
@@ -76,6 +77,11 @@ export function connectLobby(code: string, playerToken?: string): void {
          typeof data?.message === "string" ? data.message : "Lobby error";
       errorListeners.forEach((cb) => cb(msg));
    });
+   connection.on("connect_error", (error) =>
+      handleConnectionError(connection, error, (message) =>
+         errorListeners.forEach((cb) => cb(message))
+      )
+   );
    connection.connect();
 }
 

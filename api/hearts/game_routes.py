@@ -3,6 +3,8 @@ Game API: DB-backed persistence with in-memory cache.
 POST /games/start, GET /games/<id>, POST pass, POST play, POST concede, GET active.
 """
 
+from hearts.runtime import runtime_state
+
 import random
 import uuid
 from typing import Dict, Optional
@@ -28,7 +30,7 @@ def _inject_player_icons(state: dict, game_id: str) -> dict:
     return state
 
 
-_store: Dict[str, GameRunner] = {}
+_store: Dict[str, GameRunner] = runtime_state("hearts.games")
 
 
 def reset_store() -> None:

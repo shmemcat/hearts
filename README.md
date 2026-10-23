@@ -4,6 +4,8 @@ A full-stack, real-time implementation of the classic Hearts card game with sing
 
 **Live at [hearts.shmem.dev](https://hearts.shmem.dev/)**
 
+The independent [Hearts game server](game-api/README.md) is prepared locally with shared Cards accounts. The combined `api/` remains the current deployment entrypoint; Compose, gateway destinations, and tagged releases have not switched.
+
 ## Features
 
 - **Single-player vs. AI** -- four difficulty levels from random play to Monte Carlo simulation
@@ -115,7 +117,7 @@ Additional multiplayer features:
 
 ### Environment Variables
 
-The root `.env` file is read by Docker Compose and configures Postgres, the Flask API, and mail settings. It is never committed (listed in `.gitignore`). The frontend uses a relative `/api` path for all API calls, so no frontend env vars are needed -- in development the Vite dev server proxies `/api` and `/socket.io` to the API container; in production Nginx does the same.
+The root `.env` file is read by Docker Compose and configures Postgres, the Flask API, and mail settings. It is never committed (listed in `.gitignore`). Game calls use `/api/hearts/` and sockets use `/hearts/socket.io`; accounts keep the shared `/api/` base. Vite and Nginx proxy these paths to the existing combined API. Legacy API URLs and `/socket.io` remain supported. See the sibling Cards repo's `docs/game-routing-compatibility.md` for the gateway-first release order and support window.
 
 | Variable                    | Used by | When       | Required   |
 | --------------------------- | ------- | ---------- | ---------- |

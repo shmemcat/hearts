@@ -329,6 +329,28 @@ describe("UserPage - Authenticated", () => {
       });
    });
 
+   it("shows pending cleanup after legacy account deletion signs out", async () => {
+      setAuthToken();
+      const user = userEvent.setup();
+      renderWithProviders(<UserPage />, { route: "/user" });
+      await screen.findByRole("button", { name: "Delete Account" });
+      const message =
+         "Account deletion is processing. Cleanup will retry automatically.";
+      mockFetch.mockResolvedValue({
+         ok: true,
+         status: 202,
+         json: async () => ({ message }),
+      });
+      await user.click(screen.getByRole("button", { name: "Delete Account" }));
+      await user.click(screen.getByRole("button", { name: "Yes" }));
+      await user.type(screen.getByPlaceholderText("Password"), "test-password");
+      await user.click(
+         screen.getByRole("button", { name: "Delete", exact: true })
+      );
+      expect(await screen.findByRole("status")).toHaveTextContent(message);
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+   });
+
    it("displays stats when available", async () => {
       setAuthToken();
       renderWithProviders(<UserPage />, { route: "/user" });

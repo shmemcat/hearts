@@ -23,6 +23,7 @@ type AuthState = {
    user: User | null;
    token: string | null;
    preferences: UserPreferences | null;
+   preferencesAvailable?: boolean;
    status: "loading" | "authenticated" | "unauthenticated";
 };
 
@@ -111,6 +112,8 @@ function LegacyAuthProvider({ children }: { children: React.ReactNode }) {
                   },
                   token,
                   preferences: data.user.preferences ?? null,
+                  preferencesAvailable:
+                     data.user.preferences_available !== false,
                   status: "authenticated",
                });
             } else {
@@ -184,6 +187,7 @@ function LegacyAuthProvider({ children }: { children: React.ReactNode }) {
          },
          token,
          preferences: user.preferences ?? null,
+         preferencesAvailable: user.preferences_available !== false,
          status: "authenticated",
       });
       return {};

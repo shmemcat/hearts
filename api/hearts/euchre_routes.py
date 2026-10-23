@@ -6,8 +6,8 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
-from hearts.account_routes import body, no_store, protect_account
-from hearts.account_sessions import session_user
+from hearts.account_http import body, no_store, protect_account
+from hearts.account_access import session_user, accounts
 from hearts.extensions import db, limiter
 from hearts.models import EuchreGameResult, User
 
@@ -87,7 +87,10 @@ def save_results():
         return jsonify(error=str(error)), 400
     # Serialize uploads for one account. The unique constraint also protects
     # imports from different tabs and database engines without row locking.
-    if not User.query.filter_by(id=user.id).with_for_update(of=User).first():
+    if (
+        not getattr(accounts(), "remote", False)
+        and not User.query.filter_by(id=user.id).with_for_update(of=User).first()
+    ):
         return jsonify(error="Sign in to save your Euchre results."), 401
     existing = {
         row.game_id: row
@@ -114,6 +117,36 @@ def save_results():
 
 
 def rankings(category, now, monthly=False):
+    if getattr(accounts(), "remote", False):
+        query = db.session.query(
+            EuchreGameResult.user_id, func.count(EuchreGameResult.id)
+        ).filter(
+            EuchreGameResult.difficulty == category,
+            EuchreGameResult.won.is_(True),
+            EuchreGameResult.completed_at <= now,
+        )
+        if monthly:
+            query = query.filter(
+                EuchreGameResult.completed_at
+                >= now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            )
+        rows = query.group_by(EuchreGameResult.user_id).all()
+        profiles = accounts().public_profiles([row[0] for row in rows])
+        eligible = [
+            (profiles[uid], count)
+            for uid, count in rows
+            if uid in profiles and profiles[uid].email_verified
+        ]
+        eligible.sort(key=lambda item: (-item[1], item[0].username.lower(), item[0].id))
+        return [
+            dict(
+                rank=index + 1,
+                username=user.username,
+                profile_icon=user.profile_icon,
+                games_won=count,
+            )
+            for index, (user, count) in enumerate(eligible[:10])
+        ]
     wins = func.count(EuchreGameResult.id)
     query = (
         db.session.query(User.username, User.profile_icon, wins)

@@ -3,6 +3,7 @@
  */
 
 import { io, Socket } from "socket.io-client";
+import { HEARTS_SOCKET_PATH, handleConnectionError } from "./transport";
 import type { GameState, PlayEvent } from "@/types/game";
 import type { GameStartedEvent } from "@/types/lobby";
 
@@ -43,13 +44,19 @@ export function connectMulti(
    if (jwtToken) query.auth_token = jwtToken;
 
    socket = io("/multi", {
-      path: "/socket.io",
+      path: HEARTS_SOCKET_PATH,
       query,
       forceNew: true,
       transports: ["websocket", "polling"],
       autoConnect: true,
    });
 
+   const connection = socket;
+   socket.on("connect_error", (error) =>
+      handleConnectionError(connection, error, (message) =>
+         errorListeners.forEach((cb) => cb(message))
+      )
+   );
    socket.on("state", (data: GameState) => {
       stateListeners.forEach((cb) => cb(data));
    });

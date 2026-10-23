@@ -5,6 +5,8 @@ Handles real-time lobby seat management: connect, join, leave, start_game,
 disconnect with host migration timers.
 """
 
+from hearts.runtime import runtime_state
+
 import eventlet
 from typing import Dict, Optional, Tuple
 
@@ -23,12 +25,14 @@ from hearts.lobby import (
     get_all_human_sids,
 )
 from hearts.multiplayer_socket import create_multiplayer_game
+from hearts.game_accounts import game_lock
+from hearts.jwt_utils import get_current_user
 
 _HOST_DISCONNECT_SECONDS = 30
 _GUEST_DISCONNECT_SECONDS = 30
 
 # SID -> (lobby_code, player_token or None)
-_sid_to_lobby: Dict[str, Tuple[str, Optional[str]]] = {}
+_sid_to_lobby: Dict[str, Tuple[str, Optional[str]]] = runtime_state("hearts.lobby_sids")
 
 
 def _broadcast_lobby_update(lobby: Lobby) -> None:
@@ -41,7 +45,7 @@ def _emit_lobby_update_to(lobby: Lobby, sid: str) -> None:
     emit("lobby_update", lobby.to_dict(), to=sid, namespace="/lobby")
 
 
-def register_lobby_socket(socketio):
+def register_lobby_socket(socketio, app):
 
     @socketio.on("connect", namespace="/lobby")
     def on_connect(auth=None):
@@ -73,8 +77,18 @@ def register_lobby_socket(socketio):
             seat_idx = lobby.player_tokens[player_token]
             seat = lobby.seats[seat_idx]
             if seat and not seat.is_ai:
+                user = get_current_user()
+                if (
+                    app.extensions.get("remote_accounts_enabled")
+                    and seat.user_id
+                    and (not user or user.id != seat.user_id)
+                ):
+                    return False
                 _sid_to_lobby[request.sid] = (code, player_token)
                 seat.sid = request.sid
+                user = get_current_user()
+                if user:
+                    seat.user_id = user.id
                 cancel_disconnect_timer(lobby, player_token)
                 lobby.touch()
                 emit(
@@ -117,7 +131,7 @@ def register_lobby_socket(socketio):
         timeout = _HOST_DISCONNECT_SECONDS if is_host else _GUEST_DISCONNECT_SECONDS
         cancel_disconnect_timer(lobby, player_token)
 
-        def _on_timeout():
+        def _expire_lobby():
             lobby2 = get_lobby(code)
             if lobby2 is None or lobby2.status != "waiting":
                 return
@@ -148,6 +162,10 @@ def register_lobby_socket(socketio):
                 room=f"lobby:{code}",
                 namespace="/lobby",
             )
+
+        def _on_timeout():
+            with app.app_context(), game_lock():
+                _expire_lobby()
 
         timer = eventlet.spawn_after(timeout, _on_timeout)
         lobby._disconnect_timers[player_token] = timer
@@ -185,6 +203,8 @@ def register_lobby_socket(socketio):
         seat = lobby.seats[seat_idx]
         if seat:
             seat.sid = request.sid
+            user = get_current_user()
+            seat.user_id = user.id if user else None
 
         _sid_to_lobby[request.sid] = (code, token)
 
@@ -283,6 +303,7 @@ def register_lobby_socket(socketio):
                         "is_ai": seat.is_ai,
                         "player_token": seat.player_token,
                         "icon": seat.icon,
+                        "user_id": seat.user_id,
                     }
                 )
 

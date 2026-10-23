@@ -4,27 +4,30 @@ Only the server deals, validates moves and records multiplayer results. Public
 snapshots never contain seat credentials, account IDs, kitty or opponents' cards.
 """
 
+from hearts.runtime import runtime_state
+
 import copy
 import json
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
 
-from eventlet.semaphore import Semaphore
+from hearts.game_accounts import euchre_lock, is_deleted, accounts_available
 from flask import request
-from hearts.account_sessions import current_session, session_user, valid_origin
+from hearts.account_access import accounts, current_session, session_user, valid_origin
+from hearts.account_contracts import AccountsUnavailable
 from hearts.extensions import db
-from hearts.models import EuchreTable, EuchreGameResult, User
+from hearts.models import EuchreTable, EuchreGameResult
 from hearts.euchre_engine import new_game, apply_action, bot_action
 
 NS = "/euchre"
 GRACE_SECONDS = 30
 TTL_SECONDS = 20 * 60
-_tables = {}
-_clients = {}
-_jobs = {}
-_disconnections = {}
-_lock = Semaphore()
+_tables = runtime_state("euchre.tables")
+_clients = runtime_state("euchre.clients")
+_jobs = runtime_state("euchre.jobs")
+_disconnections = runtime_state("euchre.disconnections")
+_lock = runtime_state("euchre.lock", euchre_lock)
 
 
 def save(table):
@@ -236,7 +239,12 @@ def record_results(table):
         return
     for p in table["participants"]:
         user_id = p.get("userId")
-        if not user_id or not db.session.get(User, user_id):
+        if not user_id:
+            continue
+        if getattr(accounts(), "remote", False):
+            if is_deleted(user_id):
+                continue
+        elif user_id not in accounts().public_profiles([user_id]):
             continue
         if EuchreGameResult.query.filter_by(user_id=user_id, game_id=g["id"]).first():
             continue
@@ -292,8 +300,7 @@ def start_match(table, difficulty):
     table.update(game=new_game(difficulty), status="playing")
 
 
-def register_euchre_socket(socketio):
-    from hearts import app
+def register_euchre_socket(socketio, app):
 
     def broadcast(table):
         for sid, client in list(_clients.items()):
@@ -368,14 +375,24 @@ def register_euchre_socket(socketio):
             if s and s.get("token") and not s.get("bot") and not connected(s["token"]):
                 expire_after(table["code"], s["token"])
 
-    def expire_after(code, token):
+    def expire_after(code, token, recovering=False):
         if connected(token) or token in _disconnections:
             return
         stamp = time.monotonic()
         _disconnections[token] = stamp
+        member = member_for(_tables.get(code, {}), token) if code in _tables else None
+        user_id = member.get("userId") if member else None
 
         def expire():
             socketio.sleep(GRACE_SECONDS)
+            with app.app_context():
+                available = accounts_available(user_id)
+                if not available or recovering:
+                    with _lock:
+                        if _disconnections.get(token) == stamp and not connected(token):
+                            _disconnections.pop(token, None)
+                            expire_after(code, token, recovering=not available)
+                    return
             with app.app_context(), _lock:
                 try:
                     table = get_table(code)
@@ -448,7 +465,7 @@ def register_euchre_socket(socketio):
                 if client["userId"]:
                     # Socket events share their handshake request. Discard its
                     # cached session so sign-out/password reset revokes access.
-                    request.environ.pop("cards.session", None)
+                    accounts().refresh()
                     user = session_user()
                     if not user or user.id != client["userId"]:
                         raise ValueError(
@@ -766,6 +783,8 @@ def register_euchre_socket(socketio):
                 return dict(ok=True)
             except ValueError as error:
                 return dict(ok=False, error=str(error))
+            except AccountsUnavailable:
+                raise
             except Exception:
                 db.session.rollback()
                 app.logger.exception("Euchre multiplayer command failed")

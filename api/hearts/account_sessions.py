@@ -150,16 +150,7 @@ def session_response(rotate=False, user=None):
 
 
 def protect_cookie_requests():
-    """Existing Hearts game/profile APIs also accept the shared cookie and require CSRF."""
-    if request.method in {"GET", "HEAD", "OPTIONS"} or request.path.startswith(
-        "/account/"
-    ):
-        return None
-    if session_user() and not valid_csrf(current_session()):
-        return (
-            jsonify(
-                error="Please refresh your account and try again.", code="CSRF_INVALID"
-            ),
-            403,
-        )
-    return None
+    """Compatibility alias for the injected account guard."""
+    from hearts.account_http import protect_cookie_requests as protect
+
+    return protect()

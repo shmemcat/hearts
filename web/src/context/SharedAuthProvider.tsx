@@ -76,6 +76,7 @@ export function SharedAuthProvider({
             user,
             token: user ? COOKIE_SESSION : null,
             preferences: user?.preferences || null,
+            preferencesAvailable: user?.preferences_available !== false,
             status: loading
                ? "loading"
                : user

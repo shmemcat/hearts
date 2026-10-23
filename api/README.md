@@ -3,6 +3,25 @@
 Flask/SQLAlchemy API for Hearts gameplay, accounts, statistics, and preferences.
 It also supplies shared Cards accounts for the hub and Euchre.
 
+## Application entrypoints
+
+The independent Hearts-only runtime now lives in [game-api](../game-api/README.md), with its own dependencies, game models, migration version, image context, and tests. This directory retains the combined deployment and its legacy migration history during the transition.
+
+`hearts:app` remains the combined deployment entrypoint. It creates one server
+with the existing routes, namespaces, configuration defaults, and migration chain.
+
+`hearts.create_app(config=None, *, role="combined", accounts=None)` also supports
+explicit `accounts`, `hearts`, and `euchre` roles for composition and tests. Each
+app owns its live game state, socket server, and rate-limit counters. Use the
+originating app's context when calling runtime helpers directly. The default
+account adapter uses the existing local database and session implementation;
+alternate adapters implement `hearts.account_contracts.Accounts`.
+
+The smaller roles are not independent deployments yet. Routing, databases,
+credentials, and release workflows remain shared. See the Cards repo's
+`docs/account-interface-v1.md` for the contract, compatibility inventory, and
+remaining extraction work.
+
 ## Configuration
 
 - `DATABASE_URL`: existing Hearts PostgreSQL connection string in production.
@@ -76,10 +95,9 @@ notes are in the Cards repo's `docs/integration.md`.
 
 ## Account tests
 
-Set the test database before importing the app:
+Run the backend suite from `api/`:
 
 ```powershell
-$env:DATABASE_URL='sqlite://'
 python -m pytest tests/test_shared_accounts.py tests/test_auth_routes.py -q
 ```
 
@@ -87,3 +105,36 @@ Tests cover identity/stats preservation, migration upgrade/downgrade, CSRF,
 cookies, rotation/expiry, shared logout, legacy compatibility, verification, and
 reset expiry/replay/revocation. They use isolated data and local mail, not live
 accounts or real email delivery.
+
+The pytest configuration overrides inherited database settings before importing
+the default application. HTTP/socket fixtures pass an explicit in-memory URL
+to the application factory before the database engine is initialized, and
+dispose that database after each test without dropping developer tables.
+A test-only SQLAlchemy guard also rejects network databases and file databases
+outside pytest's temporary directory before the driver opens a connection. It
+checks already-pooled connections before SQL execution as well. These checks
+use the actual connection target, not mutable Flask configuration, and remain
+active for collection and fixture teardown. Migration tests may create SQLite
+files only within pytest's temporary directory.
+
+`python -m pytest tests/test_database_safety.py -q` verifies that an inherited
+developer-database URL leaves a seeded database unchanged, an unsafe file is
+never opened, pooled connections cannot bypass the boundary, and a network
+driver is never called. The separate Cards development runner continues using
+`Cards/.local/accounts.sqlite`; tests must never use either real development
+database.
+
+## Optional remote Cards account owner
+
+The default combined entrypoint and startup migrations remain unchanged. Phase 3
+adds an opt-in `CARDS_ACCOUNTS_URL` adapter and fixed public account relay; no
+production service is switched automatically. Configure private service/callback
+keys, provision supplemental game receipts explicitly, and drain legacy games
+before activation. The sibling Cards repository documents the account-owned
+schema, runtime grants, deletion/retry policy, and activation order in
+`docs/accounts-service.md`. The independent account package is `cards/api/`.
+
+`tests/test_remote_accounts.py` checks private contracts, stale-write fencing,
+snapshot cleanup, and outage recovery. Cards' `npm run test:accounts` exercises
+actual HTTP and JavaScript Socket.IO clients against separate disposable
+account/game processes and rejects game SQL reads of account-owned tables.

@@ -17,12 +17,11 @@ class DisconnectTimer:
 
 
 @pytest.fixture
-def lobby_sockets(monkeypatch):
-    from hearts import app, socketio
+def lobby_sockets(monkeypatch, default_test_app):
     from hearts import lobby_socket
 
-    reset_store()
-    lobby_socket._sid_to_lobby.clear()
+    app = default_test_app
+    socketio = app.extensions["socketio"]
     clients = []
     timers = []
     monkeypatch.setitem(app.config, "TESTING", True)
@@ -47,13 +46,17 @@ def lobby_sockets(monkeypatch):
         clients.append(client)
         return client
 
-    yield connect, timers
+    # Direct lobby helpers must use the same application as socket requests.
+    with app.app_context():
+        reset_store()
+        lobby_socket._sid_to_lobby.clear()
+        yield connect, timers
 
-    for client in clients:
-        if client.is_connected("/lobby"):
-            client.disconnect(namespace="/lobby")
-    reset_store()
-    lobby_socket._sid_to_lobby.clear()
+        for client in clients:
+            if client.is_connected("/lobby"):
+                client.disconnect(namespace="/lobby")
+        reset_store()
+        lobby_socket._sid_to_lobby.clear()
 
 
 def received(client, name):

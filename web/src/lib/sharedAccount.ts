@@ -7,6 +7,7 @@ export type SharedUser = {
    email: string;
    profile_icon?: string;
    email_verified: boolean;
+   preferences_available?: boolean;
    preferences?: {
       card_style: string;
       hard_level: string;
