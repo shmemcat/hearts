@@ -1,11 +1,11 @@
-# Hearts API
+# Retained combined Hearts API
 
 Flask/SQLAlchemy API for Hearts gameplay, accounts, statistics, and preferences.
 It also supplies shared Cards accounts for the hub and Euchre.
 
 ## Application entrypoints
 
-The independent Hearts-only runtime now lives in [game-api](../game-api/README.md), with its own dependencies, game models, migration version, image context, and tests. This directory retains the combined deployment and its legacy migration history during the transition.
+The independent Hearts-only runtime now lives in [game-api](../game-api/README.md), with its own dependencies, game models, migration version, image context, and tests. This directory retains the combined compatibility/rollback artifact and its frozen legacy migration history. Production uses the separate owners.
 
 `hearts:app` remains the combined deployment entrypoint. It creates one server
 with the existing routes, namespaces, configuration defaults, and migration chain.
@@ -17,10 +17,9 @@ originating app's context when calling runtime helpers directly. The default
 account adapter uses the existing local database and session implementation;
 alternate adapters implement `hearts.account_contracts.Accounts`.
 
-The smaller roles are not independent deployments yet. Routing, databases,
-credentials, and release workflows remain shared. See the Cards repo's
-`docs/account-interface-v1.md` for the contract, compatibility inventory, and
-remaining extraction work.
+The factory roles here support compatibility tests. Independently packaged
+production owners live in Cards `api/`, Hearts `game-api/` and Euchre `api/`.
+Their private account interface is documented in Cards' `docs/account-interface-v1.md`.
 
 ## Configuration
 
@@ -68,9 +67,9 @@ Existing `/login`, `/register`, `/verify-email`, `/forgot-password`,
 accept the shared cookie or a valid legacy JWT. Cookie mutations also require
 CSRF. Reset invalidates old shared sessions and JWTs, including multiplayer JWTs.
 
-## Local development
+## Explicit combined compatibility development
 
-The Cards repo's `npm run dev:accounts` starts this API with a separate, fresh
+Normal root `npm run dev` starts the separate services; see [Cards setup](../../cards/README.md#run-locally). Cards' explicit legacy `npm run dev:accounts` helper starts this combined API with a separate, fresh
 **Cards/.local/accounts.sqlite** database and localhost URLs. It reuses the API
 Python environment and only mail configuration from Hearts' root `.env`; it does
 not import production database credentials.
