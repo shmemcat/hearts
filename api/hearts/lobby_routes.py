@@ -34,6 +34,10 @@ def create():
         lobby = create_lobby(host_name, num_ai, host_icon=host_icon)
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
+    from hearts.jwt_utils import get_current_user
+
+    user = get_current_user()
+    lobby.seats[0].user_id = user.id if user else None
 
     cards_url = current_app.config.get("CARDS_PUBLIC_URL")
     frontend_url = (
@@ -87,9 +91,8 @@ def concede_multiplayer(game_id: str):
     if not player_token:
         return jsonify({"error": "player_token is required"}), 400
 
-    from hearts import socketio
-
     app = current_app._get_current_object()
+    socketio = app.extensions["socketio"]
     result = concede_multiplayer_by_token(game_id, player_token, socketio, app)
     if result is None:
         return jsonify({"error": "Game not found or seat not valid"}), 404

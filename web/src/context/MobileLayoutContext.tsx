@@ -1,7 +1,7 @@
 import { cardsFetch as fetch, getAuthToken } from "@/lib/sharedAccount";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-import { getApiUrl } from "@/lib/api";
+import { getGameApiUrl } from "@/lib/api";
 import { MOBILE_LAYOUT_KEY } from "@/lib/constants";
 import { useAuth } from "@/context/AuthContext";
 
@@ -23,7 +23,7 @@ export function MobileLayoutProvider({
 }: {
    children: React.ReactNode;
 }) {
-   const { status, preferences } = useAuth();
+   const { status, preferences, preferencesAvailable } = useAuth();
    const [mobileLayout, setMobileLayoutState] =
       useState<MobileLayout>("single");
 
@@ -41,12 +41,16 @@ export function MobileLayoutProvider({
          return;
       }
 
-      if (status === "authenticated" && !preferences) {
+      if (
+         status === "authenticated" &&
+         !preferences &&
+         preferencesAvailable !== false
+      ) {
          if (stored && VALID.has(stored)) {
             setMobileLayoutState(stored as MobileLayout);
             const token = typeof window !== "undefined" ? getAuthToken() : null;
             if (token) {
-               fetch(`${getApiUrl()}/preferences`, {
+               fetch(`${getGameApiUrl()}/preferences`, {
                   method: "PATCH",
                   headers: {
                      "Content-Type": "application/json",
@@ -61,7 +65,7 @@ export function MobileLayoutProvider({
 
       if (stored && VALID.has(stored))
          setMobileLayoutState(stored as MobileLayout);
-   }, [status, preferences]);
+   }, [status, preferences, preferencesAvailable]);
 
    const setMobileLayout = (layout: MobileLayout) => {
       setMobileLayoutState(layout);
@@ -71,7 +75,7 @@ export function MobileLayoutProvider({
 
       const token = typeof window !== "undefined" ? getAuthToken() : null;
       if (token) {
-         fetch(`${getApiUrl()}/preferences`, {
+         fetch(`${getGameApiUrl()}/preferences`, {
             method: "PATCH",
             headers: {
                "Content-Type": "application/json",

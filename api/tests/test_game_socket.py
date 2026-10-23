@@ -15,13 +15,12 @@ def clear_game_store():
 
 
 @pytest.fixture
-def socket_env():
+def socket_env(default_test_app):
     """Provide app, socketio, rest client, and a factory for SocketIO test clients."""
-    from hearts import app, socketio
     from hearts.extensions import db
 
-    app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
+    app = default_test_app
+    socketio = app.extensions["socketio"]
     with app.app_context():
         db.create_all()
         rest = app.test_client()
@@ -30,7 +29,6 @@ def socket_env():
             return socketio.test_client(app, flask_test_client=rest)
 
         yield app, rest, make_socket_client
-        db.drop_all()
 
 
 @pytest.fixture

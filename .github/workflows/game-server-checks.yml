@@ -1,0 +1,44 @@
+name: Check standalone Hearts server
+
+on:
+  pull_request:
+    paths: ["game-api/**", "release/**", "scripts/component-release*.mjs", ".github/workflows/game-server-checks.yml", ".github/workflows/game-release.yml"]
+  push:
+    paths: ["game-api/**", "release/**", "scripts/component-release*.mjs", ".github/workflows/game-server-checks.yml", ".github/workflows/game-release.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.1"
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test scripts/component-release.test.mjs
+      - name: Test the independent backend
+        working-directory: game-api
+        run: |
+          uv sync --locked --extra dev
+          uv run --locked --extra dev pytest -q
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the independent game image without sibling checkouts
+        uses: docker/build-push-action@v6
+        with:
+          context: game-api
+          load: true
+          tags: hearts-game-api:check
+          build-args: |
+            REVISION=${{ github.sha }}
+      - name: Check independent image imports and registrations
+        run: |
+          docker run --rm hearts-game-api:check python -c "import sys; from hearts_server import create_app; app=create_app({'SQLALCHEMY_DATABASE_URI':'sqlite://', 'CARDS_PUBLIC_URL':'http://localhost:3000', 'CARDS_ACCOUNTS_URL':'http://accounts.invalid', 'CARDS_SERVICE_TOKEN':'r'*40, 'GAME_ACCOUNT_TOKENS':{'hearts':'c'*40}}); assert set(app.extensions['socketio'].server.handlers)=={'/game','/lobby','/multi'}; assert not any(m.split('.')[0] in {'hearts','euchre_server','cards_accounts','argon2','jwt'} for m in sys.modules)"

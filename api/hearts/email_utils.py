@@ -12,7 +12,7 @@ SMTP2GO_API_URL = "https://api.smtp2go.com/v3/email/send"
 
 
 def _send(
-    to_email: str, subject: str, html_content: str, sender_name: str = "Hearts"
+    to_email: str, subject: str, html_content: str, sender_name: str = "Cards"
 ) -> bool:
     """Send an email via SMTP2GO REST API. Returns True on success."""
     api_key = current_app.config.get("SMTP2GO_API_KEY")
@@ -74,32 +74,22 @@ def send_verification_email(email: str, token: str) -> bool:
     cards = current_app.config.get("CARDS_PUBLIC_URL")
     if cards:
         link = f"{cards}/user/?{urlencode({'view': 'verify', 'token': token})}"
-        html = (
-            verification_email_html(link)
-            .replace("Hearts", "Cards")
-            .replace("HEARTS", "CARDS")
-        )
-        return _send(email, "Verify your Cards account", html, sender_name="Cards")
-    base_url = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
-    link = f"{base_url}/verify-email?token={token}"
+    else:
+        base_url = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
+        link = f"{base_url}/verify-email?{urlencode({'token': token})}"
     html = verification_email_html(link)
-    return _send(email, "Verify your Hearts account", html)
+    return _send(email, "Verify your Cards account", html, sender_name="Cards")
 
 
 def send_password_reset_email(email: str, token: str) -> bool:
     cards = current_app.config.get("CARDS_PUBLIC_URL")
     if cards:
         link = f"{cards}/user/?{urlencode({'view': 'reset', 'token': token})}"
-        html = (
-            password_reset_email_html(link)
-            .replace("Hearts", "Cards")
-            .replace("HEARTS", "CARDS")
-        )
-        return _send(email, "Reset your Cards password", html, sender_name="Cards")
-    base_url = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
-    link = f"{base_url}/reset-password?token={token}"
+    else:
+        base_url = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
+        link = f"{base_url}/reset-password?{urlencode({'token': token})}"
     html = password_reset_email_html(link)
-    return _send(email, "Reset your Hearts password", html)
+    return _send(email, "Reset your Cards password", html, sender_name="Cards")
 
 
 def hash_token(token: str) -> str:

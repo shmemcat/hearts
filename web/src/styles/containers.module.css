@@ -397,6 +397,12 @@
       background-color: transparent;
    }
 
+   .cards-hub-link {
+      position: fixed;
+      bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+      left: calc(16px + env(safe-area-inset-left, 0px));
+   }
+
    .create-button-container {
       flex-direction: column;
    }

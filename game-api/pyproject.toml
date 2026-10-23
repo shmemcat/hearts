@@ -1,0 +1,21 @@
+[project]
+name = "hearts-game-api"
+version = "0.1.0"
+description = "Independent Hearts game server using shared Cards accounts"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=2.2.2,<3.1.0", "werkzeug>=2.2.0,<3.1.0",
+    "flask-sqlalchemy>=3.1.0", "psycopg2-binary>=2.9.0", "flask-cors>=4.0.0",
+    "flask-limiter>=3.5.0", "flask-socketio>=5.3.0", "eventlet>=0.33.0",
+    "gunicorn>=21.0.0,<26", "alembic>=1.13.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0", "black>=25.0.0"]
+
+[tool.setuptools.packages.find]
+include = ["hearts_server*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -475,7 +475,7 @@ VALID_PROFILE_ICONS = {
 @limiter.limit("30 per minute")
 def update_profile():
     data = request.get_json() or {}
-    user = g.current_user
+    user = db.session.get(User, g.current_user.id)
     changed = False
 
     if "profile_icon" in data:
@@ -514,7 +514,7 @@ def update_profile():
 @auth_bp.route("/me", methods=["GET"])
 @require_jwt
 def me():
-    return jsonify({"user": g.current_user.to_dict()}), 200
+    return jsonify({"user": db.session.get(User, g.current_user.id).to_dict()}), 200
 
 
 @auth_bp.route("/account", methods=["DELETE"])
@@ -527,27 +527,8 @@ def delete_account():
 
 
 def delete_user_account(user, password):
-    if not isinstance(password, str) or not password:
-        return jsonify({"error": "Password required"}), 400
+    from hearts.account_access import accounts
 
-    if not verify_password(password, user.password_hash):
-        return jsonify({"error": "Incorrect password"}), 401
-
-    from hearts.account_sessions import AccountSession
-    from hearts.models import DifficultyStats, GameResult, EuchreGameResult
-
-    for model in (
-        PasswordResetToken,
-        ActiveGame,
-        UserStats,
-        UserPreferences,
-        DifficultyStats,
-        GameResult,
-        EuchreGameResult,
-        AccountSession,
-    ):
-        model.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    User.query.filter_by(id=user.id).delete(synchronize_session="fetch")
-    db.session.commit()
-
-    return jsonify({"message": "Account deleted"}), 200
+    result = accounts().delete_account(user.id, password)
+    key = "message" if result.deleted else "error"
+    return jsonify({key: result.message}), result.status_code

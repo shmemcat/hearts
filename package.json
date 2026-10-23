@@ -9,7 +9,11 @@
     "down-prod": "docker compose -f docker-compose.yml -f docker-compose.prod.yml down",
     "build": "docker compose build",
     "web:install": "node --env-file=.env scripts/install-web.mjs",
-    "prepare": "husky"
+    "prepare": "husky",
+    "dev:web": "npm --prefix web run dev",
+    "dev": "node ../cards/scripts/dev-split.mjs",
+    "dev:combined": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
+    "test:release": "node --test scripts/component-release.test.mjs scripts/legacy-release.test.mjs"
   },
   "lint-staged": {
     "web/src/**/*.{ts,tsx,js,jsx,css,json}": [

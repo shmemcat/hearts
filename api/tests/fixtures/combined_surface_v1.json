@@ -1,0 +1,347 @@
+{
+  "baseline": "hearts v5.0.2 (a28ebaf)",
+  "http": [
+    {
+      "endpoint": "auth.delete_account",
+      "methods": [
+        "DELETE"
+      ],
+      "rule": "/account"
+    },
+    {
+      "endpoint": "auth.forgot_password",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/forgot-password"
+    },
+    {
+      "endpoint": "auth.login",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/login"
+    },
+    {
+      "endpoint": "auth.me",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/me"
+    },
+    {
+      "endpoint": "auth.register",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/register"
+    },
+    {
+      "endpoint": "auth.resend_verification",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/resend-verification"
+    },
+    {
+      "endpoint": "auth.reset_password",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/reset-password"
+    },
+    {
+      "endpoint": "auth.update_profile",
+      "methods": [
+        "PATCH"
+      ],
+      "rule": "/profile"
+    },
+    {
+      "endpoint": "auth.verify_email",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/verify-email"
+    },
+    {
+      "endpoint": "cards_account.delete_shared_account",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/account/delete"
+    },
+    {
+      "endpoint": "cards_account.forgot_password",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/account/forgot-password"
+    },
+    {
+      "endpoint": "cards_account.get_session",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/account/session"
+    },
+    {
+      "endpoint": "cards_account.login",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/account/login"
+    },
+    {
+      "endpoint": "cards_account.logout",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/account/logout"
+    },
+    {
+      "endpoint": "cards_account.register",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/account/register"
+    },
+    {
+      "endpoint": "cards_account.resend_verification",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/account/resend-verification"
+    },
+    {
+      "endpoint": "cards_account.reset_password",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/account/reset-password"
+    },
+    {
+      "endpoint": "cards_account.update_account_profile",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/account/profile"
+    },
+    {
+      "endpoint": "cards_account.verify_email",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/account/verify-email"
+    },
+    {
+      "endpoint": "euchre_stats.leaderboard",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/account/euchre/leaderboard"
+    },
+    {
+      "endpoint": "euchre_stats.multiplayer_results",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/account/euchre/multiplayer-results"
+    },
+    {
+      "endpoint": "euchre_stats.save_results",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/account/euchre/results"
+    },
+    {
+      "endpoint": "games.advance_game",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/games/<game_id>/advance"
+    },
+    {
+      "endpoint": "games.concede_game",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/games/<game_id>/concede"
+    },
+    {
+      "endpoint": "games.get_active_game",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/games/active"
+    },
+    {
+      "endpoint": "games.get_game",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/games/<game_id>"
+    },
+    {
+      "endpoint": "games.start_game",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/games/start"
+    },
+    {
+      "endpoint": "games.submit_pass",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/games/<game_id>/pass"
+    },
+    {
+      "endpoint": "games.submit_play",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/games/<game_id>/play"
+    },
+    {
+      "endpoint": "health",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/health"
+    },
+    {
+      "endpoint": "leaderboard.get_leaderboard",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/leaderboard"
+    },
+    {
+      "endpoint": "leaderboard.reset_month",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/leaderboard/reset-month"
+    },
+    {
+      "endpoint": "lobbies.check_game_active",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/lobbies/game/<game_id>/active"
+    },
+    {
+      "endpoint": "lobbies.concede_multiplayer",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/lobbies/game/<game_id>/concede"
+    },
+    {
+      "endpoint": "lobbies.create",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/lobbies/create"
+    },
+    {
+      "endpoint": "lobbies.get_lobby_state",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/lobbies/<code>"
+    },
+    {
+      "endpoint": "prefs.get_preferences",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/preferences"
+    },
+    {
+      "endpoint": "prefs.update_preferences",
+      "methods": [
+        "PATCH"
+      ],
+      "rule": "/preferences"
+    },
+    {
+      "endpoint": "static",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/static/<path:filename>"
+    },
+    {
+      "endpoint": "stats.get_stats",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/stats"
+    },
+    {
+      "endpoint": "stats.get_stats_by_category",
+      "methods": [
+        "GET"
+      ],
+      "rule": "/stats/by-category"
+    },
+    {
+      "endpoint": "stats.record_game",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/stats/record"
+    },
+    {
+      "endpoint": "stats.unlock_achievement",
+      "methods": [
+        "POST"
+      ],
+      "rule": "/stats/unlock"
+    }
+  ],
+  "sockets": {
+    "/euchre": [
+      "command",
+      "connect",
+      "disconnect"
+    ],
+    "/game": [
+      "advance",
+      "connect",
+      "disconnect",
+      "play"
+    ],
+    "/lobby": [
+      "close_lobby",
+      "connect",
+      "disconnect",
+      "join",
+      "leave",
+      "start_game"
+    ],
+    "/multi": [
+      "concede",
+      "connect",
+      "disconnect",
+      "pass",
+      "play",
+      "request_state"
+    ]
+  },
+  "tables": [
+    "account_sessions",
+    "active_games",
+    "difficulty_stats",
+    "euchre_game_results",
+    "euchre_tables",
+    "game_results",
+    "password_reset_tokens",
+    "user_preferences",
+    "user_stats",
+    "users"
+  ]
+}

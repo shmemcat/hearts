@@ -82,7 +82,7 @@ describe("shared account transport", () => {
       mockFetch
          .mockResolvedValueOnce(response(session))
          .mockResolvedValueOnce(response({}));
-      await api.cardsFetch("/api/preferences", {
+      await api.cardsFetch("/api/hearts/preferences", {
          method: "PATCH",
          headers: {
             Authorization: "Bearer old-token",
@@ -91,6 +91,8 @@ describe("shared account transport", () => {
          body: "{}",
       });
       const init = mockFetch.mock.calls[1][1];
+      expect(mockFetch.mock.calls[0][0]).toBe("/api/account/session");
+      expect(mockFetch.mock.calls[1][0]).toContain("/api/hearts/preferences");
       expect(init.headers.get("Authorization")).toBeNull();
       expect(init.headers.get("X-CSRF-Token")).toBe("csrf-fixture");
       expect(init.body).toBe("{}");

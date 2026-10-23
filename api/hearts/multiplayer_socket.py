@@ -6,6 +6,8 @@ game_id only (no token). State is emitted per-player (each sees only their
 own hand). Play/trick events are broadcast to the entire room.
 """
 
+from hearts.runtime import runtime_state
+
 import logging
 import eventlet
 from typing import Any, Dict, Optional, Set, Tuple
@@ -26,6 +28,8 @@ from hearts.multiplayer_game_ops import (
     advance_if_bot_turn,
 )
 from hearts.jwt_utils import get_current_user, get_user_from_token
+from hearts.account_contracts import AccountsUnavailable
+from hearts.game_accounts import game_lock, is_deleted, accounts_available
 from hearts.stats_routes import (
     _compute_newly_unlocked,
     _is_in_all_time_top_10,
@@ -45,28 +49,30 @@ def _get_user_from_query_token():
 
 
 # game_id -> MultiplayerRunner
-_runners: Dict[str, MultiplayerRunner] = {}
+_runners: Dict[str, MultiplayerRunner] = runtime_state("hearts.multi_runners")
 
 # SID -> {game_id, seat_index} or {game_id, spectator: True}
-_sid_to_game: Dict[str, Dict[str, Any]] = {}
+_sid_to_game: Dict[str, Dict[str, Any]] = runtime_state("hearts.multi_sid_to_game")
 
 # player_token -> SID (for targeted emits)
-_token_to_sid: Dict[str, str] = {}
+_token_to_sid: Dict[str, str] = runtime_state("hearts.multi_token_to_sid")
 
 # game_id -> set of spectator SIDs
-_spectator_sids: Dict[str, Set[str]] = {}
+_spectator_sids: Dict[str, Set[str]] = runtime_state("hearts.multi_spectator_sids")
 
 # player_token -> eventlet.GreenThread for disconnect timers
-_disconnect_timers: Dict[str, Any] = {}
+_disconnect_timers: Dict[str, Any] = runtime_state("hearts.multi_disconnect_timers")
 
 # game_id -> {seat_index -> jwt_user_id} â€” tracked at connect time
-_game_auth: Dict[str, Dict[int, int]] = {}
+_game_auth: Dict[str, Dict[int, int]] = runtime_state("hearts.multi_game_auth")
 
 # game_id -> {seat_index -> eventlet.GreenThread} for idle kick timers
-_idle_timers: Dict[str, Dict[int, Any]] = {}
+_idle_timers: Dict[str, Dict[int, Any]] = runtime_state("hearts.multi_idle_timers")
 
 # game_id -> {seat_index -> eventlet.GreenThread} for idle warning timers
-_idle_warning_timers: Dict[str, Dict[int, Any]] = {}
+_idle_warning_timers: Dict[str, Dict[int, Any]] = runtime_state(
+    "hearts.multi_idle_warning_timers"
+)
 
 
 def _get_runner(game_id: str) -> Optional[MultiplayerRunner]:
@@ -78,6 +84,9 @@ def _get_runner(game_id: str) -> Optional[MultiplayerRunner]:
         return None
     runner = MultiplayerRunner.from_json(row.state_json)
     _runners[game_id] = runner
+    _game_auth[game_id] = {
+        index: seat.user_id for index, seat in enumerate(runner.seats) if seat.user_id
+    }
     return runner
 
 
@@ -207,7 +216,7 @@ def _start_idle_timer(game_id: str, seat_idx: int, socketio, app) -> None:
 
     def _on_idle_warning():
         try:
-            with app.app_context():
+            with app.app_context(), game_lock():
                 if not token:
                     return
                 sid = _token_to_sid.get(token)
@@ -220,9 +229,18 @@ def _start_idle_timer(game_id: str, seat_idx: int, socketio, app) -> None:
                 seat_idx,
             )
 
-    def _on_idle_timeout():
+    def _on_idle_timeout(recovering=False):
         try:
             with app.app_context():
+                user_id = _game_auth.get(game_id, {}).get(seat_idx)
+                available = accounts_available(user_id)
+                if not available or recovering:
+                    with game_lock():
+                        _idle_timers.setdefault(game_id, {})[seat_idx] = (
+                            eventlet.spawn_after(30, _on_idle_timeout, not available)
+                        )
+                    return
+            with app.app_context(), game_lock():
                 _idle_timers.get(game_id, {}).pop(seat_idx, None)
                 _idle_warning_timers.get(game_id, {}).pop(seat_idx, None)
                 r = _get_runner(game_id)
@@ -360,6 +378,8 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
         unlocked_per_seat: Dict[int, list] = {}
 
         for seat_idx, user_id in auth_map.items():
+            if is_deleted(user_id):
+                continue
             seat = runner.seats[seat_idx]
             if seat.conceded:
                 continue
@@ -625,11 +645,15 @@ def create_multiplayer_game(
                 is_human=not sd["is_ai"],
                 player_token=sd.get("player_token"),
                 icon=sd.get("icon", "robot" if sd["is_ai"] else "user"),
+                user_id=sd.get("user_id"),
             )
         )
 
     runner = MultiplayerRunner.new_game(seats, difficulty=difficulty)
     _runners[game_id] = runner
+    _game_auth[game_id] = {
+        index: seat.user_id for index, seat in enumerate(runner.seats) if seat.user_id
+    }
     _save_to_db(game_id, runner, lobby_code=lobby_code)
 
     app = current_app._get_current_object()
@@ -639,7 +663,7 @@ def create_multiplayer_game(
     return runner
 
 
-_unstick_in_progress: Set[str] = set()
+_unstick_in_progress: Set[str] = runtime_state("hearts.multi_unstick_in_progress", set)
 
 
 def _try_unstick_game(game_id: str, runner: MultiplayerRunner, socketio) -> None:
@@ -701,6 +725,17 @@ def register_multiplayer_socket(socketio):
             if player_token:
                 seat_idx = _find_seat_by_token(runner, player_token)
                 if seat_idx is not None:
+                    # Resolve accounts before replacing reconnect bookkeeping.
+                    user = get_current_user()
+                    if user is None:
+                        user = _get_user_from_query_token()
+                    expected = runner.seats[seat_idx].user_id
+                    if (
+                        current_app.extensions.get("remote_accounts_enabled")
+                        and expected
+                        and (not user or user.id != expected)
+                    ):
+                        return False
                     timer = _disconnect_timers.pop(player_token, None)
                     if timer is not None:
                         timer.cancel()
@@ -711,12 +746,11 @@ def register_multiplayer_socket(socketio):
                     }
                     _token_to_sid[player_token] = request.sid
 
-                    user = get_current_user()
-                    if user is None:
-                        user = _get_user_from_query_token()
                     if user:
                         auth = _game_auth.setdefault(game_id, {})
                         auth[seat_idx] = user.id
+                        runner.seats[seat_idx].user_id = user.id
+                        _save_to_db(game_id, runner)
                         logger.info(
                             "on_connect: stored auth game=%s seat=%d user=%d (auth_map=%s)",
                             game_id,
@@ -749,6 +783,8 @@ def register_multiplayer_socket(socketio):
             specs = _spectator_sids.setdefault(game_id, set())
             specs.add(request.sid)
             emit("state", runner.get_state_for_spectator(), namespace="/multi")
+        except AccountsUnavailable:
+            raise
         except Exception:
             logger.exception("on_connect error")
             return False
@@ -807,8 +843,18 @@ def register_multiplayer_socket(socketio):
 
         app = current_app._get_current_object()
 
-        def _on_reconnect_timeout():
+        def _on_reconnect_timeout(recovering=False):
             with app.app_context():
+                user_id = _game_auth.get(game_id, {}).get(seat_idx)
+                available = accounts_available(user_id)
+                if not available or recovering:
+                    with game_lock():
+                        if token and token not in _token_to_sid:
+                            _disconnect_timers[token] = eventlet.spawn_after(
+                                30, _on_reconnect_timeout, not available
+                            )
+                    return
+            with app.app_context(), game_lock():
                 _disconnect_timers.pop(token, None)
                 r = _get_runner(game_id)
                 if r is None:

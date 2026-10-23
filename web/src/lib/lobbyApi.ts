@@ -3,10 +3,10 @@ import { cardsFetch as fetch } from "@/lib/sharedAccount";
  * REST client for lobby endpoints.
  */
 
-import { getApiUrl } from "@/lib/api";
+import { getGameApiUrl } from "@/lib/api";
 import type { LobbyState } from "@/types/lobby";
 
-const base = () => getApiUrl();
+const base = () => getGameApiUrl();
 
 export type CreateLobbyResponse = {
    code: string;

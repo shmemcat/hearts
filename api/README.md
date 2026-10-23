@@ -1,7 +1,25 @@
-# Hearts API
+# Retained combined Hearts API
 
 Flask/SQLAlchemy API for Hearts gameplay, accounts, statistics, and preferences.
 It also supplies shared Cards accounts for the hub and Euchre.
+
+## Application entrypoints
+
+The independent Hearts-only runtime now lives in [game-api](../game-api/README.md), with its own dependencies, game models, migration version, image context, and tests. This directory retains the combined compatibility/rollback artifact and its frozen legacy migration history. Production uses the separate owners.
+
+`hearts:app` remains the combined deployment entrypoint. It creates one server
+with the existing routes, namespaces, configuration defaults, and migration chain.
+
+`hearts.create_app(config=None, *, role="combined", accounts=None)` also supports
+explicit `accounts`, `hearts`, and `euchre` roles for composition and tests. Each
+app owns its live game state, socket server, and rate-limit counters. Use the
+originating app's context when calling runtime helpers directly. The default
+account adapter uses the existing local database and session implementation;
+alternate adapters implement `hearts.account_contracts.Accounts`.
+
+The factory roles here support compatibility tests. Independently packaged
+production owners live in Cards `api/`, Hearts `game-api/` and Euchre `api/`.
+Their private account interface is documented in Cards' `docs/account-interface-v1.md`.
 
 ## Configuration
 
@@ -16,6 +34,13 @@ It also supplies shared Cards accounts for the hub and Euchre.
   required except on localhost/127.0.0.1; paths and credentials are rejected.
 - `CARDS_EMAIL_TRANSPORT`: `smtp2go` (default), or `file` for local tests only.
 - `CARDS_EMAIL_OUTBOX`: local sandbox directory for file delivery.
+
+Verification and recovery emails use the shared Cards branding and a centered
+layout with Soft slate colors by default. Supporting clients switch to the
+Midnight palette with `prefers-color-scheme`; Outlook's recoloring hooks are also
+included. Clients that force their own dark colors may override the palette.
+The default layout and colors are inline so the emails remain usable when a
+client strips the style block. No remote fonts or images are required.
 
 ## Shared account endpoints
 
@@ -42,9 +67,9 @@ Existing `/login`, `/register`, `/verify-email`, `/forgot-password`,
 accept the shared cookie or a valid legacy JWT. Cookie mutations also require
 CSRF. Reset invalidates old shared sessions and JWTs, including multiplayer JWTs.
 
-## Local development
+## Explicit combined compatibility development
 
-The Cards repo's `npm run dev:accounts` starts this API with a separate, fresh
+Normal root `npm run dev` starts the separate services; see [Cards setup](../../cards/README.md#run-locally). Cards' explicit legacy `npm run dev:accounts` helper starts this combined API with a separate, fresh
 **Cards/.local/accounts.sqlite** database and localhost URLs. It reuses the API
 Python environment and only mail configuration from Hearts' root `.env`; it does
 not import production database credentials.
@@ -69,10 +94,9 @@ notes are in the Cards repo's `docs/integration.md`.
 
 ## Account tests
 
-Set the test database before importing the app:
+Run the backend suite from `api/`:
 
 ```powershell
-$env:DATABASE_URL='sqlite://'
 python -m pytest tests/test_shared_accounts.py tests/test_auth_routes.py -q
 ```
 
@@ -80,3 +104,36 @@ Tests cover identity/stats preservation, migration upgrade/downgrade, CSRF,
 cookies, rotation/expiry, shared logout, legacy compatibility, verification, and
 reset expiry/replay/revocation. They use isolated data and local mail, not live
 accounts or real email delivery.
+
+The pytest configuration overrides inherited database settings before importing
+the default application. HTTP/socket fixtures pass an explicit in-memory URL
+to the application factory before the database engine is initialized, and
+dispose that database after each test without dropping developer tables.
+A test-only SQLAlchemy guard also rejects network databases and file databases
+outside pytest's temporary directory before the driver opens a connection. It
+checks already-pooled connections before SQL execution as well. These checks
+use the actual connection target, not mutable Flask configuration, and remain
+active for collection and fixture teardown. Migration tests may create SQLite
+files only within pytest's temporary directory.
+
+`python -m pytest tests/test_database_safety.py -q` verifies that an inherited
+developer-database URL leaves a seeded database unchanged, an unsafe file is
+never opened, pooled connections cannot bypass the boundary, and a network
+driver is never called. The separate Cards development runner continues using
+`Cards/.local/accounts.sqlite`; tests must never use either real development
+database.
+
+## Optional remote Cards account owner
+
+The default combined entrypoint and startup migrations remain unchanged. Phase 3
+adds an opt-in `CARDS_ACCOUNTS_URL` adapter and fixed public account relay; no
+production service is switched automatically. Configure private service/callback
+keys, provision supplemental game receipts explicitly, and drain legacy games
+before activation. The sibling Cards repository documents the account-owned
+schema, runtime grants, deletion/retry policy, and activation order in
+`docs/accounts-service.md`. The independent account package is `cards/api/`.
+
+`tests/test_remote_accounts.py` checks private contracts, stale-write fencing,
+snapshot cleanup, and outage recovery. Cards' `npm run test:accounts` exercises
+actual HTTP and JavaScript Socket.IO clients against separate disposable
+account/game processes and rejects game SQL reads of account-owned tables.

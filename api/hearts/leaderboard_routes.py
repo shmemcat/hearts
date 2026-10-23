@@ -5,6 +5,8 @@ from sqlalchemy import func
 
 from hearts.extensions import db
 from hearts.models import DifficultyStats, GameResult, User, UserStats
+from hearts.account_access import accounts
+from hearts.game_accounts import is_deleted
 
 leaderboard_bp = Blueprint("leaderboard", __name__, url_prefix="/leaderboard")
 
@@ -25,6 +27,28 @@ def _first_of_month() -> datetime:
 
 
 def _all_time_query(category: str) -> list[dict]:
+    if getattr(accounts(), "remote", False):
+        if category in _CATEGORY_FOR_DS:
+            rows = (
+                db.session.query(DifficultyStats.user_id, DifficultyStats.games_won)
+                .filter(
+                    DifficultyStats.category == _CATEGORY_FOR_DS[category],
+                    DifficultyStats.games_won > 0,
+                )
+                .order_by(DifficultyStats.games_won.desc())
+                .all()
+            )
+        elif category in _HARD_WIN_COL:
+            column = _HARD_WIN_COL[category]
+            rows = (
+                db.session.query(UserStats.user_id, column)
+                .filter(column > 0)
+                .order_by(column.desc())
+                .all()
+            )
+        else:
+            rows = []
+        return _with_profiles(rows)
     if category in _CATEGORY_FOR_DS:
         rows = (
             db.session.query(
@@ -66,6 +90,19 @@ def _all_time_query(category: str) -> list[dict]:
 
 
 def _monthly_query(category: str) -> list[dict]:
+    if getattr(accounts(), "remote", False):
+        rows = (
+            db.session.query(GameResult.user_id, func.count(GameResult.id))
+            .filter(
+                GameResult.difficulty == category,
+                GameResult.won.is_(True),
+                GameResult.completed_at >= _first_of_month(),
+            )
+            .group_by(GameResult.user_id)
+            .order_by(func.count(GameResult.id).desc())
+            .all()
+        )
+        return _with_profiles(rows)
     month_start = _first_of_month()
     rows = (
         db.session.query(
@@ -93,6 +130,20 @@ def _monthly_query(category: str) -> list[dict]:
             "games_won": r[2],
         }
         for i, r in enumerate(rows)
+    ]
+
+
+def _with_profiles(rows):
+    profiles = accounts().public_profiles([row[0] for row in rows])
+    visible = [(profiles[uid], count) for uid, count in rows if uid in profiles][:10]
+    return [
+        dict(
+            rank=index + 1,
+            username=user.username,
+            profile_icon=user.profile_icon,
+            games_won=count,
+        )
+        for index, (user, count) in enumerate(visible)
     ]
 
 
@@ -147,6 +198,8 @@ def reset_month():
 
     newly_awarded = 0
     for uid in awarded_users:
+        if is_deleted(uid):
+            continue
         stats = UserStats.query.filter_by(user_id=uid).first()
         if stats and not stats.monthly_star:
             stats.monthly_star = True

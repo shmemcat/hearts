@@ -1,0 +1,83 @@
+name: Release Hearts game server
+
+on:
+  push:
+    tags: ["game-v*"]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing game-vMAJOR.MINOR.PATCH tag to publish
+        required: true
+
+concurrency:
+  group: hearts-game-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: refs/tags/${{ inputs.release_tag || github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate the component tag and record its source
+        id: revision
+        run: |
+          [[ "$RELEASE_TAG" =~ ^game-v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Check version and digest contracts
+        run: node --test scripts/component-release.test.mjs
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.1"
+          python-version: "3.11"
+      - name: Test the independent service
+        working-directory: game-api
+        run: |
+          uv sync --locked --extra dev
+          uv run --locked --extra dev pytest -q
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Refuse an existing versioned image
+        run: node scripts/component-release.mjs check "$RELEASE_TAG"
+      - name: Build only this component
+        uses: docker/build-push-action@v6
+        with:
+          context: game-api
+          load: true
+          tags: ghcr.io/shmemcat/hearts-game-api:${{ env.RELEASE_TAG }}
+          build-args: |
+            VERSION=${{ env.RELEASE_TAG }}
+            REVISION=${{ steps.revision.outputs.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/shmemcat/hearts
+            org.opencontainers.image.revision=${{ steps.revision.outputs.sha }}
+            org.opencontainers.image.version=${{ env.RELEASE_TAG }}
+      - name: Smoke check the isolated image before publishing
+        run: |
+          docker run --rm "ghcr.io/shmemcat/hearts-game-api:$RELEASE_TAG" python -c "import sys; from hearts_server import create_app; app=create_app({'SQLALCHEMY_DATABASE_URI':'sqlite://','CARDS_PUBLIC_URL':'http://localhost:3000','CARDS_ACCOUNTS_URL':'http://accounts.invalid','CARDS_SERVICE_TOKEN':'r'*40,'GAME_ACCOUNT_TOKENS':{'hearts':'c'*40}}); assert set(app.extensions['socketio'].server.handlers)=={'/game','/lobby','/multi'}; assert not any(m.split('.')[0] in {'hearts','cards_accounts','argon2','jwt','euchre_server'} for m in sys.modules); assert app.test_client().get('/health').json['component']=='hearts-game'"
+      - name: Publish the immutable version and record its digest
+        run: |
+          image="ghcr.io/shmemcat/hearts-game-api:$RELEASE_TAG"
+          docker push "$image"
+          digest=$(docker buildx imagetools inspect "$image" --format '{{json .Manifest}}' | jq -er '.digest')
+          node scripts/component-release.mjs record "$RELEASE_TAG" "${{ steps.revision.outputs.sha }}" "$digest"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hearts-game-${{ env.RELEASE_TAG }}
+          path: release-artifacts/hearts-game.json
+          if-no-files-found: error

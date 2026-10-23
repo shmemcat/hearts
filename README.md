@@ -2,7 +2,9 @@
 
 A full-stack, real-time implementation of the classic Hearts card game with single-player AI, online multiplayer, achievements, and a polished, responsive UI.
 
-**Live at [hearts.shmem.dev](https://hearts.shmem.dev/)**
+**Live at [cards.shmem.dev/hearts](https://cards.shmem.dev/hearts/)**
+
+The independent [Hearts game server](game-api/README.md) runs in production with shared Cards accounts. Root `npm run dev` starts the sibling Cards split stack; `api/` and the existing Compose commands retain the combined compatibility runtime.
 
 ## Features
 
@@ -39,7 +41,7 @@ A full-stack, real-time implementation of the classic Hearts card game with sing
 | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | [Flask](https://flask.palletsprojects.com/)                                                             | REST API framework                                        |
 | [Flask-SocketIO](https://flask-socketio.readthedocs.io/) + [Eventlet](https://eventlet.readthedocs.io/) | WebSocket server (3 namespaces: game, lobby, multiplayer) |
-| [PostgreSQL 16](https://www.postgresql.org/)                                                            | Persistent storage                                        |
+| [PostgreSQL 18](https://www.postgresql.org/)                                                            | Persistent storage                                        |
 | [SQLAlchemy](https://www.sqlalchemy.org/) + [Flask-Migrate](https://flask-migrate.readthedocs.io/)      | ORM and schema migrations                                 |
 | [PyJWT](https://pyjwt.readthedocs.io/)                                                                  | JWT authentication                                        |
 | [Argon2](https://argon2-cffi.readthedocs.io/)                                                           | Password hashing                                          |
@@ -53,7 +55,7 @@ A full-stack, real-time implementation of the classic Hearts card game with sing
 | [Docker](https://www.docker.com/) + Docker Compose                                                     | Local container development                   |
 | [Nginx](https://nginx.org/)                                                                            | Reverse proxy and static file serving (production)        |
 | [GitHub Actions](https://github.com/features/actions)                                                  | CI/CD -- builds and pushes images to GHCR on version tags |
-| [Podman auto-update](https://docs.podman.io/en/latest/markdown/podman-auto-update.1.html)                                                       | Auto-deploys new images in production                     |
+| [Podman auto-update](https://docs.podman.io/en/latest/markdown/podman-auto-update.1.html)                                                       | Cards uses reviewed digest pins; other services retain auto-update                     |
 | [Husky](https://typicode.github.io/husky/) + [lint-staged](https://github.com/lint-staged/lint-staged) | Pre-commit formatting and linting                         |
 
 ## Architecture
@@ -75,7 +77,7 @@ A full-stack, real-time implementation of the classic Hearts card game with sing
                                                 └──────────────┘
 ```
 
-The frontend is a single-page app that communicates with the backend over REST (game CRUD, auth, stats) and WebSockets (real-time gameplay). In production, Nginx serves the built SPA and reverse-proxies API and Socket.IO traffic to the Flask container.
+The diagram shows Hearts gameplay: its frontend uses the Hearts server over REST and Socket.IO. Shared authentication is owned by the separate Cards accounts service. The production gateway routes each service independently.
 
 ## AI Strategy
 
@@ -107,162 +109,49 @@ Additional multiplayer features:
 
 ## Getting Started
 
-### Prerequisites
-
-- Docker & Docker Compose v2
-- Node.js 20.19+ or 22.12+ (for local frontend dev and Git hooks)
-- Python 3.9+ (for local backend dev, managed via [uv](https://docs.astral.sh/uv/))
-
-### Environment Variables
-
-The root `.env` file is read by Docker Compose and configures Postgres, the Flask API, and mail settings. It is never committed (listed in `.gitignore`). The frontend uses a relative `/api` path for all API calls, so no frontend env vars are needed -- in development the Vite dev server proxies `/api` and `/socket.io` to the API container; in production Nginx does the same.
-
-| Variable                    | Used by | When       | Required   |
-| --------------------------- | ------- | ---------- | ---------- |
-| `POSTGRES_USER`             | db, api | Runtime    | Yes        |
-| `POSTGRES_PASSWORD`         | db, api | Runtime    | Yes        |
-| `POSTGRES_DB`               | db, api | Runtime    | Yes        |
-| `JWT_SECRET`                | api     | Runtime    | Yes        |
-| `CORS_ORIGINS`              | api     | Runtime    | Yes (prod) |
-| `FRONTEND_URL`              | api     | Runtime    | Yes (prod) |
-| `SMTP2GO_API_KEY`           | api     | Runtime    | For email  |
-| `SMTP2GO_FROM_EMAIL`        | api     | Runtime    | For email  |
-| `FONTAWESOME_PACKAGE_TOKEN` | web     | Build-time | Yes        |
-
-### Development
-
-1. Clone the repo and copy the example environment file (defaults work for local dev):
-
-   ```bash
-   git clone https://github.com/shmemcat/hearts.git
-   cd hearts
-   cp .env.example .env
-   ```
-
-2. Start the full stack with hot reload:
-
-   ```bash
-   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
-   ```
-
-   - Frontend: http://localhost:3001
-   - API: http://localhost:5001
-   - Postgres: localhost:5432
-
-3. To rebuild after dependency changes:
-
-   ```bash
-   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-   ```
-
-4. Stop everything:
-
-   ```bash
-   docker compose down
-   ```
-
-### Windows setup (PowerShell)
-
-Install Git, Node.js, Docker Desktop (including Docker Compose), and
-[uv](https://docs.astral.sh/uv/getting-started/installation/). Docker Desktop uses
-Linux containers through WSL 2. If Virtual Machine Platform or WSL is missing,
-run `wsl --install --no-distribution` from an administrator PowerShell and restart
-Windows when prompted. Complete Docker Desktop's first-run setup and wait for the
-engine to start.
-
-From this checkout:
+Install Node.js 22.12+, Python 3.11 and uv. Keep `cards`, `hearts` and `euchre`
+as sibling checkouts. Follow Cards' [local setup](../cards/README.md#run-locally)
+to install all three backend environments and both frontends. For this frontend,
+copy `.env.example` to `.env`, supply the Font Awesome package token, and run
+`npm run web:install`. Keep the token untracked.
 
 ```powershell
-if (!(Test-Path .env)) { Copy-Item .env.example .env }
+npm run dev
 ```
 
-Set a random local `JWT_SECRET` and your `FONTAWESOME_PACKAGE_TOKEN` in `.env`.
-The Font Awesome Pro token comes from your Font Awesome account or your previous
-development machine. Keep `.env` untracked. Email is optional for guest games;
-account verification and password resets require SMTP2GO credentials. The local
-database starts empty and is independent of production.
+This delegates to Cards' split runner: hub 3000, web apps 3001/3002, and
+accounts/Hearts/Euchre APIs 5100/5101/5102. Run the shared stack once and open
+<http://localhost:3000/>. Local data, stable keys and file-only mail live only
+in `cards/.local/split-dev/`; existing instance databases and Compose volumes
+are not adopted or modified. Verification/recovery mail is at `/__dev/mail/`.
+No SMTP credentials are required. Ctrl+C stops the processes this runner started.
 
-```powershell
-npm ci
-uv sync --project api --python 3.11 --extra dev
-npm run web:install
-npm run up:build
-```
+`npm run dev:web` retains the frontend-only preview with separately configured
+backend destinations. `npm run dev:combined` retains the existing combined
+Docker Compose workflow; `up`, `up:build`, `up-prod`, `down` and `down-prod`
+remain explicit compatibility commands. Do not run them alongside the default
+stack on the same ports. Existing Docker data volumes are retained.
 
-Open <http://localhost:3001>. Both API and frontend source changes reload in the
-development containers. `npm run web:install` reads the token from `.env` and
-installs the pinned frontend dependencies on Windows for the editor, tests, and
-Git hooks. Host Python is used for tests and Black; the running API and Postgres
-use Linux containers. Reopen your terminal after installing tools so its PATH
-includes them.
+## Releases and migrations
 
-For subsequent sessions, start Docker Desktop and run `npm run up`. Stop the
-stack with `npm run down`; this preserves the local database volume.
+Normal backend releases use `game-vMAJOR.MINOR.PATCH` and publish only
+`hearts-game-api`. Frontend-only `web-v*` releases publish `hearts-cards-web`.
+Both produce immutable image/source records without updating `latest` or
+deploying production. Frontend builds need the repository's Font Awesome
+Actions secret; backend builds do not.
 
-```powershell
-npm --prefix web run test:run
-npm --prefix web run build
-uv run --project api --extra dev pytest
-```
+The retained combined `release.yml` is [manual-only](docs/legacy-releases.md),
+requires explicit acknowledgement, and refuses existing image versions. It
+retains the combined API and both frontend variants, with no `latest` promotion.
+The main integration includes the reviewed development and release policy.
+Historical tags retain their original workflow definitions.
 
-Git's pre-commit hook runs frontend formatters/linting and Python's Black via uv.
-The repository's `.gitattributes` keeps shell scripts compatible with Linux
-containers when checked out on Windows.
-
-### Git and releases
-
-The SSH remote is `git@github.com:shmemcat/hearts.git`. For normal development:
-
-```powershell
-git switch -c my-change
-git add <changed-files>
-git commit -m "Describe the change"
-git push -u origin my-change
-```
-
-To intentionally release, start from the commit you want deployed, check the
-latest remote tags with `git fetch --tags`, choose a new version, then run:
-
-```powershell
-# Replace X.Y.Z with the new version number.
-git tag vX.Y.Z
-git push origin vX.Y.Z
-```
-
-Pushing a `v*` tag triggers `.github/workflows/release.yml`. It tests the API
-and frontend, publishes versioned `hearts-api`, standalone `hearts-web`, and
-Cards-mounted `hearts-cards-web` images to `ghcr.io/shmemcat`, then promotes
-`latest` after all builds pass. The Cards variant uses `/hearts/` and shared
-accounts; the standalone variant retains `/` for the legacy site. A manual
-workflow run checks out an existing version tag. The repository needs its
-`FONTAWESOME_PACKAGE_TOKEN` Actions secret; Docker builds use a BuildKit secret.
-
-Production runs Podman on NixOS, whose updater checks every minute. Ordinary
-branch pushes do not deploy. These are rolling container updates, so maintain
-compatibility with the previous API/frontend. Before the first shared-account
-release, pause the updater, back up the existing database, and follow the sibling
-infra repository's `docs/cards.md` cutover sequence. The API applies additive
-migrations on startup, including when an existing `latest` watcher restarts it.
-Do not publish that first release before the maintenance window is ready.
-
-The intended home is `https://cards.shmem.dev/hearts/`; keep the existing
-`https://hearts.shmem.dev` routing until the reviewed cutover has been verified.
-
-### Migrations
-
-Migrations run automatically when the API container starts. To create a new migration after changing models:
-
-```bash
-docker compose exec api flask db migrate -m "describe the change"
-```
-
-Then commit the new file in `migrations/versions/` and restart the API container to apply it.
-
-To manually run pending migrations:
-
-```bash
-docker compose exec api flask db upgrade
-```
+Production already uses separate owners at the existing reviewed Infra pins.
+The guarded combined rollback and its artifacts remain intact. Production
+migrations are explicit reviewed jobs; standalone service startup never migrates.
+See [game-api](game-api/README.md) for schema ownership and
+[api](api/README.md) for retained combined migration/compatibility behavior.
+These review changes publish no images, apply no migrations and deploy nothing.
 
 ## Testing
 

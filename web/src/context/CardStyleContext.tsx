@@ -1,7 +1,7 @@
 import { cardsFetch as fetch, getAuthToken } from "@/lib/sharedAccount";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-import { getApiUrl } from "@/lib/api";
+import { getGameApiUrl } from "@/lib/api";
 import { CARD_STYLE_KEY } from "@/lib/constants";
 import { useAuth } from "@/context/AuthContext";
 
@@ -17,7 +17,7 @@ type CardStyleContextValue = {
 const CardStyleContext = createContext<CardStyleContextValue | null>(null);
 
 export function CardStyleProvider({ children }: { children: React.ReactNode }) {
-   const { status, preferences } = useAuth();
+   const { status, preferences, preferencesAvailable } = useAuth();
    const [cardStyle, setCardStyleState] = useState<CardStyle>("standard");
 
    useEffect(() => {
@@ -34,12 +34,16 @@ export function CardStyleProvider({ children }: { children: React.ReactNode }) {
          return;
       }
 
-      if (status === "authenticated" && !preferences) {
+      if (
+         status === "authenticated" &&
+         !preferences &&
+         preferencesAvailable !== false
+      ) {
          if (stored && VALID.has(stored)) {
             setCardStyleState(stored as CardStyle);
             const token = getAuthToken();
             if (token) {
-               fetch(`${getApiUrl()}/preferences`, {
+               fetch(`${getGameApiUrl()}/preferences`, {
                   method: "PATCH",
                   headers: {
                      "Content-Type": "application/json",
@@ -53,7 +57,7 @@ export function CardStyleProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (stored && VALID.has(stored)) setCardStyleState(stored as CardStyle);
-   }, [status, preferences]);
+   }, [status, preferences, preferencesAvailable]);
 
    const setCardStyle = (style: CardStyle) => {
       setCardStyleState(style);
@@ -63,7 +67,7 @@ export function CardStyleProvider({ children }: { children: React.ReactNode }) {
 
       const token = typeof window !== "undefined" ? getAuthToken() : null;
       if (token) {
-         fetch(`${getApiUrl()}/preferences`, {
+         fetch(`${getGameApiUrl()}/preferences`, {
             method: "PATCH",
             headers: {
                "Content-Type": "application/json",
