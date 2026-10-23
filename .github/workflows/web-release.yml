@@ -60,6 +60,7 @@ jobs:
           build-args: |
             VITE_SHARED_ACCOUNTS=true
             VITE_BASE_PATH=/hearts/
+            NGINX_CONFIG=nginx.cards.conf
           secrets: fontawesome_token=${{ secrets.FONTAWESOME_PACKAGE_TOKEN }}
           labels: |
             org.opencontainers.image.source=https://github.com/shmemcat/hearts
