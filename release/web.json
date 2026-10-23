@@ -1,0 +1,6 @@
+{
+  "component": "hearts-web",
+  "image": "ghcr.io/shmemcat/hearts-cards-web",
+  "tagPrefix": "web-v",
+  "schemaRevision": null
+}

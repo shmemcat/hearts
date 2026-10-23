@@ -58,9 +58,10 @@ export async function main([operation, tag, revision, digest], component = 'comp
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const args = process.argv.slice(2);
-  const gateway = args[0] === '--gateway';
-  if (gateway) args.shift();
-  main(args, gateway ? 'gateway' : 'component').catch((error) => {
+  const flag = args[0];
+  const component = flag === '--gateway' ? 'gateway' : flag === '--web' ? 'web' : 'component';
+  if (component !== 'component') args.shift();
+  main(args, component).catch((error) => {
     console.error(error.message);
     process.exitCode = 1;
   });
