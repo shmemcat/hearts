@@ -1,3 +1,5 @@
+from hearts.runtime import runtime_state
+
 from datetime import date, datetime, timedelta, timezone
 
 from flask import Blueprint, request, jsonify, g
@@ -38,7 +40,7 @@ def _thanksgiving_date(year: int) -> date:
 
 stats_bp = Blueprint("stats", __name__, url_prefix="/stats")
 
-_recorded_games: set = set()
+_recorded_games: set = runtime_state("hearts.recorded_games", set)
 
 _UNLOCK_WHITELIST = {"geezer", "better_with_friends"}
 

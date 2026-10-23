@@ -6,8 +6,8 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
-from hearts.account_routes import body, no_store, protect_account
-from hearts.account_sessions import session_user
+from hearts.account_http import body, no_store, protect_account
+from hearts.account_access import session_user, accounts
 from hearts.extensions import db, limiter
 from hearts.models import EuchreGameResult, User
 
@@ -87,7 +87,10 @@ def save_results():
         return jsonify(error=str(error)), 400
     # Serialize uploads for one account. The unique constraint also protects
     # imports from different tabs and database engines without row locking.
-    if not User.query.filter_by(id=user.id).with_for_update(of=User).first():
+    if (
+        not getattr(accounts(), "remote", False)
+        and not User.query.filter_by(id=user.id).with_for_update(of=User).first()
+    ):
         return jsonify(error="Sign in to save your Euchre results."), 401
     existing = {
         row.game_id: row
@@ -114,6 +117,36 @@ def save_results():
 
 
 def rankings(category, now, monthly=False):
+    if getattr(accounts(), "remote", False):
+        query = db.session.query(
+            EuchreGameResult.user_id, func.count(EuchreGameResult.id)
+        ).filter(
+            EuchreGameResult.difficulty == category,
+            EuchreGameResult.won.is_(True),
+            EuchreGameResult.completed_at <= now,
+        )
+        if monthly:
+            query = query.filter(
+                EuchreGameResult.completed_at
+                >= now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            )
+        rows = query.group_by(EuchreGameResult.user_id).all()
+        profiles = accounts().public_profiles([row[0] for row in rows])
+        eligible = [
+            (profiles[uid], count)
+            for uid, count in rows
+            if uid in profiles and profiles[uid].email_verified
+        ]
+        eligible.sort(key=lambda item: (-item[1], item[0].username.lower(), item[0].id))
+        return [
+            dict(
+                rank=index + 1,
+                username=user.username,
+                profile_icon=user.profile_icon,
+                games_won=count,
+            )
+            for index, (user, count) in enumerate(eligible[:10])
+        ]
     wins = func.count(EuchreGameResult.id)
     query = (
         db.session.query(User.username, User.profile_icon, wins)
@@ -146,11 +179,38 @@ def rankings(category, now, monthly=False):
 @limiter.limit("120 per minute")
 def leaderboard():
     category = request.args.get("category", "easy")
-    if category == "multiplayer":
-        return jsonify(monthly=[], all_time=[])
-    if category not in BOT_DIFFICULTIES:
+    if category not in BOT_DIFFICULTIES | {"multiplayer"}:
         return jsonify(error="Choose a valid leaderboard category."), 400
     now = datetime.utcnow()
     return jsonify(
         monthly=rankings(category, now, monthly=True), all_time=rankings(category, now)
+    )
+
+
+@euchre_bp.get("/multiplayer-results")
+@limiter.limit("120 per minute")
+def multiplayer_results():
+    user = session_user()
+    if not user:
+        return jsonify(error="Sign in to view your Euchre multiplayer statistics."), 401
+    rows = (
+        EuchreGameResult.query.filter_by(user_id=user.id, difficulty="multiplayer")
+        .order_by(EuchreGameResult.completed_at)
+        .all()
+    )
+    return jsonify(
+        results=[
+            dict(
+                id=r.game_id,
+                difficulty="multiplayer",
+                won=r.won,
+                conceded=r.conceded,
+                scores=[r.score, r.opponent_score],
+                finishedAt=r.completed_at.isoformat() + "Z",
+                marches=r.marches,
+                loners=r.loners,
+                euchres=r.euchres,
+            )
+            for r in rows
+        ]
     )

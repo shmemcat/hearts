@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlencode, urlsplit
 
-from flask import Blueprint, abort, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy.exc import IntegrityError
 
 from hearts.account_sessions import (
@@ -18,8 +18,8 @@ from hearts.account_sessions import (
     new_session,
     session_response,
     session_user,
-    valid_csrf,
 )
+from hearts.account_http import body, no_store, protect_account
 from hearts.auth_routes import _validate_email, _validate_password, _validate_username
 from hearts.auth_routes import VALID_PROFILE_ICONS, delete_user_account
 from hearts.auth_utils import hash_password, verify_password
@@ -35,17 +35,6 @@ _mail_workers = ThreadPoolExecutor(max_workers=2, thread_name_prefix="cards-mail
 _mail_slots = BoundedSemaphore(32)
 
 
-def body():
-    raw = request.stream.read(16385)
-    if len(raw) > 16384:
-        abort(413)
-    try:
-        value = json.loads(raw)
-    except (ValueError, UnicodeDecodeError):
-        value = None
-    return value if isinstance(value, dict) else {}
-
-
 def field(data, name):
     value = data.get(name, "")
     return value if isinstance(value, str) else ""
@@ -59,7 +48,6 @@ def send_account_email(user, token, kind):
         if kind == "verify"
         else password_reset_email_html(url)
     )
-    html = html.replace("Hearts", "Cards").replace("HEARTS", "CARDS")
     subject = (
         "Verify your Cards account" if kind == "verify" else "Reset your Cards password"
     )
@@ -101,27 +89,8 @@ def send_account_email(user, token, kind):
     return True
 
 
-@account_bp.before_request
-def protect_account():
-    if not current_app.config.get("CARDS_ACCOUNT_ENABLED"):
-        return jsonify(error="Shared accounts are not configured."), 503
-    if request.content_length and request.content_length > 16384:
-        return jsonify(error="Account request is too large."), 413
-    if request.method not in {"GET", "HEAD", "OPTIONS"} and not valid_csrf(
-        current_session()
-    ):
-        return (
-            jsonify(
-                error="Please refresh your account and try again.", code="CSRF_INVALID"
-            ),
-            403,
-        )
-
-
-@account_bp.after_request
-def no_store(response):
-    response.headers["Cache-Control"] = "no-store"
-    return response
+account_bp.before_request(protect_account)
+account_bp.after_request(no_store)
 
 
 @account_bp.get("/session")

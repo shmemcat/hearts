@@ -33,7 +33,7 @@ def _round_complete(state: GameState) -> bool:
 
 
 class SeatConfig:
-    __slots__ = ("name", "is_human", "player_token", "conceded", "icon")
+    __slots__ = ("name", "is_human", "player_token", "conceded", "icon", "user_id")
 
     def __init__(
         self,
@@ -42,12 +42,14 @@ class SeatConfig:
         player_token: Optional[str] = None,
         conceded: bool = False,
         icon: str = "user",
+        user_id: Optional[int] = None,
     ):
         self.name = name
         self.is_human = is_human
         self.player_token = player_token
         self.conceded = conceded
         self.icon = icon
+        self.user_id = user_id
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -56,6 +58,7 @@ class SeatConfig:
             "player_token": self.player_token,
             "conceded": self.conceded,
             "icon": self.icon,
+            "user_id": self.user_id,
         }
 
     @classmethod
@@ -66,6 +69,7 @@ class SeatConfig:
             player_token=d.get("player_token"),
             conceded=d.get("conceded", False),
             icon=d.get("icon", "user"),
+            user_id=d.get("user_id"),
         )
 
 
@@ -86,6 +90,7 @@ class MultiplayerRunner:
         self._seats = seats
         self._rng = rng or random.Random()
         self._difficulty = difficulty
+        self._account_links_version = 1
         self._pending_passes: Dict[int, List[Card]] = {}
         self._last_play_events: List[Dict[str, Any]] = []
         self._last_round_ended: bool = False
@@ -489,6 +494,7 @@ class MultiplayerRunner:
                 "winner_index": s.winner_index,
             },
             "seats": [sc.to_dict() for sc in self._seats],
+            "account_links_version": self._account_links_version,
             "difficulty": self._difficulty,
             "pending_passes": pending,
             "rng_state": [rng_state[0], list(rng_state[1]), rng_state[2]],
@@ -533,6 +539,7 @@ class MultiplayerRunner:
         runner = cls(
             state, pass_strategy, play_strategy, seats, rng=rng, difficulty=difficulty
         )
+        runner._account_links_version = data.get("account_links_version", 0)
 
         pending_raw = data.get("pending_passes", {})
         for k, v in pending_raw.items():

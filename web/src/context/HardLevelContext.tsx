@@ -1,7 +1,7 @@
 import { cardsFetch as fetch, getAuthToken } from "@/lib/sharedAccount";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-import { getApiUrl } from "@/lib/api";
+import { getGameApiUrl } from "@/lib/api";
 import { HARD_LEVEL_KEY, HARD_LEVEL_CHANGED_KEY } from "@/lib/constants";
 import { useAuth } from "@/context/AuthContext";
 
@@ -18,7 +18,7 @@ type HardLevelContextValue = {
 const HardLevelContext = createContext<HardLevelContextValue | null>(null);
 
 export function HardLevelProvider({ children }: { children: React.ReactNode }) {
-   const { status, preferences } = useAuth();
+   const { status, preferences, preferencesAvailable } = useAuth();
    const [hardLevel, setHardLevelState] = useState<HardLevel>("hard");
    const [hasChanged, setHasChanged] = useState(false);
 
@@ -38,13 +38,17 @@ export function HardLevelProvider({ children }: { children: React.ReactNode }) {
          return;
       }
 
-      if (status === "authenticated" && !preferences) {
+      if (
+         status === "authenticated" &&
+         !preferences &&
+         preferencesAvailable !== false
+      ) {
          if (stored && VALID_LEVELS.has(stored)) {
             setHardLevelState(stored as HardLevel);
             if (storedChanged) setHasChanged(true);
             const token = getAuthToken();
             if (token) {
-               fetch(`${getApiUrl()}/preferences`, {
+               fetch(`${getGameApiUrl()}/preferences`, {
                   method: "PATCH",
                   headers: {
                      "Content-Type": "application/json",
@@ -60,7 +64,7 @@ export function HardLevelProvider({ children }: { children: React.ReactNode }) {
       if (stored && VALID_LEVELS.has(stored))
          setHardLevelState(stored as HardLevel);
       if (storedChanged) setHasChanged(true);
-   }, [status, preferences]);
+   }, [status, preferences, preferencesAvailable]);
 
    const setHardLevel = (level: HardLevel) => {
       setHardLevelState(level);
@@ -72,7 +76,7 @@ export function HardLevelProvider({ children }: { children: React.ReactNode }) {
 
       const token = typeof window !== "undefined" ? getAuthToken() : null;
       if (token) {
-         fetch(`${getApiUrl()}/preferences`, {
+         fetch(`${getGameApiUrl()}/preferences`, {
             method: "PATCH",
             headers: {
                "Content-Type": "application/json",

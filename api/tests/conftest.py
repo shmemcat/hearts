@@ -5,6 +5,12 @@ import pytest
 import jwt as pyjwt
 from datetime import datetime, timedelta
 
+# Set this before the lazy default application is created. Changing Flask's
+# config after db.init_app cannot replace its already-configured database engine.
+# Test runs must never fall back to the developer's instance/hearts.db file.
+os.environ["DATABASE_URL"] = "sqlite://"
+os.environ.pop("CARDS_ACCOUNTS_URL", None)
+
 from hearts.game.card import (
     Card,
     Suit,
@@ -16,6 +22,58 @@ from hearts.game.card import (
 from hearts.game.state import GameState, Phase, PassDirection, initial_state_after_deal
 
 JWT_SECRET = "test-secret-key-for-hearts"
+
+
+def pytest_configure(config):
+    from tests.database_safety import database_guard
+
+    # Configure is replayed for conftests discovered after collection starts.
+    # Resolve pytest's temporary root only when a file connection is attempted.
+    guard = database_guard(lambda: config._tmp_path_factory.getbasetemp())
+    guard.__enter__()
+    config._hearts_database_guard = guard
+
+
+def pytest_unconfigure(config):
+    guard = getattr(config, "_hearts_database_guard", None)
+    if guard is not None:
+        guard.__exit__(None, None, None)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def isolated_database_guard():
+    """Fail before any test writes if a collection-time import chose another DB."""
+    from hearts import app
+    from hearts.extensions import db
+
+    with app.app_context():
+        if str(db.engine.url) != "sqlite://":
+            pytest.fail("Tests require an in-memory default database", pytrace=False)
+
+
+@pytest.fixture
+def default_test_app():
+    """Configure the engine before initialization; dispose memory instead of DROP."""
+    import hearts
+    from hearts.extensions import db
+
+    previous = hearts._default_app
+    app = hearts.create_app(
+        {
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite://",
+            "RATELIMIT_ENABLED": False,
+            "CARDS_ACCOUNTS_URL": "",
+        }
+    )
+    hearts._default_app = app
+    try:
+        yield app
+    finally:
+        with app.app_context():
+            db.session.remove()
+            db.engine.dispose()
+        hearts._default_app = previous
 
 
 @pytest.fixture
@@ -53,40 +111,26 @@ def state_playing_after_pass(state_passing):
 
 
 @pytest.fixture
-def client():
+def client(default_test_app):
     """Flask test client for API route tests."""
-    from hearts import app
     from hearts.extensions import db
 
-    app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
+    app = default_test_app
     with app.app_context():
         db.create_all()
         yield app.test_client()
-        db.drop_all()
 
 
 @pytest.fixture
-def auth_client():
+def auth_client(default_test_app, monkeypatch):
     """Flask test client with JWT_SECRET set and rate limiting disabled for auth tests."""
-    from hearts import app
-    from hearts.extensions import db, limiter
+    from hearts.extensions import db
 
-    app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
-    old_enabled = limiter.enabled
-    limiter.enabled = False
-    old_secret = os.environ.get("JWT_SECRET")
-    os.environ["JWT_SECRET"] = JWT_SECRET
+    app = default_test_app
+    monkeypatch.setenv("JWT_SECRET", JWT_SECRET)
     with app.app_context():
         db.create_all()
         yield app.test_client()
-        db.drop_all()
-    limiter.enabled = old_enabled
-    if old_secret is None:
-        os.environ.pop("JWT_SECRET", None)
-    else:
-        os.environ["JWT_SECRET"] = old_secret
 
 
 def make_jwt(

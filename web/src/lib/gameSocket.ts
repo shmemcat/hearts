@@ -4,6 +4,7 @@
  */
 
 import { io, Socket } from "socket.io-client";
+import { HEARTS_SOCKET_PATH, handleConnectionError } from "./transport";
 import type { GameState, PlayEvent } from "@/types/game";
 
 export type GameSocketState = GameState & { round_just_ended?: boolean };
@@ -29,7 +30,7 @@ export function connect(gameId: string): void {
    disconnect();
    currentGameId = gameId;
    socket = io("/game", {
-      path: "/socket.io",
+      path: HEARTS_SOCKET_PATH,
       query: { game_id: gameId },
       transports: ["websocket", "polling"],
       autoConnect: true,
@@ -51,6 +52,12 @@ export function connect(gameId: string): void {
    socket.on("disconnect", () => {
       disconnectListeners.forEach((cb) => cb());
    });
+   const connection = socket;
+   socket.on("connect_error", (error) =>
+      handleConnectionError(connection, error, (message) =>
+         errorListeners.forEach((cb) => cb(message))
+      )
+   );
    socket.io.on("reconnect", () => {
       reconnectListeners.forEach((cb) => cb());
    });

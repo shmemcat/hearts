@@ -3,7 +3,7 @@ import { cardsFetch as fetch } from "@/lib/sharedAccount";
  * Client for game API: start, get state, submit pass, submit play.
  */
 
-import { getApiUrl } from "@/lib/api";
+import { getGameApiUrl } from "@/lib/api";
 import type {
    GameState,
    PlayResponse,
@@ -13,7 +13,7 @@ import type {
    SubmitPlayBody,
 } from "@/types/game";
 
-const base = () => getApiUrl();
+const base = () => getGameApiUrl();
 
 async function parseJson<T>(res: Response): Promise<T> {
    const data = await res.json().catch(() => ({}));

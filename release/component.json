@@ -1,0 +1,7 @@
+{
+  "component": "hearts-game",
+  "image": "ghcr.io/shmemcat/hearts-game-api",
+  "tagPrefix": "game-v",
+  "schemaRevision": "hearts_001",
+  "package": "hearts_server"
+}

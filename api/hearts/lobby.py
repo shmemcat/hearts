@@ -6,6 +6,8 @@ from host (3, 2, 1); guests fill clockwise (1, 2, 3) and replace AI seats when
 needed. Lobbies expire after 20 minutes of inactivity.
 """
 
+from hearts.runtime import runtime_state
+
 import secrets
 import time
 import uuid
@@ -17,7 +19,7 @@ _CODE_LEN = 6
 _EXPIRY_SECONDS = 20 * 60  # 20 minutes
 _MAX_CODE_RETRIES = 3
 
-_lobbies: Dict[str, "Lobby"] = {}
+_lobbies: Dict[str, "Lobby"] = runtime_state("hearts.lobbies", standalone=True)
 
 
 @dataclass
@@ -27,6 +29,7 @@ class Seat:
     sid: Optional[str] = None
     is_ai: bool = False
     icon: str = "user"
+    user_id: Optional[int] = None
 
 
 @dataclass

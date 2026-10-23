@@ -1,0 +1,80 @@
+name: Release immutable Hearts frontend
+
+on:
+  push:
+    tags: ["web-v*"]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing web-vMAJOR.MINOR.PATCH tag to publish without promotion
+        required: true
+
+concurrency:
+  group: hearts-web-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: refs/tags/${{ inputs.release_tag || github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate the frontend tag and source
+        id: revision
+        run: |
+          [[ "$RELEASE_TAG" =~ ^web-v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Test the frontend
+        env:
+          FONTAWESOME_PACKAGE_TOKEN: ${{ secrets.FONTAWESOME_PACKAGE_TOKEN }}
+        run: |
+          npm --prefix web ci --no-audit --no-fund
+          npm --prefix web run test:run
+      - name: Check immutable release contracts
+        run: node --test scripts/component-release.test.mjs
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Refuse an existing frontend version
+        run: node scripts/component-release.mjs --web check "$RELEASE_TAG"
+      - name: Build only the Cards frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: web
+          load: true
+          tags: ghcr.io/shmemcat/hearts-cards-web:${{ env.RELEASE_TAG }}
+          build-args: |
+            VITE_SHARED_ACCOUNTS=true
+            VITE_BASE_PATH=/hearts/
+            NGINX_CONFIG=nginx.cards.conf
+          secrets: fontawesome_token=${{ secrets.FONTAWESOME_PACKAGE_TOKEN }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/shmemcat/hearts
+            org.opencontainers.image.revision=${{ steps.revision.outputs.sha }}
+            org.opencontainers.image.version=${{ env.RELEASE_TAG }}
+      - name: Check and publish the immutable frontend
+        run: |
+          image="ghcr.io/shmemcat/hearts-cards-web:$RELEASE_TAG"
+          docker run --rm "$image" nginx -t
+          docker push "$image"
+          digest=$(docker buildx imagetools inspect "$image" --format '{{json .Manifest}}' | jq -er '.digest')
+          node scripts/component-release.mjs --web record "$RELEASE_TAG" "${{ steps.revision.outputs.sha }}" "$digest"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hearts-web-${{ env.RELEASE_TAG }}
+          path: release-artifacts/hearts-web.json
+          if-no-files-found: error

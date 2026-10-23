@@ -4,25 +4,31 @@ Emits play, trick_complete, state (and error) to the client.
 Persists state to DB after each completed action.
 """
 
+from hearts.runtime import runtime_state
+
 from typing import Dict
 
-from flask import request
+from flask import request, current_app
 from flask_socketio import emit
 
 from hearts.game_routes import _get_runner, _save_to_db, _evict_from_cache
 from hearts.game.card import Card
-from hearts.models import ActiveGame, User
+from hearts.models import ActiveGame
+from hearts.account_access import accounts
 
-
-_sid_to_game_id: Dict[str, str] = {}
-_sid_to_icon: Dict[str, str] = {}
+_sid_to_game_id: Dict[str, str] = runtime_state("hearts.game_sids")
+_sid_to_icon: Dict[str, str] = runtime_state("hearts.game_icons")
 
 
 def _lookup_player_icon(game_id: str) -> str:
     """Resolve the human player's profile icon from the ActiveGame's user."""
     row = ActiveGame.query.filter_by(game_id=game_id).first()
     if row and row.user_id:
-        user = User.query.get(row.user_id)
+        user = (
+            request.environ.get("cards.game_icon")
+            if current_app.extensions.get("remote_accounts_enabled")
+            else accounts().public_profiles([row.user_id]).get(row.user_id)
+        )
         if user:
             return user.profile_icon
     return "user"
