@@ -43,14 +43,14 @@ import achievementStyles from "@/styles/achievements.module.css";
 import deleteStyles from "@/components/DeleteAccountModal.module.css";
 
 export default function UserPage() {
-   const { error: accountError } = useAuth();
+   const { user, error: accountError } = useAuth();
    const [notice, setNotice] = useState("");
    return (
       <>
          <Helmet>
-            <title>User | Hearts</title>
+            <title>{user ? "User" : "Sign in"} | Hearts</title>
          </Helmet>
-         <PageLayout title="USER">
+         <PageLayout title={user ? "USER" : "SIGN IN"}>
             {notice && <p role="status">{notice}</p>}
             <UserInfo onNotice={setNotice} />
             {accountError && <p role="alert">{accountError}</p>}
