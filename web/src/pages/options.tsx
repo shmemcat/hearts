@@ -1,3 +1,4 @@
+import { TurnSoundOption } from "@/context/TurnSoundContext";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 
@@ -37,6 +38,7 @@ export default function OptionsPage() {
                <CardStylePicker />
                <MobileLayoutPicker />
                <HardLevelPicker />
+               <TurnSoundOption />
                <ButtonGroup padding="loose">
                   <Link to="/user">
                      <Button name="Back" />

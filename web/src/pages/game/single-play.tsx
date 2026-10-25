@@ -1,3 +1,4 @@
+import { useTurnIndicator } from "@/context/TurnSoundContext";
 import { Helmet } from "react-helmet-async";
 import { Link, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -261,6 +262,29 @@ export default function PlayGamePage() {
          return onTable;
       },
       [enqueue]
+   );
+
+   useTurnIndicator(
+      !!state &&
+         !loading &&
+         !busy &&
+         !reconnecting &&
+         !roundBanner &&
+         !dealingHand &&
+         !noPassHold &&
+         !passTransition &&
+         !roundSummary &&
+         !shootTheMoon &&
+         !conceded &&
+         !state.game_over &&
+         (state.phase === "passing"
+            ? !submitting
+            : state.whose_turn === 0 && state.legal_plays.length > 0),
+      state
+         ? `${gameId}:${state.round}:${state.phase}:${
+              state.phase === "passing" ? "pass" : state.human_hand.length
+           }`
+         : ""
    );
 
    // ── WebSocket: connect / disconnect ────────────────────────────────

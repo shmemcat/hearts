@@ -1,3 +1,4 @@
+import { useTurnIndicator } from "@/context/TurnSoundContext";
 import { Helmet } from "react-helmet-async";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -910,6 +911,24 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
       (nudgePhase === "passing"
          ? !passSubmitted
          : (state?.legal_plays.length ?? 0) > 0);
+
+   useTurnIndicator(
+      canAct &&
+         !isSpectator &&
+         !conceded &&
+         !nudgeGameOver &&
+         mySeat !== null &&
+         (nudgePhase === "passing"
+            ? !passSubmitted
+            : nudgePhase === "playing" && nudgeTurn === mySeat),
+      state
+         ? `${gameId}:${state.round}:${state.phase}:${
+              state.phase === "passing"
+                 ? "pass"
+                 : (state.my_hand ?? state.human_hand).length
+           }`
+         : ""
+   );
 
    useEffect(() => {
       if (isSpectator || conceded || !canAct) return;

@@ -103,7 +103,9 @@ Multiplayer uses a lobby-based flow:
 Additional multiplayer features:
 
 - 120-second reconnect window before auto-concede
-- Host migration if the creator disconnects
+- When the host leaves the lobby, hosting passes to the earliest remaining
+  player to join, regardless of seat choice. Disconnects transfer hosting after
+  the lobby's 30-second reconnect window.
 - Spectator support
 - AI takeover on concede
 

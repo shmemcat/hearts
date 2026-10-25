@@ -151,6 +151,34 @@ class TestLeaveLobby:
 
 
 class TestMigrateHost:
+    def test_transfers_in_join_order_regardless_of_seat_choice(self):
+        lobby = create_lobby("Host", num_ai=3)
+        _, first = join_lobby(lobby.code, "First", seat_preference=3)
+        _, second = join_lobby(lobby.code, "Second", seat_preference=1)
+        _, third = join_lobby(lobby.code, "Third", seat_preference=2)
+
+        for departing, successor in (
+            (lobby.host_token, first),
+            (first, second),
+            (second, third),
+        ):
+            leave_lobby(lobby.code, departing)
+            assert lobby.host_token == successor
+            assert lobby.status == "waiting"
+
+    def test_rejoining_player_goes_to_end_of_host_succession(self):
+        lobby = create_lobby("Host")
+        _, first = join_lobby(lobby.code, "First")
+        _, second = join_lobby(lobby.code, "Second")
+        leave_lobby(lobby.code, first)
+        seat, returning = join_lobby(lobby.code, "Returning")
+        assert seat == 1
+
+        leave_lobby(lobby.code, lobby.host_token)
+        assert lobby.host_token == second
+        leave_lobby(lobby.code, second)
+        assert lobby.host_token == returning
+
     def test_transfers_to_next_human(self):
         lobby = create_lobby("Host")
         _, guest_token = join_lobby(lobby.code, "Guest")
@@ -229,6 +257,17 @@ class TestExpiration:
 
 
 class TestToDict:
+    def test_host_marker_follows_the_successor(self):
+        lobby = create_lobby("Host")
+        _, successor = join_lobby(lobby.code, "First", seat_preference=3)
+        join_lobby(lobby.code, "Later", seat_preference=1)
+        assert [s["index"] for s in lobby.to_dict()["seats"] if s.get("host")] == [0]
+
+        leave_lobby(lobby.code, lobby.host_token)
+
+        assert lobby.host_token == successor
+        assert [s["index"] for s in lobby.to_dict()["seats"] if s.get("host")] == [3]
+
     def test_serializes_lobby(self):
         lobby = create_lobby("Host", num_ai=1)
         join_lobby(lobby.code, "Guest")

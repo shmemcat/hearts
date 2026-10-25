@@ -1,9 +1,9 @@
 """
 In-memory lobby store for multiplayer games.
 
-Each lobby holds up to 4 seats (seat 0 = host). AI seats fill counter-clockwise
-from host (3, 2, 1); guests fill clockwise (1, 2, 3) and replace AI seats when
-needed. Lobbies expire after 20 minutes of inactivity.
+Each lobby holds up to 4 seats (the creator starts in seat 0). AI seats fill
+counter-clockwise (3, 2, 1); guests fill clockwise (1, 2, 3) and replace AI seats
+when needed. Lobbies expire after 20 minutes of inactivity.
 """
 
 from hearts_server.runtime import runtime_state
@@ -37,6 +37,7 @@ class Lobby:
     code: str
     host_token: str
     seats: List[Optional[Seat]] = field(default_factory=lambda: [None] * 4)
+    # Insertion order records lobby arrival order, independently of seat choice.
     player_tokens: Dict[str, int] = field(default_factory=dict)
     status: str = "waiting"  # "waiting" | "playing" | "finished"
     game_id: Optional[str] = None
@@ -64,6 +65,7 @@ class Lobby:
                         "status": "human",
                         "name": seat.name,
                         "icon": seat.icon,
+                        "host": seat.player_token == self.host_token,
                     }
                 )
         return {
@@ -193,17 +195,17 @@ def leave_lobby(code: str, player_token: str) -> Optional[int]:
 
 
 def migrate_host(code: str) -> Optional[str]:
-    """Transfer host to the next seated human. Returns new host_token or None."""
+    """Transfer host to the earliest remaining arrival. Return their token or None."""
     lobby = get_lobby(code)
     if lobby is None:
         return None
 
-    for i in range(4):
-        seat = lobby.seats[i]
-        if seat is not None and not seat.is_ai and seat.player_token is not None:
-            lobby.host_token = seat.player_token
+    for token, seat_idx in lobby.player_tokens.items():
+        seat = lobby.seats[seat_idx]
+        if seat is not None and not seat.is_ai and seat.player_token == token:
+            lobby.host_token = token
             lobby.touch()
-            return seat.player_token
+            return token
 
     lobby.status = "finished"
     return None

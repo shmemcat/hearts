@@ -6,6 +6,7 @@ export type SharedUser = {
    name: string;
    email: string;
    profile_icon?: string;
+   turn_sound?: Partial<Record<"golf" | "euchre" | "hearts", boolean>>;
    email_verified: boolean;
    preferences_available?: boolean;
    preferences?: {

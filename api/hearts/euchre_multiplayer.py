@@ -130,7 +130,9 @@ def migrate_host(table):
         humans = seated
     if not any(s["token"] == table["host"] for s in humans):
         table["host"] = (
-            min(humans, key=lambda s: s["joined"])["token"] if humans else None
+            min(humans, key=lambda s: s.get("lobbyJoined", s["joined"]))["token"]
+            if humans
+            else None
         )
 
 
@@ -531,6 +533,7 @@ def register_euchre_socket(socketio, app):
                                 token=token,
                                 userId=client["userId"],
                                 joined=0,
+                                lobbyJoined=0,
                                 bot=False,
                             ),
                             None,
@@ -596,6 +599,14 @@ def register_euchre_socket(socketio, app):
                             userId=client["userId"],
                             bot=False,
                             joined=max((m["joined"] for m in members(table)), default=0)
+                            + 1,
+                            lobbyJoined=max(
+                                (
+                                    m.get("lobbyJoined", m["joined"])
+                                    for m in members(table)
+                                ),
+                                default=0,
+                            )
                             + 1,
                             reserved=False,
                             named=bool(client["name"]),
@@ -663,6 +674,20 @@ def register_euchre_socket(socketio, app):
                             if old and index is not None and index % 2 == target % 2
                             else max(
                                 (s.get("joined", 0) for s in members(table)),
+                                default=0,
+                            )
+                            + 1
+                        ),
+                        # Team naming order may change when switching partnerships;
+                        # host succession keeps the original lobby arrival order.
+                        lobbyJoined=(
+                            old.get("lobbyJoined", old["joined"])
+                            if old
+                            else max(
+                                (
+                                    s.get("lobbyJoined", s["joined"])
+                                    for s in members(table)
+                                ),
                                 default=0,
                             )
                             + 1

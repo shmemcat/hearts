@@ -10,6 +10,7 @@ type User = {
    email: string;
    name?: string;
    profile_icon?: string;
+   turn_sound?: Partial<Record<"golf" | "euchre" | "hearts", boolean>>;
    email_verified?: boolean;
 };
 

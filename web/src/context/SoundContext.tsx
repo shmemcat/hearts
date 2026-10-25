@@ -30,6 +30,7 @@ type SoundName =
    | "roundEnd"
    | "gameEnd"
    | "shootTheMoon"
+   | "turn"
    | "soundOn"
    | "notification";
 
@@ -55,6 +56,7 @@ const SOUND_SOURCES: Record<SoundName, string[]> = {
    gameEnd: ["/sounds/game-end.mp3"],
    shootTheMoon: ["/sounds/shoot-the-moon.mp3"],
    soundOn: ["/sounds/sound-on.mp3"],
+   turn: ["/sounds/sound-on.mp3"],
    notification: ["/sounds/notification.mp3"],
 };
 

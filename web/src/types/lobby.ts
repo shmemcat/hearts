@@ -9,6 +9,7 @@ export type LobbySeat = {
    status: SeatStatus;
    name?: string;
    icon?: string;
+   host?: boolean;
 };
 
 export type LobbyState = {

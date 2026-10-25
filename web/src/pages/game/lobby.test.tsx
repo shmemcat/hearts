@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
    connect: vi.fn(),
    disconnect: vi.fn(),
    close: vi.fn(),
+   leave: vi.fn(),
    sound: vi.fn(),
 }));
 
@@ -29,7 +30,7 @@ vi.mock("@/lib/lobbySocket", () => ({
    disconnect: mocks.disconnect,
    sendCloseLobby: mocks.close,
    sendJoin: vi.fn(),
-   sendLeave: vi.fn(),
+   sendLeave: mocks.leave,
    sendStartGame: vi.fn(),
    onLobbyUpdate: (cb: typeof mocks.update) => {
       mocks.update = cb;
@@ -80,7 +81,7 @@ const lobby: LobbyState = {
    status: "waiting",
    game_id: null,
    seats: [
-      { index: 0, status: "human", name: "Host" },
+      { index: 0, status: "human", name: "Host", host: true },
       { index: 1, status: "empty" },
       { index: 2, status: "empty" },
       { index: 3, status: "empty" },
@@ -127,6 +128,60 @@ it("restores host controls after leaving and returning", async () => {
    act(() => mocks.closed?.());
    expect(screen.getByText("Lobby has been closed.")).toBeInTheDocument();
    expect(localStorage.getItem(tokenKey)).toBeNull();
+});
+
+it("moves the host crown and controls to the next host without reconnecting", async () => {
+   localStorage.setItem(tokenKey, "guest-token");
+   const joinedLobby: LobbyState = {
+      ...lobby,
+      seats: [
+         lobby.seats[0],
+         { index: 1, status: "human", name: "Later", host: false },
+         lobby.seats[2],
+         { index: 3, status: "human", name: "First", host: false },
+      ],
+   };
+   mocks.getLobbyState.mockResolvedValue({ ok: true, data: joinedLobby });
+   renderLobby();
+   await screen.findByDisplayValue("ABC123");
+   act(() => mocks.session?.({ player_token: "guest-token", seat_index: 3 }));
+   expect(screen.queryByRole("button", { name: "Close Lobby" })).toBeNull();
+
+   act(() =>
+      mocks.update?.({
+         ...joinedLobby,
+         host_token: "guest-token",
+         seats: [
+            { index: 0, status: "empty" },
+            joinedLobby.seats[1],
+            joinedLobby.seats[2],
+            { ...joinedLobby.seats[3], host: true },
+         ],
+      })
+   );
+
+   expect(
+      screen.getByRole("button", { name: "Close Lobby" })
+   ).toBeInTheDocument();
+   expect(
+      screen.getByRole("button", { name: /Start Game/ })
+   ).toBeInTheDocument();
+   expect(screen.getAllByTitle("Host")).toHaveLength(1);
+   expect(screen.getByTitle("Host").parentElement).toHaveTextContent("First");
+   expect(mocks.connect).toHaveBeenCalledOnce();
+});
+
+it("lets the host leave the lobby without closing it for the group", async () => {
+   renderLobby();
+   await screen.findByDisplayValue("ABC123");
+   act(() => mocks.session?.({ player_token: "host-token", seat_index: 0 }));
+
+   fireEvent.click(screen.getByRole("button", { name: "Leave Lobby" }));
+
+   expect(mocks.leave).toHaveBeenCalledOnce();
+   expect(mocks.close).not.toHaveBeenCalled();
+   expect(localStorage.getItem(tokenKey)).toBeNull();
+   expect(screen.queryByRole("button", { name: "Close Lobby" })).toBeNull();
 });
 
 it("preserves the host token after a rejected close so the host can retry", async () => {

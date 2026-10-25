@@ -369,10 +369,7 @@ export default function LobbyPage() {
    };
 
    const renderSeat = (seat: LobbySeat) => {
-      const seatIsHost =
-         lobby != null &&
-         seat.index === 0 &&
-         lobby.seats[0]?.status === "human";
+      const seatIsHost = seat.status === "human" && seat.host === true;
       const canSelect =
          seat.status === "empty" && isVisitor && lobby?.status === "waiting";
       return (
@@ -392,7 +389,10 @@ export default function LobbyPage() {
                </button>
             ) : (
                <>
-                  <span className={styles.seatName}>
+                  <span
+                     className={styles.seatName}
+                     title={seatIsHost ? "Host" : undefined}
+                  >
                      {seat.status === "empty" ? (
                         <>
                            Waiting
@@ -569,11 +569,18 @@ export default function LobbyPage() {
 
                <ButtonGroup className="pt-0">
                   {isHost && lobby?.status === "waiting" && (
-                     <Button
-                        name="Close Lobby"
-                        onClick={handleCloseLobby}
-                        style={{ width: "160px" }}
-                     />
+                     <>
+                        <Button
+                           name="Leave Lobby"
+                           onClick={handleLeave}
+                           style={{ width: "160px" }}
+                        />
+                        <Button
+                           name="Close Lobby"
+                           onClick={handleCloseLobby}
+                           style={{ width: "160px" }}
+                        />
+                     </>
                   )}
                   <Link to="/" onClick={() => triggerLogoFadeOut()}>
                      <Button name="Home" style={{ width: "120px" }} />

@@ -1,13 +1,14 @@
 # syntax=docker/dockerfile:1
-# Build stage: install deps and build SPA
-FROM node:22-alpine AS builder
+# Keep dependencies separate so CI can warm this stage for release tags.
+FROM node:22-alpine AS dependencies
 
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
 COPY .npmrc ./
-RUN --mount=type=secret,id=fontawesome_token,env=FONTAWESOME_PACKAGE_TOKEN,required=true npm ci --no-audit --no-fund
+RUN --mount=type=secret,id=fontawesome_token,env=FONTAWESOME_PACKAGE_TOKEN,required=true npm ci --prefer-offline --no-audit --no-fund
 
+FROM dependencies AS builder
 COPY . .
 ARG VITE_SHARED_ACCOUNTS=false
 ARG VITE_BASE_PATH=/

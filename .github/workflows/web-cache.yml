@@ -1,0 +1,48 @@
+name: Warm frontend dependency caches
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", ".github/workflows/web-cache.yml", ".github/workflows/web-release.yml", ".github/workflows/release.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: web-dependency-cache
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  warm:
+    # Release tags can restore default-branch caches, but not other tags' caches.
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Cache frontend npm packages
+        id: npm-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/_cacache
+          key: ${{ runner.os }}-web-npm-v1-${{ hashFiles('web/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-web-npm-v1-
+      - name: Fill the npm download cache
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        env:
+          FONTAWESOME_PACKAGE_TOKEN: ${{ secrets.FONTAWESOME_PACKAGE_TOKEN }}
+        run: npm --prefix web ci --ignore-scripts --prefer-offline --no-audit --no-fund
+      - uses: docker/setup-buildx-action@v3
+      - name: Cache the Docker dependency stage
+        uses: docker/build-push-action@v6
+        with:
+          context: web
+          target: dependencies
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+          secrets: fontawesome_token=${{ secrets.FONTAWESOME_PACKAGE_TOKEN }}

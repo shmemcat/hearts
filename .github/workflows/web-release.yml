@@ -30,6 +30,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Cache frontend npm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/_cacache
+          key: ${{ runner.os }}-web-npm-v1-${{ hashFiles('web/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-web-npm-v1-
       - name: Validate the frontend tag and source
         id: revision
         run: |
@@ -39,7 +45,7 @@ jobs:
         env:
           FONTAWESOME_PACKAGE_TOKEN: ${{ secrets.FONTAWESOME_PACKAGE_TOKEN }}
         run: |
-          npm --prefix web ci --no-audit --no-fund
+          npm --prefix web ci --prefer-offline --no-audit --no-fund
           npm --prefix web run test:run
       - name: Check immutable release contracts
         run: node --test scripts/component-release.test.mjs
@@ -55,6 +61,8 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: web
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
           load: true
           tags: ghcr.io/shmemcat/hearts-cards-web:${{ env.RELEASE_TAG }}
           build-args: |

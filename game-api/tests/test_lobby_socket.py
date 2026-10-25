@@ -147,6 +147,34 @@ def test_disconnect_timeout_runs_without_request_context(lobby_sockets):
     assert received(guest, "lobby_closed") == [{}]
 
 
+@pytest.mark.parametrize("departure", ["leave", "disconnect"])
+def test_next_arrival_receives_host_controls_after_departure(lobby_sockets, departure):
+    connect, timers = lobby_sockets
+    lobby = create_lobby("Host")
+    _, first_token = join_lobby(lobby.code, "First", seat_preference=3)
+    _, later_token = join_lobby(lobby.code, "Later", seat_preference=1)
+    host = connect(lobby, lobby.host_token)
+    first = connect(lobby, first_token)
+    later = connect(lobby, later_token)
+    first.get_received("/lobby")
+    later.get_received("/lobby")
+
+    if departure == "leave":
+        host.emit("leave", namespace="/lobby")
+    else:
+        host.disconnect(namespace="/lobby")
+        timers[-1].callback()
+
+    assert received(first, "lobby_update")[-1]["host_token"] == first_token
+    assert received(later, "lobby_update")[-1]["host_token"] == first_token
+    later.emit("close_lobby", namespace="/lobby")
+    assert received(later, "error") == [
+        {"message": "Only the host can close the lobby"}
+    ]
+    first.emit("close_lobby", namespace="/lobby")
+    assert received(first, "lobby_closed") == [{}]
+
+
 def test_old_timeout_cannot_remove_reconnected_host(lobby_sockets):
     connect, timers = lobby_sockets
     lobby = create_lobby("Host")

@@ -628,6 +628,78 @@ def test_joining_another_table_requires_leaving_the_current_group(tables):
     assert mp.get_table(first["code"])["seats"][0]["token"] == first["token"]
 
 
+@pytest.mark.parametrize("departure", ["leave", "disconnect"])
+@pytest.mark.parametrize("first_action", ["move", "unseat", "reconnect"])
+def test_host_succession_keeps_arrival_order_through_seat_changes_and_reload(
+    tables, departure, first_action
+):
+    connect, tasks, mp = tables
+    host, first, later = connect(), connect(), connect()
+    code = cmd(host, "create", name="Host")["code"]
+    # Arrival order starts in the waiting room, before choosing a seat.
+    first_token = cmd(first, "watch", code=code)["token"]
+    join(later, code, 1, "Later")
+    assert cmd(first, "join", seat=3, name="First")["ok"]
+
+    if first_action == "move":
+        assert cmd(first, "join", seat=2)["ok"]
+    elif first_action == "unseat":
+        assert cmd(first, "unseat")["ok"]
+    else:
+        first.disconnect(namespace=mp.NS)
+        first = connect()
+        assert cmd(first, "watch", code=code, token=first_token)["ok"]
+        tasks[-1]()
+
+    mp._tables.clear()
+    if departure == "leave":
+        assert cmd(host, "leave")["ok"]
+    else:
+        host.disconnect(namespace=mp.NS)
+        tasks[-1]()
+
+    assert mp.get_table(code)["host"] == first_token
+    assert state(first)["lobby"]["isHost"]
+    assert not state(later)["lobby"]["isHost"]
+    assert not cmd(later, "close")["ok"]
+    if first_action == "unseat":
+        assert cmd(first, "join", seat=0)["ok"]
+    assert cmd(first, "start")["ok"]
+
+
+def test_leaving_and_rejoining_moves_to_end_of_host_succession(tables):
+    connect, tasks, mp = tables
+    host, returning, next_host = connect(), connect(), connect()
+    code = cmd(host, "create", name="Host")["code"]
+    old_token = join(returning, code, 3, "Returning")
+    next_token = join(next_host, code, 2, "Next host")
+    assert cmd(returning, "leave")["ok"]
+    new_token = join(returning, code, 1, "Returning")
+    assert new_token != old_token
+
+    assert cmd(host, "leave")["ok"]
+    assert mp.get_table(code)["host"] == next_token
+    assert cmd(next_host, "leave")["ok"]
+    assert mp.get_table(code)["host"] == new_token
+    assert cmd(returning, "close")["ok"]
+
+
+def test_host_succession_supports_snapshots_without_lobby_arrival_order(tables):
+    connect, tasks, mp = tables
+    host, first, later = connect(), connect(), connect()
+    code = cmd(host, "create", name="Host")["code"]
+    first_token = join(first, code, 3, "First")
+    join(later, code, 1, "Later")
+    table = mp.get_table(code)
+    for member in mp.members(table):
+        member.pop("lobbyJoined", None)
+    mp.save(table)
+    mp._tables.clear()
+
+    assert cmd(host, "leave")["ok"]
+    assert mp.get_table(code)["host"] == first_token
+
+
 def test_changing_teams_does_not_take_naming_rights_from_the_first_teammate(tables):
     connect, tasks, mp = tables
     host, first = connect(), connect()
