@@ -203,11 +203,17 @@ it("saves the selected sound and independent volume, and previews without saving
       "player"
    );
    mocks.save.mockClear();
-   fireEvent.click(screen.getByRole("button", { name: "Preview sound" }));
+   const preview = screen.getByRole("button", { name: "Preview sound" });
+   for (let press = 0; press < 3; press++) {
+      fireEvent.click(preview);
+      expect(preview).toHaveTextContent("Preview");
+      expect(preview).toHaveAccessibleName("Preview sound");
+   }
+   expect(mocks.play).toHaveBeenCalledTimes(3);
    expect(mocks.play).toHaveBeenCalledWith(
       "notification",
       0.81,
-      expect.any(Function),
+      undefined,
       expect.any(Function)
    );
    expect(mocks.save).not.toHaveBeenCalled();
