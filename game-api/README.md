@@ -24,6 +24,17 @@ Then start `gunicorn -c gunicorn_conf.py hearts_server.wsgi:app` (one eventlet w
 
 Deletion scrubs saved and live seats, cancels the removed player's timers and credentials, updates remaining players, and resumes bot takeover after the cleanup commit. It also resolves a pending pass when the remaining humans have already submitted. First-match multiplayer statistics are initialized before scoring so a new account receives its result and achievements.
 
+Waiting multiplayer seats have a 30-second reconnect window, including seats
+retained after a match and invitations whose creator never connects. Results
+sockets keep their people in the group while connected; returning to the lobby
+cancels cleanup. Active games retain their two-minute reconnect window. The
+last human leaving or timing out closes the group, even when bots remain, and
+an abandoned match cannot reopen it. Completed account results remain saved.
+
+Only completed games count toward games played, win rates, score statistics, and
+win streaks. Conceding or abandoning a solo or multiplayer game does not count as
+a loss or interrupt a streak; already-earned moon shots and achievements remain.
+
 Build with context `game-api/`. The build-only `game-server-checks.yml` checks this package without sibling checkouts. The separate `game-release.yml` publishes only `hearts-game-api` for `game-vMAJOR.MINOR.PATCH` tags, with an overwrite check and a digest/source/schema release record. It does not publish `latest`. The retained legacy workflow is [manual-only](../docs/legacy-releases.md). Cards' default local stack and pinned-image integration workflow exercise all three independent services; see [component releases](../../cards/docs/component-releases.md). Cards' `npm run test:postgres` passes with split containers, restricted PostgreSQL roles, and a synthetic legacy backup/restore that preserves seeded record fingerprints through repeated migrations. Production cutover and encrypted offsite Cards recovery are complete; these development/release-policy changes preserve current production pins and guarded rollback.
 
 ## Source continuity

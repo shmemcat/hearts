@@ -1,3 +1,4 @@
+import type { GameTurnSoundOptions } from "@/lib/turnSound";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import {
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
       user: null as null | {
          id: string;
          turn_sound?: Partial<Record<"golf" | "euchre" | "hearts", boolean>>;
+         turn_sound_options?: GameTurnSoundOptions;
       },
       loading: false,
       status: "unauthenticated",
@@ -18,11 +20,18 @@ const mocks = vi.hoisted(() => ({
       updateUser: vi.fn(),
    },
    play: vi.fn(),
+   stop: vi.fn(),
+   setVolume: vi.fn(),
    save: vi.fn(),
 }));
 vi.mock("@/context/AuthContext", () => ({ useAuth: () => mocks.auth }));
-vi.mock("@/context/SoundContext", () => ({
-   useSound: () => ({ play: mocks.play }),
+vi.mock("@/lib/turnSound", async (original) => ({
+   ...(await original<typeof import("@/lib/turnSound")>()),
+   createTurnSoundPlayer: () => ({
+      play: mocks.play,
+      stop: mocks.stop,
+      setVolume: mocks.setVolume,
+   }),
 }));
 vi.mock("@/lib/sharedAccount", () => ({ sharedAccountRequest: mocks.save }));
 
@@ -37,6 +46,8 @@ const view = (ready = true, decision = "game:1:turn:1") => (
 );
 beforeEach(() => {
    vi.clearAllMocks();
+   mocks.auth.updateProfile.mockReset();
+   mocks.save.mockReset().mockResolvedValue({ user: null });
    mocks.auth.user = null;
    mocks.auth.loading = false;
    mocks.auth.status = "unauthenticated";
@@ -60,7 +71,7 @@ it("waits for input to unlock, chimes once per decision, and handles consecutive
    const page = render(view(false));
    expect(mocks.play).not.toHaveBeenCalled();
    page.rerender(view(true));
-   expect(mocks.play).toHaveBeenCalledExactlyOnceWith("turn");
+   expect(mocks.play).toHaveBeenCalledExactlyOnceWith("pop", 0.15);
    page.rerender(view(true));
    page.rerender(view(false));
    page.rerender(view(true));
@@ -137,4 +148,126 @@ it("checks immediately while saving quietly and rolls back if saving fails", asy
    expect(screen.getByRole("alert")).toHaveTextContent(
       "Unable to save your option."
    );
+});
+
+it("shows only the opt-in until checked, then exposes the four sounds without extra labels", async () => {
+   mocks.auth.user = { id: "player" };
+   mocks.auth.status = "authenticated";
+   render(view(false));
+   expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+   expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+   expect(
+      screen.queryByRole("button", { name: "Preview sound" })
+   ).not.toBeInTheDocument();
+   await act(async () => fireEvent.click(screen.getByRole("checkbox")));
+   expect(
+      screen.getByRole("combobox", { name: "Turn indicator sound" })
+   ).toHaveValue("pop");
+   expect(
+      screen.getAllByRole("option").map((option) => option.textContent)
+   ).toEqual(["Pop", "Chime", "Ding", "Notification"]);
+   expect(
+      screen.getByRole("slider", { name: "Turn sound volume" })
+   ).toHaveValue("15");
+   expect(screen.queryByText(/^Sound$/)).not.toBeInTheDocument();
+   expect(screen.queryByText("Your current sound")).not.toBeInTheDocument();
+   expect(mocks.play).not.toHaveBeenCalled();
+   await act(async () => fireEvent.click(screen.getByRole("checkbox")));
+   expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+   expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+});
+
+it("saves the selected sound and independent volume, and previews without saving", async () => {
+   mocks.auth.user = { id: "player", turn_sound: { hearts: true } };
+   mocks.auth.status = "authenticated";
+   render(view(false));
+   await act(async () =>
+      fireEvent.change(screen.getByRole("combobox"), {
+         target: { value: "notification" },
+      })
+   );
+   expect(mocks.save).toHaveBeenLastCalledWith(
+      "profile",
+      { turn_sound: { game: "hearts", sound: "notification" } },
+      "player"
+   );
+   expect(mocks.play).not.toHaveBeenCalled();
+   mocks.save.mockClear();
+   fireEvent.change(screen.getByRole("slider"), { target: { value: "81" } });
+   expect(screen.getByText("81%")).toBeInTheDocument();
+   expect(mocks.save).not.toHaveBeenCalled();
+   await act(async () => fireEvent.pointerUp(screen.getByRole("slider")));
+   expect(mocks.save).toHaveBeenLastCalledWith(
+      "profile",
+      { turn_sound: { game: "hearts", volume: 0.81 } },
+      "player"
+   );
+   mocks.save.mockClear();
+   fireEvent.click(screen.getByRole("button", { name: "Preview sound" }));
+   expect(mocks.play).toHaveBeenCalledWith(
+      "notification",
+      0.81,
+      expect.any(Function),
+      expect.any(Function)
+   );
+   expect(mocks.save).not.toHaveBeenCalled();
+   expect(screen.getByRole("checkbox")).toBeChecked();
+});
+
+it("rolls back a rejected sound choice and preserves saved choices when disabled", async () => {
+   mocks.auth.user = {
+      id: "player",
+      turn_sound: { hearts: true },
+      turn_sound_options: { hearts: { sound: "ding", volume: 0.4 } },
+   };
+   mocks.auth.status = "authenticated";
+   mocks.save.mockRejectedValueOnce(new Error("Save failed"));
+   render(view(false));
+   await act(async () =>
+      fireEvent.change(screen.getByRole("combobox"), {
+         target: { value: "chime" },
+      })
+   );
+   expect(screen.getByRole("combobox")).toHaveValue("ding");
+   expect(screen.getByRole("alert")).toHaveTextContent("Save failed");
+   await act(async () => fireEvent.click(screen.getByRole("checkbox")));
+   expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+   await act(async () => fireEvent.click(screen.getByRole("checkbox")));
+   expect(screen.getByRole("combobox")).toHaveValue("ding");
+   expect(screen.getByRole("slider")).toHaveValue("40");
+});
+
+it("uses saved sound and volume for actual turns without replaying after option changes", async () => {
+   mocks.auth.user = {
+      id: "player",
+      turn_sound: { hearts: true },
+      turn_sound_options: { hearts: { sound: "chime", volume: 0.85 } },
+   };
+   mocks.auth.status = "authenticated";
+   const page = render(view());
+   expect(mocks.play).toHaveBeenCalledExactlyOnceWith("chime", 0.85);
+   await act(async () =>
+      fireEvent.change(screen.getByRole("combobox"), {
+         target: { value: "ding" },
+      })
+   );
+   expect(mocks.play).toHaveBeenCalledTimes(1);
+   page.rerender(view(true, "game:1:turn:2"));
+   expect(mocks.play).toHaveBeenLastCalledWith("ding", 0.85);
+   expect(mocks.play).toHaveBeenCalledTimes(2);
+});
+
+it("keeps zero-volume turn alerts silent and does not leak another account's choices", () => {
+   mocks.auth.user = {
+      id: "player",
+      turn_sound: { hearts: true },
+      turn_sound_options: { hearts: { sound: "notification", volume: 0 } },
+   };
+   mocks.auth.status = "authenticated";
+   const page = render(view());
+   expect(mocks.play).not.toHaveBeenCalled();
+   mocks.auth.user = { id: "different", turn_sound: { hearts: true } };
+   page.rerender(view(false));
+   expect(screen.getByRole("combobox")).toHaveValue("pop");
+   expect(screen.getByRole("slider")).toHaveValue("15");
 });

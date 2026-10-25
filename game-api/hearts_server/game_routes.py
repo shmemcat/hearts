@@ -244,8 +244,6 @@ def concede_game(game_id: str):
             stats.wimp = True
             newly_unlocked.append("wimp")
 
-        stats.current_win_streak = 0
-
         db.session.commit()
 
     _delete_game(game_id)

@@ -356,6 +356,17 @@ class TestConcedeGame:
         runner._human_moon_shots = 3
         _save_to_db(game_id, runner, user_id=user["id"])
 
+        db.session.add(
+            UserStats(
+                user_id=user["id"],
+                games_played=3,
+                games_won=2,
+                current_win_streak=2,
+                max_win_streak=2,
+            )
+        )
+        db.session.commit()
+
         # Concede
         r = auth_client.post(f"/games/{game_id}/concede", headers=headers)
         assert r.status_code == 200
@@ -363,6 +374,9 @@ class TestConcedeGame:
         stats = UserStats.query.filter_by(user_id=user["id"]).first()
         assert stats is not None
         assert stats.moon_shots == 3
+        assert stats.games_played == 3
+        assert stats.games_won == 2
+        assert stats.current_win_streak == stats.max_win_streak == 2
 
 
 # -----------------------------------------------------------------------------

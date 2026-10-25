@@ -276,6 +276,28 @@ class TestConcedeGame:
         assert stats is not None
         assert stats.moon_shots == 3
 
+    def test_concession_preserves_completed_game_statistics_and_streak(self, auth_client):
+        from hearts_server.extensions import db
+        from hearts_server.models import DifficultyStats, GameResult, UserStats
+        from tests.conftest import auth_headers
+
+        user = _verified_account(auth_client, "finishedplayer")
+        headers = auth_headers("legacy-42")
+        stats = UserStats(user_id=user.id, games_played=3, games_won=2,
+                          current_win_streak=2, max_win_streak=2, total_points=120,
+                          best_score=10, worst_score=80)
+        category = DifficultyStats(user_id=user.id, category="easy", games_played=3,
+                                   games_won=2, current_win_streak=2, max_win_streak=2,
+                                   total_points=120, best_score=10, worst_score=80)
+        db.session.add_all([stats, category])
+        db.session.commit()
+        before, category_before = stats.to_dict(), category.to_dict()
+        game_id = auth_client.post("/games/start", json={}, headers=headers).json["game_id"]
+        assert auth_client.post(f"/games/{game_id}/concede", headers=headers).status_code == 200
+        assert stats.to_dict() == before
+        assert category.to_dict() == category_before
+        assert GameResult.query.count() == 0
+
 
 class TestActiveGame:
 

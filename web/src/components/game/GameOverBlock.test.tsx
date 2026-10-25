@@ -63,19 +63,19 @@ describe("GameOverBlock", () => {
       expect(screen.queryByText("Game Over")).not.toBeInTheDocument();
    });
 
-   it("highlights all tied players in score table", () => {
-      renderGameOver(-1, tiedPlayers);
-      const rows = screen.getAllByRole("row").slice(1);
-      const highlightedNames = rows
-         .filter((r) =>
-            (r as HTMLElement).className.includes("scoreTableWinner")
-         )
-         .map((r) => (r as HTMLTableRowElement).cells[0].textContent?.trim());
-      expect(highlightedNames).toContain("You");
-      expect(highlightedNames).toContain("Alice");
-      expect(highlightedNames).not.toContain("Bob");
-      expect(highlightedNames).not.toContain("Carol");
-   });
+   it.each([0, 2])(
+      "highlights only your own row in a tie for seat %i",
+      (mySeatIndex) => {
+         renderGameOver(-1, tiedPlayers, mySeatIndex);
+         const rows = screen.getAllByRole("row").slice(1);
+         const highlightedNames = rows
+            .filter((r) => (r as HTMLElement).className !== "")
+            .map((r) =>
+               (r as HTMLTableRowElement).cells[0].textContent?.trim()
+            );
+         expect(highlightedNames).toEqual([tiedPlayers[mySeatIndex].name]);
+      }
+   );
 
    it("highlights the user's own row", () => {
       renderGameOver(2);
@@ -116,11 +116,12 @@ describe("GameOverBlock", () => {
       expect(screen.getByText("60")).toBeInTheDocument();
    });
 
-   it("renders Create New Game link", () => {
+   it("offers Play Again and Home after single-player games", () => {
       renderGameOver(2);
       expect(
-         screen.getByRole("button", { name: "Create New Game" })
+         screen.getByRole("button", { name: "Play Again" })
       ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Home" })).toBeInTheDocument();
    });
 
    it("renders custom children instead of default button", () => {

@@ -38,6 +38,14 @@ def create():
 
     user = get_current_user()
     lobby.seats[0].user_id = user.id if user else None
+    from hearts_server.lobby_socket import schedule_lobby_disconnect
+
+    schedule_lobby_disconnect(
+        lobby,
+        lobby.host_token,
+        current_app.extensions["socketio"],
+        current_app._get_current_object(),
+    )
 
     cards_url = current_app.config.get("CARDS_PUBLIC_URL")
     frontend_url = (

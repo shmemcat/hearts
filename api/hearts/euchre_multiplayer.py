@@ -228,7 +228,9 @@ def game_view(table, token):
     participant = next((p for p in table["participants"] if p["token"] == token), None)
     if g["phase"] == "game_over" and participant and participant["conceded"]:
         g["conceded"] = True
-        g["message"] = "Your seat was replaced by a bot. This game counts as a loss."
+        g["message"] = (
+            "Your seat was replaced by a bot. Only finished games count toward your statistics."
+        )
     if g["message"].startswith("Seat "):
         for i, s in enumerate(table["seats"]):
             g["message"] = g["message"].replace(f"Seat {i + 1} ", s["name"] + " ")

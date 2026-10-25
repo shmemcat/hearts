@@ -1,3 +1,4 @@
+import type { GameTurnSoundOptions } from "@/lib/turnSound";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 import { getApiUrl } from "@/lib/api";
@@ -11,6 +12,7 @@ type User = {
    name?: string;
    profile_icon?: string;
    turn_sound?: Partial<Record<"golf" | "euchre" | "hearts", boolean>>;
+   turn_sound_options?: GameTurnSoundOptions;
    email_verified?: boolean;
 };
 

@@ -1,19 +1,111 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { vi, beforeEach, afterEach } from "vitest";
 import { SoundProvider, useSound } from "./SoundContext";
-import { SOUND_MUTED_KEY, SOUND_VOLUME_KEY } from "@/lib/constants";
+import {
+   MUSIC_MUTED_KEY,
+   SOUND_MUTED_KEY,
+   SOUND_VOLUME_KEY,
+} from "@/lib/constants";
+import { installMusicLocks } from "@/test/musicLocks";
+import type { HowlOptions } from "howler";
+
+vi.mock("howler", () => ({
+   Howl: class {
+      active = false;
+      unlock?: () => void;
+      play = vi.fn(() => {
+         this.active = true;
+         return 1;
+      });
+      pause = vi.fn(() => {
+         this.active = false;
+      });
+      unload = vi.fn(() => {
+         this.active = false;
+      });
+      volume = vi.fn();
+      playing = () => this.active;
+      once = vi.fn((_event: string, callback: () => void) => {
+         this.unlock = callback;
+      });
+      constructor(public options: HowlOptions) {
+         if (options.loop) musicTracks.push(this);
+      }
+   },
+}));
+let musicTracks: {
+   active: boolean;
+   options: HowlOptions;
+   play: ReturnType<typeof vi.fn>;
+   pause: ReturnType<typeof vi.fn>;
+   unload: ReturnType<typeof vi.fn>;
+   unlock?: () => void;
+}[];
 
 beforeEach(() => {
    localStorage.clear();
+   musicTracks = [];
+   installMusicLocks();
 });
 
 afterEach(() => {
    vi.restoreAllMocks();
+   vi.unstubAllGlobals();
 });
 
 function wrapper({ children }: { children: React.ReactNode }) {
    return <SoundProvider>{children}</SoundProvider>;
 }
+
+describe("Music across tabs", () => {
+   const renderSound = () => renderHook(useSound, { wrapper });
+
+   it("plays in one tab and hands off when its music is muted", async () => {
+      const first = renderSound();
+      renderSound();
+      expect(musicTracks[0].active).toBe(true);
+      expect(musicTracks[1].play).not.toHaveBeenCalled();
+      await act(async () => first.result.current.setMusicMuted(true));
+      expect(musicTracks[0].active).toBe(false);
+      expect(musicTracks[1].active).toBe(true);
+   });
+
+   it("does not layer playback when repeatedly enabling music", () => {
+      const { result } = renderSound();
+      act(() => result.current.setMusicMuted(false));
+      act(() => result.current.setMusicMuted(false));
+      expect(musicTracks[0].play).toHaveBeenCalledOnce();
+   });
+
+   it("hands off when the owner closes and skips a closed waiting tab", async () => {
+      const first = renderSound();
+      const waiting = renderSound();
+      renderSound();
+      waiting.unmount();
+      await act(async () => first.unmount());
+      expect(musicTracks[1].play).not.toHaveBeenCalled();
+      expect(musicTracks[2].active).toBe(true);
+   });
+
+   it("does not request playback while music is muted", () => {
+      localStorage.setItem(MUSIC_MUTED_KEY, "true");
+      renderSound();
+      expect(musicTracks[0].play).not.toHaveBeenCalled();
+   });
+
+   it("ignores autoplay unlock callbacks after losing ownership", () => {
+      renderSound();
+      const current = musicTracks[0];
+      current.active = false;
+      act(() => current.options.onplayerror?.(1, "Autoplay blocked"));
+      act(() => window.dispatchEvent(new Event("pagehide")));
+      act(() => current.unlock?.());
+      expect(current.play).toHaveBeenCalledOnce();
+      current.active = true;
+      act(() => current.options.onplay?.(1));
+      expect(current.active).toBe(false);
+   });
+});
 
 describe("SoundContext", () => {
    it("defaults to not muted, volume 0.15", () => {

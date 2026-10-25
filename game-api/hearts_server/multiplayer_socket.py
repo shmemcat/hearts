@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 from hearts_server.extensions import db
 from hearts_server.game.card import Card
-from hearts_server.lobby import get_lobby
+from hearts_server.lobby import get_lobby, cancel_disconnect_timer, migrate_host
 from hearts_server.models import ActiveGame, DifficultyStats, GameResult, UserStats
 from hearts_server.multiplayer_runner import MultiplayerRunner, SeatConfig
 from hearts_server.multiplayer_game_ops import (
@@ -554,14 +554,44 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
     if active and active.lobby_code:
         lobby = get_lobby(active.lobby_code)
         if lobby:
+            from hearts_server.lobby_socket import schedule_lobby_disconnect
+
             lobby.status = "waiting"
             lobby.previous_game_id = lobby.game_id or game_id
             lobby.game_id = None
-            for seat in lobby.seats:
+            for token in list(lobby._disconnect_timers):
+                cancel_disconnect_timer(lobby, token)
+            for index, seat in enumerate(lobby.seats):
                 if seat:
                     seat.sid = None
-            lobby._disconnect_timers.clear()
+                    if not runner.is_active_human(index) and not seat.is_ai:
+                        lobby.player_tokens.pop(seat.player_token, None)
+                        lobby.seats[index] = None
+                token = runner.seats[index].player_token
+                timer = _disconnect_timers.pop(token, None)
+                if timer is not None:
+                    timer.cancel()
+            # Results sockets still represent people in the retained group.
+            for info in _sid_to_game.values():
+                if info.get("game_id") != game_id or info.get("spectator"):
+                    continue
+                index = info.get("seat_index")
+                if index is not None and runner.is_active_human(index):
+                    info.update(
+                        lobby_code=lobby.code,
+                        player_token=runner.seats[index].player_token,
+                    )
+            migrate_host(lobby.code)
             lobby.touch()
+            if lobby.status == "finished":
+                socketio.emit(
+                    "lobby_closed", {}, room=f"lobby:{lobby.code}", namespace="/lobby"
+                )
+            else:
+                for token in lobby.player_tokens:
+                    schedule_lobby_disconnect(
+                        lobby, token, socketio, current_app._get_current_object()
+                    )
 
     _delete_game(game_id)
     _game_auth.pop(game_id, None)
@@ -826,6 +856,19 @@ def register_multiplayer_socket(socketio):
             return
 
         game_id = info["game_id"]
+
+        if info.get("lobby_code"):
+            from hearts_server.lobby_socket import schedule_lobby_disconnect
+
+            token = info["player_token"]
+            if _token_to_sid.get(token) == request.sid:
+                _token_to_sid.pop(token, None)
+            lobby = get_lobby(info["lobby_code"])
+            if lobby is not None:
+                schedule_lobby_disconnect(
+                    lobby, token, socketio, current_app._get_current_object()
+                )
+            return
 
         if info.get("spectator"):
             specs = _spectator_sids.get(game_id, set())

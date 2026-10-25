@@ -19,7 +19,6 @@ from hearts_server.lobby import (
     join_lobby,
     leave_lobby,
     close_lobby,
-    migrate_host,
     start_game,
     cancel_disconnect_timer,
     get_all_human_sids,
@@ -45,6 +44,58 @@ def _broadcast_lobby_update(lobby: Lobby) -> None:
 
 def _emit_lobby_update_to(lobby: Lobby, sid: str) -> None:
     emit("lobby_update", lobby.to_dict(), to=sid, namespace="/lobby")
+
+
+def lobby_player_connected(code: str, player_token: str) -> bool:
+    from hearts_server.multiplayer_socket import _sid_to_game
+
+    return any(info == (code, player_token) for info in _sid_to_lobby.values()) or any(
+        info.get("lobby_code") == code and info.get("player_token") == player_token
+        for info in _sid_to_game.values()
+    )
+
+
+def schedule_lobby_disconnect(lobby: Lobby, player_token: str, socketio, app) -> None:
+    """Retire a waiting seat after its last lobby or results connection leaves."""
+    if lobby.status != "waiting" or player_token not in lobby.player_tokens:
+        return
+    if lobby_player_connected(lobby.code, player_token):
+        return
+    if player_token in lobby._disconnect_timers:
+        return
+    code = lobby.code
+    timeout = (
+        _HOST_DISCONNECT_SECONDS
+        if player_token == lobby.host_token
+        else _GUEST_DISCONNECT_SECONDS
+    )
+
+    def on_timeout():
+        with app.app_context(), game_lock():
+            current = get_lobby(code)
+            if current is not lobby or lobby.status != "waiting":
+                return
+            if lobby._disconnect_timers.get(player_token) is not timer:
+                return
+            lobby._disconnect_timers.pop(player_token, None)
+            if lobby_player_connected(code, player_token):
+                return
+            if leave_lobby(code, player_token) is None:
+                return
+            if lobby.status == "finished":
+                socketio.emit(
+                    "lobby_closed", {}, room=f"lobby:{code}", namespace="/lobby"
+                )
+            else:
+                socketio.emit(
+                    "lobby_update",
+                    lobby.to_dict(),
+                    room=f"lobby:{code}",
+                    namespace="/lobby",
+                )
+
+    timer = eventlet.spawn_after(timeout, on_timeout)
+    lobby._disconnect_timers[player_token] = timer
 
 
 def register_lobby_socket(socketio, app):
@@ -122,55 +173,7 @@ def register_lobby_socket(socketio, app):
         if player_token is None:
             return
 
-        seat_idx = lobby.player_tokens.get(player_token)
-        if seat_idx is None:
-            return
-        seat = lobby.seats[seat_idx]
-        if seat is None or seat.sid != sid:
-            return
-
-        is_host = player_token == lobby.host_token
-        timeout = _HOST_DISCONNECT_SECONDS if is_host else _GUEST_DISCONNECT_SECONDS
-        cancel_disconnect_timer(lobby, player_token)
-
-        def _expire_lobby():
-            lobby2 = get_lobby(code)
-            if lobby2 is None or lobby2.status != "waiting":
-                return
-            tok_seat = lobby2.player_tokens.get(player_token)
-            if tok_seat is None:
-                return
-            seat = lobby2.seats[tok_seat]
-            if seat is None or seat.sid != sid:
-                # They reconnected with a new SID already
-                return
-
-            lobby2.seats[tok_seat] = None
-            lobby2.player_tokens.pop(player_token, None)
-            lobby2._disconnect_timers.pop(player_token, None)
-
-            if player_token == lobby2.host_token:
-                new_host = migrate_host(code)
-                if new_host is None:
-                    socketio.emit(
-                        "lobby_closed", {}, room=f"lobby:{code}", namespace="/lobby"
-                    )
-                    return
-
-            lobby2.touch()
-            socketio.emit(
-                "lobby_update",
-                lobby2.to_dict(),
-                room=f"lobby:{code}",
-                namespace="/lobby",
-            )
-
-        def _on_timeout():
-            with app.app_context(), game_lock():
-                _expire_lobby()
-
-        timer = eventlet.spawn_after(timeout, _on_timeout)
-        lobby._disconnect_timers[player_token] = timer
+        schedule_lobby_disconnect(lobby, player_token, socketio, app)
 
     @socketio.on("join", namespace="/lobby")
     def on_join(data):
@@ -231,7 +234,7 @@ def register_lobby_socket(socketio, app):
             return
 
         lobby = get_lobby(code)
-        if lobby is None:
+        if lobby is None or lobby.status == "finished":
             socketio.emit("lobby_closed", {}, room=f"lobby:{code}", namespace="/lobby")
         else:
             _broadcast_lobby_update(lobby)

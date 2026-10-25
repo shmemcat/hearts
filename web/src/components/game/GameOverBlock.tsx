@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import party from "party-js";
 
 import { Button } from "@/components/Buttons";
+import { triggerLogoFadeOut } from "@/components/Navbar";
+import { ButtonGroup } from "@/components/ui";
 import { PlayerIcon } from "./PlayerIcon";
 import type { GamePlayer } from "@/types/game";
 import styles from "@/styles/play.module.css";
@@ -60,11 +62,6 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
       ? `${winnerName} won!`
       : "Game Over";
 
-   const minScore =
-      !isCustomMode && isTie && players.length
-         ? Math.min(...players.map((p) => p.score))
-         : null;
-
    return (
       <div className={styles.gameOverBackdrop}>
          <div className={styles.gameOverBlock}>
@@ -86,16 +83,11 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
                         .sort((a, b) => a.score - b.score)
                         .map((p) => {
                            const isMe = p.idx === mySeatIndex;
-                           const isTiedWinner =
-                              !isCustomMode && isTie && p.score === minScore;
-                           const classes = [
-                              isMe ? styles.scoreTableMe : "",
-                              isTiedWinner ? styles.scoreTableWinner : "",
-                           ]
-                              .filter(Boolean)
-                              .join(" ");
                            return (
-                              <tr key={p.idx} className={classes}>
+                              <tr
+                                 key={p.idx}
+                                 className={isMe ? styles.scoreTableMe : ""}
+                              >
                                  <td>
                                     <PlayerIcon
                                        name={p.name}
@@ -112,9 +104,14 @@ export const GameOverBlock: React.FC<GameOverBlockProps> = ({
                </table>
             )}
             {children ?? (
-               <Link to="/game/create">
-                  <Button name="Create New Game" style={{ width: "250px" }} />
-               </Link>
+               <ButtonGroup padding="tight">
+                  <Link to="/game/create">
+                     <Button name="Play Again" style={{ width: "250px" }} />
+                  </Link>
+                  <Link to="/" onClick={() => triggerLogoFadeOut()}>
+                     <Button name="Home" style={{ width: "250px" }} />
+                  </Link>
+               </ButtonGroup>
             )}
          </div>
       </div>

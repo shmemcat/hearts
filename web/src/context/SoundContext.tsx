@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { Howl } from "howler";
 import { gamePath } from "@/lib/paths";
+import { requestMusicPlayback } from "@/lib/musicPlayback";
 
 import {
    SOUND_MUTED_KEY,
@@ -112,8 +113,8 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
    const howlsRef = useRef<Record<SoundName, Howl[]> | null>(null);
    const musicHowlRef = useRef<Howl | null>(null);
-   const musicChannelRef = useRef<BroadcastChannel | null>(null);
-   const playingInThisTabRef = useRef(false);
+   const ownsMusicRef = useRef(false);
+   const musicIdRef = useRef<number | undefined>(undefined);
    const mutedRef = useRef(muted);
    const volumeRef = useRef(volume);
    const musicMutedRef = useRef(musicMuted);
@@ -141,7 +142,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       howlsRef.current = howls;
    }, []);
 
-   // Create music loop Howl and coordinate playback across tabs
+   // Create the loop once; playback is granted by the shared music lock below.
    useEffect(() => {
       if (typeof window === "undefined") return;
       const howl = new Howl({
@@ -149,86 +150,47 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
          loop: true,
          preload: true,
          volume: musicVolumeRef.current,
+         onplay: () => {
+            if (
+               musicHowlRef.current !== howl ||
+               !ownsMusicRef.current ||
+               musicMutedRef.current
+            ) {
+               howl.pause();
+            }
+         },
+         onplayerror: () => {
+            howl.once("unlock", () => {
+               if (
+                  musicHowlRef.current === howl &&
+                  ownsMusicRef.current &&
+                  !musicMutedRef.current &&
+                  !howl.playing()
+               ) {
+                  musicIdRef.current = howl.play(musicIdRef.current);
+               }
+            });
+         },
       });
       musicHowlRef.current = howl;
 
-      const channel =
-         "BroadcastChannel" in window
-            ? new BroadcastChannel("hearts-music")
-            : null;
-      musicChannelRef.current = channel;
-
-      let anotherTabIsPlaying = false;
-
-      const startPlaying = () => {
-         if (musicMutedRef.current || playingInThisTabRef.current) return;
-         howl.play();
-         playingInThisTabRef.current = true;
-         channel?.postMessage("playing");
-      };
-
-      const stopPlaying = () => {
-         if (!playingInThisTabRef.current) return;
-         howl.pause();
-         playingInThisTabRef.current = false;
-      };
-
-      if (channel) {
-         channel.onmessage = (e) => {
-            switch (e.data) {
-               case "playing":
-                  anotherTabIsPlaying = true;
-                  stopPlaying();
-                  break;
-               case "who-is-playing":
-                  if (playingInThisTabRef.current) {
-                     channel.postMessage("i-am-playing");
-                  }
-                  break;
-               case "i-am-playing":
-                  anotherTabIsPlaying = true;
-                  stopPlaying();
-                  break;
-               case "tab-closing":
-                  anotherTabIsPlaying = false;
-                  setTimeout(() => {
-                     if (!anotherTabIsPlaying && !playingInThisTabRef.current) {
-                        startPlaying();
-                     }
-                  }, Math.random() * 200 + 50);
-                  break;
-            }
-         };
-
-         channel.postMessage("who-is-playing");
-      }
-
-      const claimTimer = setTimeout(() => {
-         if (!anotherTabIsPlaying && !musicMutedRef.current) {
-            startPlaying();
-         }
-      }, 150);
-
-      const handleBeforeUnload = () => {
-         if (playingInThisTabRef.current) {
-            channel?.postMessage("tab-closing");
-         }
-      };
-      window.addEventListener("beforeunload", handleBeforeUnload);
-
       return () => {
-         clearTimeout(claimTimer);
-         if (playingInThisTabRef.current) {
-            channel?.postMessage("tab-closing");
-            playingInThisTabRef.current = false;
-         }
-         window.removeEventListener("beforeunload", handleBeforeUnload);
-         channel?.close();
-         musicChannelRef.current = null;
          howl.unload();
          musicHowlRef.current = null;
+         musicIdRef.current = undefined;
       };
    }, []);
+
+   useEffect(() => {
+      if (musicMuted) return;
+      return requestMusicPlayback((owner) => {
+         ownsMusicRef.current = owner;
+         const howl = musicHowlRef.current;
+         if (!howl) return;
+         if (owner) musicIdRef.current = howl.play(musicIdRef.current);
+         else howl.pause();
+      });
+   }, [musicMuted]);
 
    // Persist + apply muted
    const setMuted = useCallback((m: boolean) => {
@@ -263,16 +225,6 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       setMusicMutedState(m);
       if (typeof window !== "undefined")
          localStorage.setItem(MUSIC_MUTED_KEY, String(m));
-      const howl = musicHowlRef.current;
-      if (!howl) return;
-      if (m) {
-         howl.pause();
-         playingInThisTabRef.current = false;
-      } else {
-         howl.play();
-         playingInThisTabRef.current = true;
-         musicChannelRef.current?.postMessage("playing");
-      }
    }, []);
 
    const setMusicVolume = useCallback((v: number) => {

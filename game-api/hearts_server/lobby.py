@@ -186,6 +186,7 @@ def leave_lobby(code: str, player_token: str) -> Optional[int]:
 
     lobby.seats[seat_idx] = None
     del lobby.player_tokens[player_token]
+    cancel_disconnect_timer(lobby, player_token)
     lobby.touch()
 
     if player_token == lobby.host_token:

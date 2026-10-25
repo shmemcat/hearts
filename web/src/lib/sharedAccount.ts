@@ -1,3 +1,4 @@
+import type { GameTurnSoundOptions } from "@/lib/turnSound";
 import { getApiUrl } from "@/lib/api";
 import { STORAGE_KEY } from "@/lib/constants";
 
@@ -7,6 +8,7 @@ export type SharedUser = {
    email: string;
    profile_icon?: string;
    turn_sound?: Partial<Record<"golf" | "euchre" | "hearts", boolean>>;
+   turn_sound_options?: GameTurnSoundOptions;
    email_verified: boolean;
    preferences_available?: boolean;
    preferences?: {

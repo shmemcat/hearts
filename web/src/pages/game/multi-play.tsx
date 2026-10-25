@@ -60,6 +60,7 @@ import { useSound } from "@/context/SoundContext";
 import { useToast } from "@/context/ToastContext";
 import { resolveUnlockId } from "@/lib/achievements";
 import { recordGameStats, unlockAchievement } from "@/lib/gameApi";
+import { leaveLobby } from "@/lib/lobbySocket";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import handStyles from "@/components/game/Hand.module.css";
 import styles from "@/styles/play.module.css";
@@ -97,6 +98,28 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
    const [loading, setLoading] = useState(true);
    const [state, setState] = useState<GameState | null>(null);
    const [error, setError] = useState<string | null>(null);
+   const [leavingLobby, setLeavingLobby] = useState(false);
+   const [leaveError, setLeaveError] = useState<string | null>(null);
+   const handleLeaveLobby = async () => {
+      if (leavingLobby) return;
+      setLeavingLobby(true);
+      setLeaveError(null);
+      try {
+         if (lobbyCode && playerToken) await leaveLobby(lobbyCode, playerToken);
+         localStorage.removeItem(MP_TOKEN_KEY(gameId));
+         localStorage.removeItem(MP_SEAT_KEY(gameId));
+         localStorage.removeItem(MP_LOBBY_KEY(gameId));
+         if (lobbyCode) localStorage.removeItem(LOBBY_TOKEN_KEY(lobbyCode));
+         navigate("/play");
+      } catch (error) {
+         setLeaveError(
+            error instanceof Error
+               ? error.message
+               : "Could not leave the lobby."
+         );
+         setLeavingLobby(false);
+      }
+   };
    const [infoModalOpen, setInfoModalOpen] = useState(false);
    const [concedeModalOpen, setConcedeModalOpen] = useState(false);
    const [conceded, setConceded] = useState(false);
@@ -1787,9 +1810,15 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
                               mySeat === 0 &&
                               !conceded &&
                               !isSpectator && (
-                                 <Link to={`/game/lobby/${lobbyCode}`}>
+                                 <Link
+                                    to={`/game/lobby/${lobbyCode}`}
+                                    onClick={(event) => {
+                                       if (leavingLobby) event.preventDefault();
+                                    }}
+                                 >
                                     <Button
                                        name="Play Again"
+                                       disabled={leavingLobby}
                                        style={{ width: "250px" }}
                                     />
                                  </Link>
@@ -1806,33 +1835,14 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
                                     />
                                  </span>
                               )}
-                           <Link
-                              to="/game/create"
-                              onClick={() => {
-                                 if (lobbyCode)
-                                    localStorage.removeItem(
-                                       LOBBY_TOKEN_KEY(lobbyCode)
-                                    );
-                              }}
-                           >
-                              <Button
-                                 name="Create New Game"
-                                 style={{ width: "250px" }}
-                              />
-                           </Link>
-                           <Link
-                              to="/"
-                              onClick={() => {
-                                 if (lobbyCode)
-                                    localStorage.removeItem(
-                                       LOBBY_TOKEN_KEY(lobbyCode)
-                                    );
-                                 triggerLogoFadeOut();
-                              }}
-                           >
-                              <Button name="Home" style={{ width: "250px" }} />
-                           </Link>
+                           <Button
+                              name="Leave Lobby"
+                              disabled={leavingLobby}
+                              onClick={handleLeaveLobby}
+                              style={{ width: "250px" }}
+                           />
                         </ButtonGroup>
+                        {leaveError && <p role="alert">{leaveError}</p>}
                      </GameOverBlock>
                   )}
                </div>
@@ -1871,29 +1881,14 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
                mySeatIndex={conceded || isSpectator ? -1 : mySeat ?? 0}
             >
                <ButtonGroup padding="tight">
-                  <Link
-                     to="/game/create"
-                     onClick={() => {
-                        if (lobbyCode)
-                           localStorage.removeItem(LOBBY_TOKEN_KEY(lobbyCode));
-                     }}
-                  >
-                     <Button
-                        name="Create New Game"
-                        style={{ width: "250px" }}
-                     />
-                  </Link>
-                  <Link
-                     to="/"
-                     onClick={() => {
-                        if (lobbyCode)
-                           localStorage.removeItem(LOBBY_TOKEN_KEY(lobbyCode));
-                        triggerLogoFadeOut();
-                     }}
-                  >
-                     <Button name="Home" style={{ width: "250px" }} />
-                  </Link>
+                  <Button
+                     name="Leave Lobby"
+                     disabled={leavingLobby}
+                     onClick={handleLeaveLobby}
+                     style={{ width: "250px" }}
+                  />
                </ButtonGroup>
+               {leaveError && <p role="alert">{leaveError}</p>}
             </GameOverBlock>
          )}
       </>

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
    connectLobby,
+   leaveLobby,
    disconnect,
    onLobbySession,
    sendCloseLobby,
@@ -24,6 +25,41 @@ const transport = vi.hoisted(() => {
       };
    };
    return { makeSocket, io: vi.fn() };
+});
+
+describe("leaving from game results", () => {
+   it("waits for the lobby to confirm the seat and acknowledge leaving", async () => {
+      const leaving = leaveLobby("ABC123", "host-token");
+      expect(socket.emit).not.toHaveBeenCalled();
+      socket.handlers.lobby_session({
+         player_token: "host-token",
+         seat_index: 0,
+      });
+      expect(socket.emit).toHaveBeenCalledWith("leave", expect.any(Function));
+      expect(socket.disconnect).not.toHaveBeenCalled();
+      socket.emit.mock.calls[0][1]();
+      await leaving;
+      expect(socket.disconnect).toHaveBeenCalledOnce();
+   });
+
+   it("allows leaving an already-closed lobby without recreating it", async () => {
+      const leaving = leaveLobby("ABC123", "host-token");
+      socket.handlers.lobby_closed();
+      await leaving;
+      expect(socket.emit).not.toHaveBeenCalled();
+      expect(socket.disconnect).toHaveBeenCalledOnce();
+   });
+
+   it("reports connection failures instead of pretending the seat was released", async () => {
+      const leaving = leaveLobby("ABC123", "host-token");
+      const rejected = expect(leaving).rejects.toThrow(
+         "Could not leave the lobby"
+      );
+      socket.handlers.connect_error();
+      await rejected;
+      expect(socket.emit).not.toHaveBeenCalled();
+      expect(socket.disconnect).toHaveBeenCalledOnce();
+   });
 });
 
 vi.mock("socket.io-client", () => ({ io: transport.io }));

@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
    again: null as ((data: GameStartedEvent) => void) | null,
    sound: vi.fn(),
    connect: vi.fn(),
+   leave: vi.fn(),
 }));
 
 vi.mock("@/lib/multiplayerSocket", () => ({
@@ -60,6 +61,7 @@ vi.mock("@/lib/multiplayerSocket", () => ({
 vi.mock("@/context/AuthContext", () => ({
    useAuth: () => ({ token: null, user: null }),
 }));
+vi.mock("@/lib/lobbySocket", () => ({ leaveLobby: mocks.leave }));
 vi.mock("@/context/SoundContext", () => ({
    useSound: () => ({ play: mocks.sound }),
 }));
@@ -145,9 +147,66 @@ function playTrick() {
 beforeEach(() => {
    vi.useFakeTimers();
    vi.clearAllMocks();
+   mocks.leave.mockReset();
+   mocks.leave.mockResolvedValue(undefined);
    localStorage.setItem("hearts_mp_token_first", "player-token");
    localStorage.setItem("hearts_mp_seat_first", "1");
    localStorage.setItem("hearts_mp_lobby_first", "ABCDEF");
+});
+
+it.each([0, 1])(
+   "lets seat %i leave from the end screen without creating or closing a lobby",
+   async (seat) => {
+      localStorage.setItem("hearts_mp_seat_first", String(seat));
+      localStorage.setItem("hearts_lobby_token_ABCDEF", "player-token");
+      start({
+         game_over: true,
+         winner_index: 0,
+         my_seat: seat,
+         my_hand: [],
+         human_hand: [],
+      });
+      expect(
+         screen.queryByRole("button", { name: "Home" })
+      ).not.toBeInTheDocument();
+      expect(
+         screen.queryByRole("button", { name: "Create New Game" })
+      ).not.toBeInTheDocument();
+      expect(
+         screen.getByRole("button", {
+            name: seat === 0 ? "Play Again" : "Waiting for Host...",
+         })
+      ).toBeInTheDocument();
+      await act(async () => {
+         fireEvent.click(screen.getByRole("button", { name: "Leave Lobby" }));
+      });
+      expect(mocks.leave).toHaveBeenCalledExactlyOnceWith(
+         "ABCDEF",
+         "player-token"
+      );
+      expect(localStorage.getItem("hearts_lobby_token_ABCDEF")).toBeNull();
+   }
+);
+
+it("keeps the lobby credentials and offers a retry if leaving fails", async () => {
+   localStorage.setItem("hearts_lobby_token_ABCDEF", "player-token");
+   mocks.leave.mockRejectedValueOnce(new Error("Could not leave the lobby."));
+   start({ game_over: true, winner_index: 0, my_hand: [], human_hand: [] });
+   await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Leave Lobby" }));
+   });
+   expect(screen.getByRole("alert")).toHaveTextContent(
+      "Could not leave the lobby."
+   );
+   expect(localStorage.getItem("hearts_lobby_token_ABCDEF")).toBe(
+      "player-token"
+   );
+   expect(screen.getByRole("button", { name: "Leave Lobby" })).toBeEnabled();
+   await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Leave Lobby" }));
+   });
+   expect(mocks.leave).toHaveBeenCalledTimes(2);
+   expect(localStorage.getItem("hearts_lobby_token_ABCDEF")).toBeNull();
 });
 afterEach(() => {
    vi.useRealTimers();

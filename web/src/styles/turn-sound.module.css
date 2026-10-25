@@ -19,7 +19,115 @@
    accent-color: var(--cardhighlight);
    cursor: pointer;
 }
-.option input:focus-visible {
+.section :is(input, select, button):focus-visible {
    outline: 2px solid var(--cardhighlight);
    outline-offset: 4px;
+}
+.controls {
+   display: grid;
+   gap: 22px;
+   padding: 22px 4px 0;
+}
+.selectorRow {
+   display: grid;
+   grid-template-columns: minmax(0, 1fr) auto;
+   gap: 12px;
+   align-items: stretch;
+}
+.selectWrap {
+   position: relative;
+   min-width: 0;
+}
+.selectWrap select {
+   box-sizing: border-box;
+   width: 100%;
+   min-height: 46px;
+   appearance: none;
+   -webkit-appearance: none;
+   background: var(--inputbox);
+   background-image: none;
+   color: var(--text);
+   border: 1px solid var(--inputboxborder);
+   border-radius: 12px;
+   padding: 11px 48px 11px 14px;
+   font: inherit;
+   font-size: 16px;
+   letter-spacing: 0.3px;
+   cursor: pointer;
+}
+.chevron {
+   position: absolute;
+   right: 16px;
+   top: 50%;
+   transform: translateY(-50%);
+   width: 12px;
+   height: 12px;
+   color: var(--text);
+   pointer-events: none;
+}
+.selectorRow .preview {
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   gap: 8px;
+   width: auto;
+   height: auto;
+   min-height: 46px;
+   min-width: 104px;
+   padding: 11px 14px;
+   box-sizing: border-box;
+   white-space: nowrap;
+}
+.preview svg {
+   width: 13px;
+   height: 13px;
+}
+.volume {
+   min-width: 0;
+}
+.volumeHeading {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   gap: 12px;
+   font-size: 15px;
+   text-align: left;
+}
+.volumeHeading output {
+   font-variant-numeric: tabular-nums;
+}
+.volume input {
+   display: block;
+   box-sizing: border-box;
+   width: 100%;
+   min-height: 32px;
+   margin: 8px 0 0;
+   padding: 0;
+   accent-color: var(--lightpink);
+   cursor: pointer;
+}
+.section :disabled {
+   cursor: wait;
+}
+@media (max-width: 420px) {
+   .option {
+      padding: 14px 12px;
+   }
+   .controls {
+      padding: 18px 0 0;
+   }
+   .selectorRow {
+      gap: 8px;
+   }
+   .selectorRow .preview {
+      min-width: 96px;
+      padding: 11px 8px;
+
+      gap: 6px;
+   }
+}
+@media (pointer: coarse) {
+   .volume input {
+      min-height: 44px;
+   }
 }

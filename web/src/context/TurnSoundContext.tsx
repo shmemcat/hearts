@@ -1,46 +1,80 @@
 import {
    createContext,
+   useCallback,
    useContext,
    useEffect,
+   useId,
    useRef,
    useState,
    type ReactNode,
 } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+   faChevronDown,
+   faPlay,
+   faStop,
+} from "@fortawesome/pro-solid-svg-icons";
 import { useAuth } from "@/context/AuthContext";
-import { useSound } from "@/context/SoundContext";
 import { sharedAccountRequest } from "@/lib/sharedAccount";
+import {
+   createTurnSoundPlayer,
+   DEFAULT_TURN_SOUND,
+   normalizeTurnSound,
+   TURN_SOUNDS,
+   type TurnSoundOptions,
+   type TurnSoundUpdate,
+} from "@/lib/turnSound";
+import buttons from "@/styles/buttons.module.css";
 import styles from "@/styles/turn-sound.module.css";
 
-type TurnSoundState = {
-   enabled: boolean;
+type Options = TurnSoundOptions & { enabled: boolean };
+type TurnSoundState = Options & {
    saving: boolean;
    error: string;
    available: boolean;
-   setEnabled: (enabled: boolean) => Promise<void>;
+   previewing: boolean;
+   update: (value: TurnSoundUpdate) => Promise<void>;
+   preview: (volume: number) => void;
+   setPlaybackVolume: (volume: number) => void;
+   playIndicator: () => void;
 };
 const Context = createContext<TurnSoundState>({
+   ...DEFAULT_TURN_SOUND,
    enabled: false,
    saving: false,
    error: "",
    available: false,
-   setEnabled: async () => {},
+   previewing: false,
+   update: async () => {},
+   preview: () => {},
+   setPlaybackVolume: () => {},
+   playIndicator: () => {},
 });
 
 export function TurnSoundProvider({ children }: { children: ReactNode }) {
    const { user, status, updateUser } = useAuth();
    const loading = status === "loading";
+   const activeAccount = useRef(user?.id);
+   activeAccount.current = user?.id;
    return (
       <AccountTurnSound
          accountId={user?.id ?? "guest"}
-         enabled={!!user && !loading && user.turn_sound?.hearts === true}
+         value={{
+            ...normalizeTurnSound(user?.turn_sound_options?.hearts),
+            enabled: !!user && !loading && user.turn_sound?.hearts === true,
+         }}
          available={!!user && !loading}
-         save={async (enabled) => {
+         save={async (patch) => {
             const next = await sharedAccountRequest(
                "profile",
-               { turn_sound: { game: "hearts", enabled } },
+               { turn_sound: { game: "hearts", ...patch } },
                user!.id
             );
-            if (next.user) updateUser({ turn_sound: next.user.turn_sound });
+            if (next.user && activeAccount.current === user!.id)
+               updateUser({
+                  turn_sound: next.user.turn_sound,
+                  turn_sound_options: next.user.turn_sound_options,
+               });
          }}
       >
          {children}
@@ -50,55 +84,125 @@ export function TurnSoundProvider({ children }: { children: ReactNode }) {
 
 function AccountTurnSound({
    children,
-   enabled,
+   value,
    available,
    accountId,
    save,
 }: {
    children: ReactNode;
-   enabled: boolean;
+   value: Options;
    available: boolean;
    accountId: string;
-   save: (enabled: boolean) => Promise<unknown>;
+   save: (value: TurnSoundUpdate) => Promise<unknown>;
 }) {
    const [operation, setOperation] = useState({
       accountId,
+      value,
       saving: false,
       error: "",
-      value: enabled,
    });
-   const pending = useRef<string | null>(null);
+   const [player] = useState(createTurnSoundPlayer);
+   const [previewing, setPreviewing] = useState(false);
+   const [previewError, setPreviewError] = useState("");
+   const pending = useRef<{ accountId: string } | null>(null);
    const currentAccount = useRef(accountId);
    currentAccount.current = accountId;
-   const setEnabled = async (value: boolean) => {
-      if (!available || pending.current === accountId) return;
-      pending.current = accountId;
-      setOperation({ accountId, saving: true, error: "", value });
+   const owned = operation.accountId === accountId;
+   const options = owned ? operation.value : value;
+   const enabled = available && options.enabled;
+   const saving = owned && operation.saving;
+   const error = owned ? operation.error || previewError : "";
+
+   useEffect(() => {
+      if (pending.current?.accountId !== accountId)
+         setOperation({ accountId, value, saving: false, error: "" });
+   }, [accountId, value.enabled, value.sound, value.volume]);
+   useEffect(() => {
+      player.stop();
+      setPreviewing(false);
+      setPreviewError("");
+   }, [accountId, player]);
+   useEffect(() => {
+      if (!enabled) {
+         player.stop();
+         setPreviewing(false);
+      }
+   }, [enabled, player]);
+   useEffect(() => () => player.stop(), [player]);
+
+   const update = async (patch: TurnSoundUpdate) => {
+      if (!available || pending.current?.accountId === accountId) return;
+      const request = { accountId };
+      pending.current = request;
+      const next = { ...options, ...patch };
+      player.stop();
+      setPreviewError("");
+      setOperation({ accountId, value: next, saving: true, error: "" });
       try {
-         await save(value);
-         if (currentAccount.current === accountId)
-            setOperation({ accountId, saving: false, error: "", value });
+         await save(patch);
+         if (
+            currentAccount.current === accountId &&
+            pending.current === request
+         )
+            setOperation({ accountId, value: next, saving: false, error: "" });
       } catch (error) {
-         if (currentAccount.current === accountId)
+         if (
+            currentAccount.current === accountId &&
+            pending.current === request
+         )
             setOperation({
                accountId,
+               value: options,
                saving: false,
-               value: enabled,
                error:
                   error instanceof Error
                      ? error.message
                      : "Unable to save your option.",
             });
       } finally {
-         if (pending.current === accountId) pending.current = null;
+         if (pending.current === request) pending.current = null;
       }
    };
-   const saving = operation.accountId === accountId && operation.saving;
-   const error = operation.accountId === accountId ? operation.error : "";
-   const checked = available && (saving ? operation.value : enabled);
+   const preview = (volume: number) => {
+      if (!enabled) return;
+      if (previewing) {
+         player.stop();
+         return;
+      }
+      setPreviewError("");
+      setPreviewing(true);
+      player.play(
+         options.sound,
+         volume,
+         () => {
+            if (currentAccount.current === accountId) setPreviewing(false);
+         },
+         () => {
+            if (currentAccount.current === accountId)
+               setPreviewError(
+                  "Unable to preview this sound. Please try again."
+               );
+         }
+      );
+   };
+   const playIndicator = useCallback(() => {
+      if (enabled && options.volume > 0)
+         player.play(options.sound, options.volume);
+   }, [enabled, options.sound, options.volume, player]);
    return (
       <Context.Provider
-         value={{ enabled: checked, available, saving, error, setEnabled }}
+         value={{
+            ...options,
+            enabled,
+            available,
+            saving,
+            error,
+            previewing,
+            update,
+            preview,
+            playIndicator,
+            setPlaybackVolume: player.setVolume,
+         }}
       >
          {children}
       </Context.Provider>
@@ -106,35 +210,120 @@ function AccountTurnSound({
 }
 
 export function TurnSoundOption() {
-   const { enabled, available, saving, error, setEnabled } =
-      useContext(Context);
+   const {
+      enabled,
+      sound,
+      volume,
+      available,
+      saving,
+      error,
+      previewing,
+      update,
+      preview,
+      setPlaybackVolume,
+   } = useContext(Context);
+   const volumeId = useId();
+   const [draftVolume, setDraftVolume] = useState(volume);
+   useEffect(() => setDraftVolume(volume), [volume]);
+   const saveVolume = () => {
+      if (draftVolume !== volume && !saving)
+         void update({ volume: draftVolume });
+   };
    return (
-      <section className={styles.section}>
+      <section className={styles.section} aria-label="Turn indicator">
          <h2>Turn Indicator</h2>
          <label className={styles.option}>
             <input
                type="checkbox"
                checked={enabled}
                disabled={!available || saving}
-               onChange={(event) => void setEnabled(event.target.checked)}
+               onChange={(event) =>
+                  void update({ enabled: event.target.checked })
+               }
             />
             <span>Play a sound when it’s my turn</span>
          </label>
-         {!available && <p>Sign in to enable the turn indicator.</p>}
+         {enabled && (
+            <div className={styles.controls}>
+               <div className={styles.selectorRow}>
+                  <div className={styles.selectWrap}>
+                     <select
+                        aria-label="Turn indicator sound"
+                        value={sound}
+                        disabled={saving}
+                        onChange={(event) =>
+                           void update({
+                              sound: event.target
+                                 .value as TurnSoundOptions["sound"],
+                           })
+                        }
+                     >
+                        {TURN_SOUNDS.map((option) => (
+                           <option key={option.value} value={option.value}>
+                              {option.label}
+                           </option>
+                        ))}
+                     </select>
+                     <FontAwesomeIcon
+                        icon={faChevronDown}
+                        className={styles.chevron}
+                     />
+                  </div>
+                  <button
+                     type="button"
+                     className={`${buttons["menu-button"]} ${styles.preview}`}
+                     onClick={() => preview(draftVolume)}
+                     aria-label={previewing ? "Stop preview" : "Preview sound"}
+                  >
+                     <span
+                        className={buttons["button-shine"]}
+                        aria-hidden="true"
+                     />
+                     <FontAwesomeIcon icon={previewing ? faStop : faPlay} />
+                     <span>{previewing ? "Stop" : "Preview"}</span>
+                  </button>
+               </div>
+               <div className={styles.volume}>
+                  <div className={styles.volumeHeading}>
+                     <label htmlFor={volumeId}>Turn sound volume</label>
+                     <output htmlFor={volumeId}>
+                        {Math.round(draftVolume * 100)}%
+                     </output>
+                  </div>
+                  <input
+                     id={volumeId}
+                     type="range"
+                     min="0"
+                     max="100"
+                     step="1"
+                     value={Math.round(draftVolume * 100)}
+                     disabled={saving}
+                     onChange={(event) => {
+                        const level = Number(event.target.value) / 100;
+                        setDraftVolume(level);
+                        setPlaybackVolume(level);
+                     }}
+                     onPointerUp={saveVolume}
+                     onKeyUp={saveVolume}
+                     onBlur={saveVolume}
+                  />
+               </div>
+            </div>
+         )}
+
          {error && <p role="alert">{error}</p>}
       </section>
    );
 }
 
-// Record every decision, including while opted out or muted. Re-renders,
-// reconnects and temporary input locks must not replay the same turn.
+// Record decisions even while opted out or silent, so edits and reconnections
+// cannot replay a turn that has already been announced.
 export function useTurnIndicator(canAct: boolean, decision: string) {
-   const { enabled } = useContext(Context);
-   const { play } = useSound();
+   const { playIndicator } = useContext(Context);
    const lastDecision = useRef<string | null>(null);
    useEffect(() => {
       if (!canAct || !decision || decision === lastDecision.current) return;
       lastDecision.current = decision;
-      if (enabled) play("turn");
-   }, [canAct, decision, enabled, play]);
+      playIndicator();
+   }, [canAct, decision, playIndicator]);
 }

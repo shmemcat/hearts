@@ -106,6 +106,49 @@ export function sendLeave(): void {
    if (socket?.connected) socket.emit("leave");
 }
 
+/** Leave a retained lobby from the results page, after its game socket has ended. */
+export function leaveLobby(code: string, playerToken: string): Promise<void> {
+   return new Promise((resolve, reject) => {
+      const identity = { lobby_code: code, player_token: playerToken };
+      const connection = io("/lobby", {
+         path: HEARTS_SOCKET_PATH,
+         query: identity,
+         auth: identity,
+         forceNew: true,
+         reconnection: false,
+         transports: ["websocket", "polling"],
+         autoConnect: false,
+      });
+      const timer = setTimeout(
+         () =>
+            finish(new Error("Could not leave the lobby. Please try again.")),
+         10000
+      );
+      const finish = (error?: Error) => {
+         clearTimeout(timer);
+         connection.removeAllListeners();
+         connection.disconnect();
+         if (error) reject(error);
+         else resolve();
+      };
+      connection.on("lobby_closed", () => finish());
+      connection.on("lobby_session", (event: LobbySessionEvent) => {
+         if (event.player_token !== playerToken || event.seat_index === null) {
+            finish();
+            return;
+         }
+         connection.emit("leave", () => finish());
+      });
+      connection.on("connect_error", () =>
+         finish(new Error("Could not leave the lobby. Please try again."))
+      );
+      connection.on("error", (event: { message?: string }) =>
+         finish(new Error(event.message || "Could not leave the lobby."))
+      );
+      connection.connect();
+   });
+}
+
 export function sendStartGame(difficulty: string): void {
    if (socket?.connected) socket.emit("start_game", { difficulty });
 }
