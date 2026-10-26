@@ -35,6 +35,16 @@ Only completed games count toward games played, win rates, score statistics, and
 win streaks. Conceding or abandoning a solo or multiplayer game does not count as
 a loss or interrupt a streak; already-earned moon shots and achievements remain.
 
+Night Owl uses a game start from midnight through just before 5 a.m.; Early Bird
+uses 5 a.m. through just before 8 a.m., in the player's local time. Multiplayer
+clients send `utc_offset_minutes` on the `/multi` connection. Each seat retains
+its first offset in the saved game, so reconnecting does not change it. The server
+awards time and holiday badges when recording the completed game, before deleting
+its start record. Seats without a known offset cannot earn these calendar badges.
+Solo clients send the offset when starting a game; its saved state retains that
+offset across resumes and daylight-saving changes. Older solo saves continue to
+use the offset supplied when recording the result.
+
 Build with context `game-api/`. The build-only `game-server-checks.yml` checks this package without sibling checkouts. The separate `game-release.yml` publishes only `hearts-game-api` for `game-vMAJOR.MINOR.PATCH` tags, with an overwrite check and a digest/source/schema release record. It does not publish `latest`. The retained legacy workflow is [manual-only](../docs/legacy-releases.md). Cards' default local stack and pinned-image integration workflow exercise all three independent services; see [component releases](../../cards/docs/component-releases.md). Cards' `npm run test:postgres` passes with split containers, restricted PostgreSQL roles, and a synthetic legacy backup/restore that preserves seeded record fingerprints through repeated migrations. Production cutover and encrypted offsite Cards recovery are complete; these development/release-policy changes preserve current production pins and guarded rollback.
 
 ## Source continuity

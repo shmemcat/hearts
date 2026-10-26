@@ -37,6 +37,16 @@ function failJsonResponse(body: unknown, status = 400) {
 // ── startGame ────────────────────────────────────────────────────────
 
 describe("startGame", () => {
+   it("captures the player's offset when the game starts", async () => {
+      vi.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(-330);
+      mockFetch.mockReturnValueOnce(jsonResponse({ game_id: "abc" }));
+      await startGame({ player_name: "You" });
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({
+         player_name: "You",
+         utc_offset_minutes: -330,
+      });
+   });
+
    it("returns ok with game_id on success", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ game_id: "abc123" }));
       const result = await startGame({ player_name: "You" });

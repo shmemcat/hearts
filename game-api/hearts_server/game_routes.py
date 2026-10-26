@@ -17,6 +17,7 @@ from hearts_server.game.runner import GameRunner
 from hearts_server.ai.factory import create_strategies
 from hearts_server.jwt_utils import get_current_user
 from hearts_server.models import ActiveGame, UserStats
+from hearts_server.stats_routes import _valid_utc_offset
 
 games_bp = Blueprint("games", __name__, url_prefix="/games")
 
@@ -95,6 +96,9 @@ def start_game():
     Returns { "game_id": "<id>" }."""
     data = request.get_json() or {}
     player_name = (data.get("player_name") or "You").strip() or "You"
+    utc_offset_minutes = data.get("utc_offset_minutes")
+    if utc_offset_minutes is not None and not _valid_utc_offset(utc_offset_minutes):
+        return jsonify({"error": "Invalid local time offset"}), 400
     difficulty = data.get("difficulty", "easy")
     game_id = uuid.uuid4().hex
     rng = None
@@ -112,6 +116,7 @@ def start_game():
         difficulty=difficulty,
     )
     _store[game_id] = runner
+    runner.utc_offset_minutes = utc_offset_minutes
 
     user = get_current_user()
     user_id = user.id if user else None

@@ -35,7 +35,19 @@ afterEach(() => {
    single.disconnect();
    multi.disconnect();
    cleanup.splice(0).forEach((unsubscribe) => unsubscribe());
+   vi.restoreAllMocks();
 });
+
+it.each([420, -330, 0])(
+   "sends the player's local offset %s for multiplayer",
+   (offset) => {
+      vi.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(offset);
+      multi.connectMulti("game-id", "seat-token");
+      expect(transport.io.mock.calls[0][1].query.utc_offset_minutes).toBe(
+         String(offset)
+      );
+   }
+);
 
 for (const [namespace, connect, onError] of [
    ["/game", () => single.connect("game-id"), single.onError],
@@ -59,6 +71,7 @@ for (const [namespace, connect, onError] of [
             game_id: "game-id",
             player_token: "seat-token",
             auth_token: "legacy-token",
+            utc_offset_minutes: String(new Date().getTimezoneOffset()),
          });
    });
    it(`${namespace} retries ordinary failures but surfaces a required reload`, () => {

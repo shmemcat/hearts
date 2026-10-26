@@ -31,9 +31,11 @@ from hearts_server.jwt_utils import get_current_user, get_user_from_token
 from hearts_server.account_contracts import AccountsUnavailable
 from hearts_server.game_accounts import game_lock, is_deleted, accounts_available
 from hearts_server.stats_routes import (
+    _calendar_achievements,
     _compute_newly_unlocked,
     _is_in_all_time_top_10,
     _recorded_games,
+    _valid_utc_offset,
 )
 
 _RECONNECT_TIMEOUT_SECONDS = 120
@@ -475,6 +477,11 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
                 us.worst_score = player_score
 
             # Boolean achievements
+            if runner.state.game_over and active:
+                for achievement in _calendar_achievements(
+                    active.created_at, seat.utc_offset_minutes
+                ):
+                    setattr(us, achievement, True)
             if won and player_score == 7 and not us.lucky_seven:
                 us.lucky_seven = True
             if seat_moon_shots >= 2 and not us.double_moon:
@@ -754,6 +761,14 @@ def register_multiplayer_socket(socketio):
         try:
             game_id = (request.args.get("game_id") or "").strip()
             player_token = (request.args.get("player_token") or "").strip() or None
+            offset = request.args.get("utc_offset_minutes")
+            if offset is not None:
+                try:
+                    offset = int(offset)
+                except ValueError:
+                    return False
+                if not _valid_utc_offset(offset):
+                    return False
 
             if not game_id:
                 return False
@@ -778,6 +793,9 @@ def register_multiplayer_socket(socketio):
                         and (not user or user.id != expected)
                     ):
                         return False
+                    # Keep the first local offset across reconnects and server reloads.
+                    if runner.seats[seat_idx].utc_offset_minutes is None:
+                        runner.seats[seat_idx].utc_offset_minutes = offset
                     timer = _disconnect_timers.pop(player_token, None)
                     if timer is not None:
                         timer.cancel()

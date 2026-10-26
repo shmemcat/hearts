@@ -69,6 +69,7 @@ class GameRunner:
         self._player_names = player_names or DEFAULT_PLAYER_NAMES
         self._rng = rng or random.Random()
         self._difficulty = difficulty
+        self.utc_offset_minutes: Optional[int] = None
         self._human_moon_shots: int = 0
         self._human_hearts_broken: int = 0
         self._last_play_events: List[Dict[str, Any]] = []
@@ -320,6 +321,7 @@ class GameRunner:
             },
             "player_names": list(self._player_names),
             "difficulty": self._difficulty,
+            "utc_offset_minutes": self.utc_offset_minutes,
             "human_moon_shots": self._human_moon_shots,
             "human_hearts_broken": self._human_hearts_broken,
             "rng_state": [
@@ -370,6 +372,7 @@ class GameRunner:
             difficulty=difficulty,
         )
         runner._human_moon_shots = data.get("human_moon_shots", 0)
+        runner.utc_offset_minutes = data.get("utc_offset_minutes")
         runner._human_hearts_broken = data.get("human_hearts_broken", 0)
         return runner
 

@@ -33,7 +33,15 @@ def _round_complete(state: GameState) -> bool:
 
 
 class SeatConfig:
-    __slots__ = ("name", "is_human", "player_token", "conceded", "icon", "user_id")
+    __slots__ = (
+        "name",
+        "is_human",
+        "player_token",
+        "conceded",
+        "icon",
+        "user_id",
+        "utc_offset_minutes",
+    )
 
     def __init__(
         self,
@@ -43,6 +51,7 @@ class SeatConfig:
         conceded: bool = False,
         icon: str = "user",
         user_id: Optional[int] = None,
+        utc_offset_minutes: Optional[int] = None,
     ):
         self.name = name
         self.is_human = is_human
@@ -50,6 +59,7 @@ class SeatConfig:
         self.conceded = conceded
         self.icon = icon
         self.user_id = user_id
+        self.utc_offset_minutes = utc_offset_minutes
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -59,6 +69,7 @@ class SeatConfig:
             "conceded": self.conceded,
             "icon": self.icon,
             "user_id": self.user_id,
+            "utc_offset_minutes": self.utc_offset_minutes,
         }
 
     @classmethod
@@ -70,6 +81,7 @@ class SeatConfig:
             conceded=d.get("conceded", False),
             icon=d.get("icon", "user"),
             user_id=d.get("user_id"),
+            utc_offset_minutes=d.get("utc_offset_minutes"),
         )
 
 

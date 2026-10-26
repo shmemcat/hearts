@@ -39,7 +39,10 @@ export function connectMulti(
    jwtToken?: string | null
 ): void {
    disconnect();
-   const query: Record<string, string> = { game_id: gameId };
+   const query: Record<string, string> = {
+      game_id: gameId,
+      utc_offset_minutes: String(new Date().getTimezoneOffset()),
+   };
    if (playerToken) query.player_token = playerToken;
    if (jwtToken) query.auth_token = jwtToken;
 

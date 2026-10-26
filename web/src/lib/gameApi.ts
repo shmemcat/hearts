@@ -36,7 +36,10 @@ export async function startGame(
    const res = await fetch(`${base()}/games/start`, {
       method: "POST",
       headers,
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+         ...body,
+         utc_offset_minutes: new Date().getTimezoneOffset(),
+      }),
    });
    const data = await parseJson<StartGameResponse & GameApiError>(res);
    if (!res.ok) {

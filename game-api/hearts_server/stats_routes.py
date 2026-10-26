@@ -1,6 +1,7 @@
 from hearts_server.runtime import runtime_state
 
 from datetime import date, datetime, timedelta, timezone
+import json
 
 from flask import Blueprint, request, jsonify, g
 
@@ -36,6 +37,41 @@ def _thanksgiving_date(year: int) -> date:
     first = date(year, 11, 1)
     thu_offset = (3 - first.weekday()) % 7
     return date(year, 11, 1 + thu_offset + 21)
+
+
+def _valid_utc_offset(value) -> bool:
+    return type(value) is int and -840 <= value <= 720
+
+
+def _calendar_achievements(started_at: datetime, utc_offset_minutes) -> list[str]:
+    """Use this player's local game start; an unknown offset cannot earn badges."""
+    if not started_at or not _valid_utc_offset(utc_offset_minutes):
+        return []
+    utc_dt = (
+        started_at.replace(tzinfo=timezone.utc)
+        if started_at.tzinfo is None
+        else started_at
+    )
+    local_dt = utc_dt.astimezone(timezone(timedelta(minutes=-utc_offset_minutes)))
+    day = local_dt.date()
+    fixed_holidays = {
+        "lonely_heart": (2, 14),
+        "new_year": (1, 1),
+        "lucky_clover": (3, 17),
+        "fireworks": (7, 4),
+        "spooky": (10, 31),
+        "christmas_spirit": (12, 25),
+    }
+    unlocked = [key for key, md in fixed_holidays.items() if (day.month, day.day) == md]
+    if local_dt.hour < 5:
+        unlocked.append("night_owl")
+    elif local_dt.hour < 8:
+        unlocked.append("early_bird")
+    if day == _easter_date(day.year):
+        unlocked.append("easter_egg")
+    if day == _thanksgiving_date(day.year):
+        unlocked.append("thankful")
+    return unlocked
 
 
 stats_bp = Blueprint("stats", __name__, url_prefix="/stats")
@@ -297,6 +333,10 @@ def record_game():
     is_christmas = False
     utc_offset_minutes = data.get("utc_offset_minutes")
     if active_game and active_game.created_at:
+        if not active_game.is_multiplayer:
+            saved_offset = json.loads(active_game.state_json).get("utc_offset_minutes")
+            if _valid_utc_offset(saved_offset):
+                utc_offset_minutes = saved_offset
         utc_dt = active_game.created_at.replace(tzinfo=timezone.utc)
         if utc_offset_minutes is not None:
             local_dt = utc_dt.astimezone(
