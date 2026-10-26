@@ -3,11 +3,16 @@
  */
 
 import { io, Socket } from "socket.io-client";
-import { HEARTS_SOCKET_PATH, handleConnectionError } from "./transport";
+import {
+   HEARTS_SOCKET_PATH,
+   handleConnectionError,
+   resumeOnWake,
+} from "./transport";
 import type { GameState, PlayEvent } from "@/types/game";
 import type { GameStartedEvent } from "@/types/lobby";
 
 let socket: Socket | null = null;
+let stopWake = () => {};
 
 type StateCb = (state: GameState) => void;
 type PlayCb = (event: PlayEvent) => void;
@@ -55,11 +60,22 @@ export function connectMulti(
    });
 
    const connection = socket;
-   socket.on("connect_error", (error) =>
+   stopWake = resumeOnWake(
+      () => {
+         connection.disconnect();
+         connection.connect();
+      },
+      () => {
+         if (connection.connected) connection.emit("request_state");
+         else connection.connect();
+      }
+   );
+   socket.on("connect_error", (error: Error & { data?: { code?: string } }) => {
+      if (error.data?.code === "CLIENT_RELOAD_REQUIRED") stopWake();
       handleConnectionError(connection, error, (message) =>
          errorListeners.forEach((cb) => cb(message))
-      )
-   );
+      );
+   });
    socket.on("state", (data: GameState) => {
       stateListeners.forEach((cb) => cb(data));
    });
@@ -101,9 +117,10 @@ export function connectMulti(
 }
 
 export function disconnect(): void {
+   stopWake();
    if (socket) {
       socket.removeAllListeners();
-      if (socket.connected) socket.disconnect();
+      socket.disconnect();
       socket = null;
    }
 }

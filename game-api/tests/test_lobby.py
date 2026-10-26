@@ -238,17 +238,17 @@ class TestStartGame:
 
 
 class TestExpiration:
-    def test_get_lobby_returns_none_for_expired(self):
+    def test_occupied_lobby_survives_inactivity(self):
         lobby = create_lobby("Host")
         lobby.last_activity = time.time() - _EXPIRY_SECONDS - 1
-        assert get_lobby(lobby.code) is None
+        assert get_lobby(lobby.code) is lobby
 
-    def test_cleanup_expired_removes_stale(self):
+    def test_cleanup_expired_preserves_occupied_lobbies(self):
         lobby = create_lobby("Host")
         code = lobby.code
         lobby.last_activity = time.time() - _EXPIRY_SECONDS - 1
         cleanup_expired()
-        assert get_lobby(code) is None
+        assert get_lobby(code) is lobby
 
     def test_active_lobby_not_expired(self):
         lobby = create_lobby("Host")

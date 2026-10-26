@@ -17,7 +17,7 @@ import {
    connectLobby,
    disconnect as disconnectLobby,
    sendJoin,
-   sendLeave,
+   leaveLobby,
    sendStartGame,
    sendCloseLobby,
    onLobbyUpdate,
@@ -55,6 +55,7 @@ export default function LobbyPage() {
       localStorage.getItem(LOBBY_TOKEN_KEY(upperCode))
    );
    const myTokenRef = useRef(myToken);
+   const leaving = useRef(false);
    myTokenRef.current = myToken;
    const prevHumanCountRef = useRef<number | null>(null);
 
@@ -209,11 +210,25 @@ export default function LobbyPage() {
       [joinName, user]
    );
 
-   const handleLeave = useCallback(() => {
-      sendLeave();
-      localStorage.removeItem(LOBBY_TOKEN_KEY(upperCode));
-      setMyToken(null);
-      setMySeat(null);
+   const handleLeave = useCallback(async () => {
+      const token = myTokenRef.current;
+      if (!token || leaving.current) return;
+      leaving.current = true;
+      try {
+         await leaveLobby(upperCode, token);
+         localStorage.removeItem(LOBBY_TOKEN_KEY(upperCode));
+         myTokenRef.current = null;
+         setMyToken(null);
+         setMySeat(null);
+      } catch (error) {
+         setError(
+            error instanceof Error
+               ? error.message
+               : "Couldn’t leave the lobby. Please retry."
+         );
+      } finally {
+         leaving.current = false;
+      }
    }, [upperCode]);
 
    const handleCloseLobby = useCallback(() => {

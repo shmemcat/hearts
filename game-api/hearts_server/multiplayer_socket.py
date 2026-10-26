@@ -38,7 +38,6 @@ from hearts_server.stats_routes import (
     _valid_utc_offset,
 )
 
-_RECONNECT_TIMEOUT_SECONDS = 120
 _IDLE_TIMEOUT_SECONDS = 600
 _IDLE_WARNING_SECONDS = 540
 _STALE_GAME_SECONDS = 30 * 60  # 30 minutes with no DB update â†’ game is abandoned
@@ -83,6 +82,7 @@ _idle_timers: Dict[str, Dict[int, Any]] = runtime_state(
 _idle_warning_timers: Dict[str, Dict[int, Any]] = runtime_state(
     "hearts_server.multi_idle_warning_timers"
 )
+_idle_warned = runtime_state("hearts_server.multi_idle_warned", set)
 
 
 def _get_runner(game_id: str) -> Optional[MultiplayerRunner]:
@@ -190,6 +190,7 @@ def _find_seat_by_token(runner: MultiplayerRunner, token: str) -> Optional[int]:
 
 def _cancel_idle_timer(game_id: str, seat_idx: int) -> None:
     """Cancel both warning and kick timers for a single seat."""
+    _idle_warned.discard((game_id, seat_idx))
     warn_timers = _idle_warning_timers.get(game_id)
     if warn_timers:
         t = warn_timers.pop(seat_idx, None)
@@ -204,6 +205,7 @@ def _cancel_idle_timer(game_id: str, seat_idx: int) -> None:
 
 def _cancel_all_idle_timers(game_id: str) -> None:
     """Cancel all idle timers for a game."""
+    _idle_warned.difference_update({key for key in _idle_warned if key[0] == game_id})
     for store in (_idle_warning_timers, _idle_timers):
         timers = store.pop(game_id, None)
         if timers:
@@ -229,6 +231,7 @@ def _start_idle_timer(game_id: str, seat_idx: int, socketio, app) -> None:
             with app.app_context(), game_lock():
                 if not token:
                     return
+                _idle_warned.add((game_id, seat_idx))
                 sid = _token_to_sid.get(token)
                 if sid:
                     socketio.emit("idle_warning", {}, to=sid, namespace="/multi")
@@ -837,6 +840,8 @@ def register_multiplayer_socket(socketio):
                         runner.get_state_for_player(seat_idx),
                         namespace="/multi",
                     )
+                    if (game_id, seat_idx) in _idle_warned:
+                        emit("idle_warning", {}, namespace="/multi")
                     return
 
             _sid_to_game[request.sid] = {"game_id": game_id, "spectator": True}
@@ -907,68 +912,12 @@ def register_multiplayer_socket(socketio):
 
         token = seat.player_token
 
-        # Cancel idle timer -- disconnect timer takes over
-        _cancel_idle_timer(game_id, seat_idx)
-
-        # Clean up token -> sid mapping
+        # Presence changes do not concede a seat or restart its decision clock.
         if token and _token_to_sid.get(token) == request.sid:
             _token_to_sid.pop(token, None)
-
-        app = current_app._get_current_object()
-
-        def _on_reconnect_timeout(recovering=False):
-            with app.app_context():
-                user_id = _game_auth.get(game_id, {}).get(seat_idx)
-                available = accounts_available(user_id)
-                if not available or recovering:
-                    with game_lock():
-                        if token and token not in _token_to_sid:
-                            _disconnect_timers[token] = eventlet.spawn_after(
-                                30, _on_reconnect_timeout, not available
-                            )
-                    return
-            with app.app_context(), game_lock():
-                _disconnect_timers.pop(token, None)
-                r = _get_runner(game_id)
-                if r is None:
-                    return
-                s = r.seats[seat_idx]
-                if not s.is_human or s.conceded:
-                    return
-                if token in _token_to_sid:
-                    return
-
-                result = r.concede_player(seat_idx)
-                socketio.emit(
-                    "player_conceded",
-                    {
-                        "seat_index": seat_idx,
-                        "name": r.seats[seat_idx].name,
-                        "reason": "disconnected",
-                    },
-                    room=_room(game_id),
-                    namespace="/multi",
-                )
-                if result == "terminated":
-                    socketio.emit(
-                        "game_terminated",
-                        {},
-                        room=_room(game_id),
-                        namespace="/multi",
-                    )
-                    _cancel_all_idle_timers(game_id)
-                    _on_game_complete(game_id, r, socketio)
-                else:
-                    _emit_state_to_all(game_id, r, socketio)
-                    _save_to_db(game_id, r)
-
-                    advance_if_bot_turn(game_id, r, _build_ops(socketio, app))
-
-        if token:
-            timer = eventlet.spawn_after(
-                _RECONNECT_TIMEOUT_SECONDS, _on_reconnect_timeout
-            )
-            _disconnect_timers[token] = timer
+        _start_idle_timers_for_actionable_seats(
+            game_id, runner, socketio, current_app._get_current_object()
+        )
 
     @socketio.on("pass", namespace="/multi")
     def on_pass(data):

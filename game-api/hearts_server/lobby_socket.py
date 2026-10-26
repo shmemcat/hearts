@@ -2,12 +2,11 @@
 WebSocket handlers for the /lobby namespace.
 
 Handles real-time lobby seat management: connect, join, leave, start_game,
-disconnect with host migration timers.
+reconnect, and explicit departures with host migration.
 """
 
 from hearts_server.runtime import runtime_state
 
-import eventlet
 from typing import Dict, Optional, Tuple
 
 from flask import request
@@ -21,14 +20,9 @@ from hearts_server.lobby import (
     close_lobby,
     start_game,
     cancel_disconnect_timer,
-    get_all_human_sids,
 )
 from hearts_server.multiplayer_socket import create_multiplayer_game
-from hearts_server.game_accounts import game_lock
 from hearts_server.jwt_utils import get_current_user
-
-_HOST_DISCONNECT_SECONDS = 30
-_GUEST_DISCONNECT_SECONDS = 30
 
 # SID -> (lobby_code, player_token or None)
 _sid_to_lobby: Dict[str, Tuple[str, Optional[str]]] = runtime_state(
@@ -46,56 +40,9 @@ def _emit_lobby_update_to(lobby: Lobby, sid: str) -> None:
     emit("lobby_update", lobby.to_dict(), to=sid, namespace="/lobby")
 
 
-def lobby_player_connected(code: str, player_token: str) -> bool:
-    from hearts_server.multiplayer_socket import _sid_to_game
-
-    return any(info == (code, player_token) for info in _sid_to_lobby.values()) or any(
-        info.get("lobby_code") == code and info.get("player_token") == player_token
-        for info in _sid_to_game.values()
-    )
-
-
 def schedule_lobby_disconnect(lobby: Lobby, player_token: str, socketio, app) -> None:
-    """Retire a waiting seat after its last lobby or results connection leaves."""
-    if lobby.status != "waiting" or player_token not in lobby.player_tokens:
-        return
-    if lobby_player_connected(lobby.code, player_token):
-        return
-    if player_token in lobby._disconnect_timers:
-        return
-    code = lobby.code
-    timeout = (
-        _HOST_DISCONNECT_SECONDS
-        if player_token == lobby.host_token
-        else _GUEST_DISCONNECT_SECONDS
-    )
-
-    def on_timeout():
-        with app.app_context(), game_lock():
-            current = get_lobby(code)
-            if current is not lobby or lobby.status != "waiting":
-                return
-            if lobby._disconnect_timers.get(player_token) is not timer:
-                return
-            lobby._disconnect_timers.pop(player_token, None)
-            if lobby_player_connected(code, player_token):
-                return
-            if leave_lobby(code, player_token) is None:
-                return
-            if lobby.status == "finished":
-                socketio.emit(
-                    "lobby_closed", {}, room=f"lobby:{code}", namespace="/lobby"
-                )
-            else:
-                socketio.emit(
-                    "lobby_update",
-                    lobby.to_dict(),
-                    room=f"lobby:{code}",
-                    namespace="/lobby",
-                )
-
-    timer = eventlet.spawn_after(timeout, on_timeout)
-    lobby._disconnect_timers[player_token] = timer
+    """A transport disconnect never ends server-owned lobby membership."""
+    cancel_disconnect_timer(lobby, player_token)
 
 
 def register_lobby_socket(socketio, app):
@@ -150,6 +97,20 @@ def register_lobby_socket(socketio, app):
                     namespace="/lobby",
                 )
                 _broadcast_lobby_update(lobby)
+                if lobby.status == "playing" and lobby.game_id:
+                    # A sleeping phone may have missed the original start event.
+                    emit(
+                        "game_started",
+                        {
+                            "game_id": lobby.game_id,
+                            "difficulty": lobby.difficulty,
+                            "seat_assignments": [
+                                {"seat_index": seat_idx, "player_token": player_token}
+                            ],
+                            "seats": lobby.to_dict()["seats"],
+                        },
+                        namespace="/lobby",
+                    )
                 return
 
         emit(

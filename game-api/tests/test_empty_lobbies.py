@@ -57,7 +57,9 @@ def test_bots_do_not_keep_a_waiting_lobby_open(lobby_sockets, departure):
     else:
         host.disconnect(namespace="/lobby")
         assert lobby.status == "waiting"
-        timers[-1].callback()
+        assert not timers
+        host = connect(lobby, lobby.host_token)
+        host.emit("leave", namespace="/lobby")
     assert lobby.status == "finished"
     assert received(observer, "lobby_closed") == [{}]
     with pytest.raises(ValueError):
@@ -75,9 +77,11 @@ def test_abandoned_game_does_not_reopen_an_empty_lobby(app, game, departure):
             assert result == ("terminated" if index == 1 else "conceded")
         else:
             sockets[index].disconnect(namespace="/multi")
-            timer = mp._disconnect_timers[token]
+            assert token not in mp._disconnect_timers
             assert not runner.seats[index].conceded
-            timer.callback()
+            mp.concede_multiplayer_by_token(
+                game_id, token, app.extensions["socketio"], app
+            )
     assert lobby.status == "finished"
     assert not lobby.player_tokens
     assert not lobby._disconnect_timers
@@ -113,9 +117,10 @@ def test_results_departures_close_the_group_and_preserve_saved_results(
             returning.emit("leave", namespace="/lobby")
         else:
             socket.disconnect(namespace="/multi")
-            timer = lobby._disconnect_timers[tokens[index]]
+            assert not lobby._disconnect_timers
             assert lobby.status == "waiting"
-            timer.callback()
+            returning = connect(lobby, tokens[index])
+            returning.emit("leave", namespace="/lobby")
     assert lobby.status == "finished"
     assert GameResult.query.count() == 1
     assert GameResult.query.one().won
@@ -126,10 +131,8 @@ def test_results_to_lobby_reconnect_and_stale_timer_are_safe(app, game, lobby_so
     lobby, _, _, sockets, tokens = game
     connect, _ = lobby_sockets
     sockets[0].disconnect(namespace="/multi")
-    old_timer = lobby._disconnect_timers[tokens[0]]
+    assert not lobby._disconnect_timers
     returning = connect(lobby, tokens[0])
-    old_timer.callback()
-    assert old_timer.cancelled
     assert tokens[0] in lobby.player_tokens
     # The results connection remains alive while the temporary lobby socket leaves.
     second_tab = connect(lobby, tokens[1])
@@ -138,16 +141,20 @@ def test_results_to_lobby_reconnect_and_stale_timer_are_safe(app, game, lobby_so
     returning.emit("leave", namespace="/lobby")
     assert lobby.status == "waiting"
     sockets[1].disconnect(namespace="/multi")
-    lobby._disconnect_timers[tokens[1]].callback()
+    assert get_lobby(lobby.code).status == "waiting"
+    returning = connect(lobby, tokens[1])
+    returning.emit("leave", namespace="/lobby")
     assert get_lobby(lobby.code).status == "finished"
     assert GameResult.query.one().won
 
 
-def test_lobby_created_without_connecting_also_expires(app, lobby_sockets):
+def test_lobby_created_without_connecting_preserves_its_host(app, lobby_sockets):
     _, timers = lobby_sockets
     response = app.test_client().post("/lobbies/create", json={"host_name": "Host"})
     assert response.status_code == 201
     lobby = get_lobby(response.json["code"])
     assert lobby.status == "waiting"
-    timers[-1].callback()
-    assert lobby.status == "finished"
+    assert not timers
+    lobby.last_activity -= 30 * 86400
+    assert get_lobby(lobby.code) is lobby
+    assert lobby.status == "waiting"

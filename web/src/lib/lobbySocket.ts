@@ -3,7 +3,11 @@
  */
 
 import { io, Socket } from "socket.io-client";
-import { HEARTS_SOCKET_PATH, handleConnectionError } from "./transport";
+import {
+   HEARTS_SOCKET_PATH,
+   handleConnectionError,
+   resumeOnWake,
+} from "./transport";
 import type {
    LobbyState,
    JoinAckEvent,
@@ -12,6 +16,7 @@ import type {
 } from "@/types/lobby";
 
 let socket: Socket | null = null;
+let stopWake = () => {};
 
 type LobbyUpdateCb = (state: LobbyState) => void;
 type JoinAckCb = (event: JoinAckEvent) => void;
@@ -77,15 +82,29 @@ export function connectLobby(code: string, playerToken?: string): void {
          typeof data?.message === "string" ? data.message : "Lobby error";
       errorListeners.forEach((cb) => cb(msg));
    });
-   connection.on("connect_error", (error) =>
-      handleConnectionError(connection, error, (message) =>
-         errorListeners.forEach((cb) => cb(message))
-      )
+   stopWake = resumeOnWake(
+      () => {
+         connection.disconnect();
+         connection.connect();
+      },
+      () => {
+         if (!connection.connected) connection.connect();
+      }
+   );
+   connection.on(
+      "connect_error",
+      (error: Error & { data?: { code?: string } }) => {
+         if (error.data?.code === "CLIENT_RELOAD_REQUIRED") stopWake();
+         handleConnectionError(connection, error, (message) =>
+            errorListeners.forEach((cb) => cb(message))
+         );
+      }
    );
    connection.connect();
 }
 
 export function disconnect(): void {
+   stopWake();
    if (socket) {
       socket.removeAllListeners();
       socket.disconnect();

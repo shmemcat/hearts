@@ -24,12 +24,16 @@ Then start `gunicorn -c gunicorn_conf.py hearts_server.wsgi:app` (one eventlet w
 
 Deletion scrubs saved and live seats, cancels the removed player's timers and credentials, updates remaining players, and resumes bot takeover after the cleanup commit. It also resolves a pending pass when the remaining humans have already submitted. First-match multiplayer statistics are initialized before scoring so a new account receives its result and achievements.
 
-Waiting multiplayer seats have a 30-second reconnect window, including seats
-retained after a match and invitations whose creator never connects. Results
-sockets keep their people in the group while connected; returning to the lobby
-cancels cleanup. Active games retain their two-minute reconnect window. The
-last human leaving or timing out closes the group, even when bots remain, and
-an abandoned match cannot reopen it. Completed account results remain saved.
+Waiting multiplayer membership belongs to the server and lasts until an explicit
+leave or host closure, including seats retained after a match. Occupied lobbies
+do not expire after an idle period. Locking a phone or dropping its socket does
+not free its seat or change the host; the next member becomes host when the host
+explicitly leaves. The last explicit departure closes the waiting lobby.
+Active games use only the nine-minute warning and ten-minute decision timeout,
+whether online or offline. Reconnecting preserves that timer and restores the
+player's private state, including a warning missed while asleep. A member who
+missed the lobby's game-start event receives it again when reconnecting.
+Completed account results remain saved; bots cannot retain an empty group.
 
 Only completed games count toward games played, win rates, score statistics, and
 win streaks. Conceding or abandoning a solo or multiplayer game does not count as

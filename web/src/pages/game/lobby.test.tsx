@@ -30,7 +30,7 @@ vi.mock("@/lib/lobbySocket", () => ({
    disconnect: mocks.disconnect,
    sendCloseLobby: mocks.close,
    sendJoin: vi.fn(),
-   sendLeave: mocks.leave,
+   leaveLobby: mocks.leave,
    sendStartGame: vi.fn(),
    onLobbyUpdate: (cb: typeof mocks.update) => {
       mocks.update = cb;
@@ -176,7 +176,9 @@ it("lets the host leave the lobby without closing it for the group", async () =>
    await screen.findByDisplayValue("ABC123");
    act(() => mocks.session?.({ player_token: "host-token", seat_index: 0 }));
 
-   fireEvent.click(screen.getByRole("button", { name: "Leave Lobby" }));
+   await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Leave Lobby" }));
+   });
 
    expect(mocks.leave).toHaveBeenCalledOnce();
    expect(mocks.close).not.toHaveBeenCalled();
@@ -196,6 +198,21 @@ it("preserves the host token after a rejected close so the host can retry", asyn
    fireEvent.click(screen.getByRole("button", { name: "Close Lobby" }));
    expect(mocks.close).toHaveBeenCalledTimes(2);
    expect(screen.queryByRole("alert")).toBeNull();
+});
+
+it("keeps the saved seat if the server cannot confirm leaving", async () => {
+   renderLobby();
+   await screen.findByDisplayValue("ABC123");
+   act(() => mocks.session?.({ player_token: "host-token", seat_index: 0 }));
+   mocks.leave.mockRejectedValueOnce(new Error("Couldn’t reach the lobby."));
+   await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Leave Lobby" }));
+   });
+   expect(localStorage.getItem(tokenKey)).toBe("host-token");
+   expect(
+      screen.getByRole("button", { name: "Close Lobby" })
+   ).toBeInTheDocument();
+   expect(screen.getByText("Couldn’t reach the lobby.")).toBeInTheDocument();
 });
 
 it("waits for fresh confirmation after a connection drops without losing the token", async () => {

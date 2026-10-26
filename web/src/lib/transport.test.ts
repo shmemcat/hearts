@@ -14,6 +14,8 @@ let connection: {
    };
    on: ReturnType<typeof vi.fn>;
    disconnect: ReturnType<typeof vi.fn>;
+   connect: ReturnType<typeof vi.fn>;
+   emit: ReturnType<typeof vi.fn>;
    removeAllListeners: ReturnType<typeof vi.fn>;
 };
 const cleanup: (() => void)[] = [];
@@ -27,6 +29,8 @@ beforeEach(() => {
          handlers[event] = callback;
       }),
       disconnect: vi.fn(),
+      connect: vi.fn(),
+      emit: vi.fn(),
       removeAllListeners: vi.fn(),
    };
    transport.io.mockReset().mockReturnValue(connection);
@@ -36,6 +40,24 @@ afterEach(() => {
    multi.disconnect();
    cleanup.splice(0).forEach((unsubscribe) => unsubscribe());
    vi.restoreAllMocks();
+});
+
+it("reconnects multiplayer after phone sleep, refreshes on focus, and cleans up", () => {
+   multi.connectMulti("game-id", "seat-token");
+   const visibility = vi
+      .spyOn(document, "visibilityState", "get")
+      .mockReturnValue("hidden");
+   document.dispatchEvent(new Event("visibilitychange"));
+   expect(connection.disconnect).not.toHaveBeenCalled();
+   visibility.mockReturnValue("visible");
+   document.dispatchEvent(new Event("visibilitychange"));
+   expect(connection.disconnect).toHaveBeenCalledOnce();
+   expect(connection.connect).toHaveBeenCalledOnce();
+   window.dispatchEvent(new Event("focus"));
+   expect(connection.emit).toHaveBeenCalledWith("request_state");
+   multi.disconnect();
+   window.dispatchEvent(new Event("online"));
+   expect(connection.connect).toHaveBeenCalledOnce();
 });
 
 it.each([420, -330, 0])(

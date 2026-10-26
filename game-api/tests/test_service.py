@@ -372,6 +372,56 @@ def test_idle_timer_grants_recovery_after_account_outage(app, monkeypatch):
     assert runner.seats[0].is_human and not runner.seats[0].conceded
 
 
+def test_sleeping_phone_rejoins_same_seat_without_restarting_its_decision_timer(
+    app, monkeypatch
+):
+    from hearts_server import multiplayer_socket as mp
+
+    client = signed(app)
+    runner = multiplayer(app)
+    scheduled = []
+
+    class Timer:
+        def __init__(self):
+            self.cancelled = False
+
+        def cancel(self):
+            self.cancelled = True
+
+    def schedule(seconds, callback, *args):
+        timer = Timer()
+        scheduled.append((seconds, callback, args, timer))
+        return timer
+
+    monkeypatch.setattr(mp.eventlet, "spawn_after", schedule)
+    socketio = app.extensions["socketio"]
+
+    def connect():
+        return socketio.test_client(
+            app,
+            namespace="/multi",
+            flask_test_client=client,
+            query_string="game_id=saved-multi&player_token=private-seat",
+        )
+
+    socket = connect()
+    assert socket.is_connected("/multi")
+    warning, expiry = scheduled[:2]
+    assert (warning[0], expiry[0]) == (540, 600)
+    socket.disconnect(namespace="/multi")
+    assert not warning[3].cancelled and not expiry[3].cancelled
+    assert len(scheduled) == 2 and not mp._disconnect_timers
+    warning[1](*warning[2])
+    returning = connect()
+    events = returning.get_received("/multi")
+    assert any(e["name"] == "state" and e["args"][0]["my_seat"] == 0 for e in events)
+    assert any(e["name"] == "idle_warning" for e in events)
+    assert len(scheduled) == 2
+    returning.disconnect(namespace="/multi")
+    expiry[1](*expiry[2])
+    assert runner.seats[0].conceded
+
+
 def test_first_multiplayer_finish_records_defaults_and_achievements_once(app):
     from hearts_server import multiplayer_socket as mp
 

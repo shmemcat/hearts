@@ -3,7 +3,7 @@ In-memory lobby store for multiplayer games.
 
 Each lobby holds up to 4 seats (the creator starts in seat 0). AI seats fill
 counter-clockwise (3, 2, 1); guests fill clockwise (1, 2, 3) and replace AI seats
-when needed. Lobbies expire after 20 minutes of inactivity.
+when needed. Membership survives network disconnects until an explicit leave.
 """
 
 from hearts_server.runtime import runtime_state
@@ -41,6 +41,7 @@ class Lobby:
     player_tokens: Dict[str, int] = field(default_factory=dict)
     status: str = "waiting"  # "waiting" | "playing" | "finished"
     game_id: Optional[str] = None
+    difficulty: str = "easy"
     previous_game_id: Optional[str] = None
     last_activity: float = field(default_factory=time.time)
     created_at: float = field(default_factory=time.time)
@@ -86,7 +87,7 @@ def cleanup_expired() -> None:
     expired = [
         code
         for code, lobby in _lobbies.items()
-        if now - lobby.last_activity > _EXPIRY_SECONDS
+        if not lobby.player_tokens and now - lobby.last_activity > _EXPIRY_SECONDS
     ]
     for code in expired:
         _lobbies.pop(code, None)
@@ -124,7 +125,8 @@ def get_lobby(code: str) -> Optional[Lobby]:
     if lobby is None:
         return None
     if (
-        lobby.status != "playing"
+        not lobby.player_tokens
+        and lobby.status != "playing"
         and time.time() - lobby.last_activity > _EXPIRY_SECONDS
     ):
         _lobbies.pop(code, None)
@@ -248,6 +250,7 @@ def start_game(code: str, difficulty: str) -> str:
 
     game_id = uuid.uuid4().hex
     lobby.game_id = game_id
+    lobby.difficulty = difficulty
     lobby.status = "playing"
     lobby.touch()
     return game_id

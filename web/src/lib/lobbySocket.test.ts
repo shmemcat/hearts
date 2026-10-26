@@ -79,6 +79,23 @@ afterEach(() => {
 });
 
 describe("lobby connections", () => {
+   it("retains the same lobby credential when a phone wakes and stops after leaving", () => {
+      connectLobby("ABC123", "host-token");
+      socket.handlers.lobby_session({
+         player_token: "host-token",
+         seat_index: 0,
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+      expect(socket.disconnect).toHaveBeenCalledOnce();
+      expect(socket.connect).toHaveBeenCalledTimes(2);
+      expect(socket.auth).toEqual({
+         lobby_code: "ABC123",
+         player_token: "host-token",
+      });
+      disconnect();
+      window.dispatchEvent(new Event("online"));
+      expect(socket.connect).toHaveBeenCalledTimes(2);
+   });
    it("sends the saved identity in namespace auth and receives initial confirmation", () => {
       const confirmed = vi.fn();
       subscriptions.push(onLobbySession(confirmed));
@@ -110,6 +127,8 @@ describe("lobby connections", () => {
       expect(error).toHaveBeenCalledWith(
          "This page has been updated. Please reload to reconnect."
       );
+      window.dispatchEvent(new Event("online"));
+      expect(socket.connect).toHaveBeenCalledOnce();
    });
 
    it("cancels an unfinished connection when leaving or returning", () => {

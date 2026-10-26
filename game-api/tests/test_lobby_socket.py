@@ -31,7 +31,7 @@ def lobby_sockets(monkeypatch, default_test_app):
         timers.append(timer)
         return timer
 
-    monkeypatch.setattr(lobby_socket.eventlet, "spawn_after", spawn_after)
+    monkeypatch.setattr("eventlet.spawn_after", spawn_after)
 
     def connect(lobby, token=None, *, use_auth=False, query=None):
         identity = {"lobby_code": lobby.code}
@@ -73,13 +73,12 @@ def test_returning_host_is_confirmed_and_can_close(lobby_sockets, use_auth):
     lobby = create_lobby("Host")
     first = connect(lobby, lobby.host_token, use_auth=use_auth)
     first.disconnect(namespace="/lobby")
-    assert len(timers) == 1
+    assert not timers
 
     returning = connect(lobby, lobby.host_token, use_auth=use_auth)
     assert received(returning, "lobby_session") == [
         {"player_token": lobby.host_token, "seat_index": 0}
     ]
-    assert timers[0].cancelled
     returning.emit("close_lobby", namespace="/lobby")
     assert received(returning, "lobby_closed") == [{}]
     assert get_lobby(lobby.code) is None
@@ -131,17 +130,18 @@ def test_invalid_saved_token_is_confirmed_as_visitor(lobby_sockets):
     assert get_lobby(lobby.code) is lobby
 
 
-def test_disconnect_timeout_runs_without_request_context(lobby_sockets):
+def test_disconnected_host_stays_in_lobby_for_an_unlimited_wait(lobby_sockets):
     connect, timers = lobby_sockets
     lobby = create_lobby("Host")
     _, guest_token = join_lobby(lobby.code, "Guest")
     host = connect(lobby, lobby.host_token)
     guest = connect(lobby, guest_token)
     host.disconnect(namespace="/lobby")
-
-    timers[0].callback()
-
-    assert lobby.seats[0] is None
+    lobby.last_activity -= 30 * 86400
+    assert get_lobby(lobby.code) is lobby
+    assert lobby.seats[0] is not None and not timers
+    returning = connect(lobby, lobby.host_token)
+    returning.emit("leave", namespace="/lobby")
     assert lobby.host_token == guest_token
     guest.emit("close_lobby", namespace="/lobby")
     assert received(guest, "lobby_closed") == [{}]
@@ -163,7 +163,9 @@ def test_next_arrival_receives_host_controls_after_departure(lobby_sockets, depa
         host.emit("leave", namespace="/lobby")
     else:
         host.disconnect(namespace="/lobby")
-        timers[-1].callback()
+        assert lobby.host_token != first_token
+        host = connect(lobby, lobby.host_token)
+        host.emit("leave", namespace="/lobby")
 
     assert received(first, "lobby_update")[-1]["host_token"] == first_token
     assert received(later, "lobby_update")[-1]["host_token"] == first_token
@@ -175,7 +177,7 @@ def test_next_arrival_receives_host_controls_after_departure(lobby_sockets, depa
     assert received(first, "lobby_closed") == [{}]
 
 
-def test_old_timeout_cannot_remove_reconnected_host(lobby_sockets):
+def test_disconnection_does_not_remove_reconnected_host(lobby_sockets):
     connect, timers = lobby_sockets
     lobby = create_lobby("Host")
     host = connect(lobby, lobby.host_token)
@@ -183,7 +185,6 @@ def test_old_timeout_cannot_remove_reconnected_host(lobby_sockets):
     returning = connect(lobby, lobby.host_token)
 
     # Even if a cancelled task wakes up, it belongs to the previous connection.
-    timers[0].callback()
 
     assert lobby.seats[0] is not None
     assert lobby.host_token in lobby.player_tokens
@@ -204,19 +205,20 @@ def test_superseded_connection_does_not_start_disconnect_timer(lobby_sockets):
     assert received(current, "lobby_closed") == [{}]
 
 
-def test_last_host_timeout_closes_lobby_for_returning_browser(lobby_sockets):
+def test_last_host_can_lock_their_phone_and_return_to_the_same_lobby(lobby_sockets):
     connect, timers = lobby_sockets
     lobby = create_lobby("Host")
     host = connect(lobby, lobby.host_token)
     host.disconnect(namespace="/lobby")
-
-    timers[0].callback()
-
+    assert not timers
     returning = connect(lobby, lobby.host_token)
-    assert received(returning, "lobby_closed") == [{}]
+    assert received(returning, "lobby_session") == [
+        dict(player_token=lobby.host_token, seat_index=0)
+    ]
+    assert lobby.status == "waiting"
 
 
-def test_timeout_migrates_the_current_host_even_if_they_were_a_guest(lobby_sockets):
+def test_offline_guest_becomes_host_until_their_own_explicit_departure(lobby_sockets):
     connect, timers = lobby_sockets
     lobby = create_lobby("Host")
     _, guest_token = join_lobby(lobby.code, "Guest")
@@ -225,15 +227,15 @@ def test_timeout_migrates_the_current_host_even_if_they_were_a_guest(lobby_socke
     observer = connect(lobby)
     guest.disconnect(namespace="/lobby")
     host.emit("leave", namespace="/lobby")
-    assert lobby.host_token == guest_token
-
-    timers[0].callback()
-
+    assert lobby.host_token == guest_token and lobby.status == "waiting"
+    assert not timers
+    guest = connect(lobby, guest_token)
+    guest.emit("leave", namespace="/lobby")
     assert lobby.status == "finished"
     assert received(observer, "lobby_closed") == [{}]
 
 
-def test_returning_host_can_start_without_old_timer_removing_their_seat(
+def test_returning_host_can_start_with_the_same_saved_membership(
     lobby_sockets, monkeypatch
 ):
     from hearts_server import lobby_socket
@@ -249,7 +251,6 @@ def test_returning_host_can_start_without_old_timer_removing_their_seat(
     returning = connect(lobby, lobby.host_token)
 
     returning.emit("start_game", {"difficulty": "easy"}, namespace="/lobby")
-    timers[0].callback()
 
     assert lobby.status == "playing"
     assert lobby.seats[0].player_token == lobby.host_token
@@ -257,3 +258,22 @@ def test_returning_host_can_start_without_old_timer_removing_their_seat(
     assert received(returning, "game_started")[0]["seat_assignments"] == [
         {"seat_index": 0, "player_token": lobby.host_token}
     ]
+
+
+def test_returning_member_receives_game_start_missed_while_asleep(
+    lobby_sockets, monkeypatch
+):
+    from hearts_server import lobby_socket
+
+    monkeypatch.setattr(lobby_socket, "create_multiplayer_game", lambda *args: None)
+    connect, _ = lobby_sockets
+    lobby = create_lobby("Host")
+    _, token = join_lobby(lobby.code, "Sleeping friend")
+    host = connect(lobby, lobby.host_token)
+    friend = connect(lobby, token)
+    friend.disconnect(namespace="/lobby")
+    host.emit("start_game", {"difficulty": "easy"}, namespace="/lobby")
+    friend = connect(lobby, token)
+    event = received(friend, "game_started")[0]
+    assert event["game_id"] == lobby.game_id
+    assert event["seat_assignments"] == [dict(seat_index=1, player_token=token)]
