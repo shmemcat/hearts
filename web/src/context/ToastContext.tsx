@@ -67,15 +67,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
    const removeToast = useCallback((id: string) => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-      const timer = timerRefs.current.get(id);
-      if (timer) {
-         clearTimeout(timer);
-         timerRefs.current.delete(id);
+      for (const key of [id, `exit-${id}`]) {
+         const timer = timerRefs.current.get(key);
+         if (timer !== undefined) clearTimeout(timer);
+         timerRefs.current.delete(key);
       }
    }, []);
 
    const startExit = useCallback(
       (id: string) => {
+         if (timerRefs.current.has(`exit-${id}`)) return;
+         const scheduled = timerRefs.current.get(id);
+         if (scheduled !== undefined) clearTimeout(scheduled);
+         timerRefs.current.delete(id);
          setToasts((prev) =>
             prev.map((t) => (t.id === id ? { ...t, exiting: true } : t))
          );
@@ -147,12 +151,21 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <ToastContext.Provider value={{ addToast, addToasts }}>
          {children}
          {typeof document !== "undefined" &&
-            createPortal(<ToastStack toasts={toasts} />, document.body)}
+            createPortal(
+               <ToastStack toasts={toasts} onDismiss={startExit} />,
+               document.body
+            )}
       </ToastContext.Provider>
    );
 }
 
-function ToastStack({ toasts }: { toasts: AchievementToast[] }) {
+function ToastStack({
+   toasts,
+   onDismiss,
+}: {
+   toasts: AchievementToast[];
+   onDismiss: (id: string) => void;
+}) {
    if (toasts.length === 0) return null;
 
    return (
@@ -175,6 +188,15 @@ function ToastStack({ toasts }: { toasts: AchievementToast[] }) {
                   <div className={styles.toastLabel}>Achievement Unlocked!</div>
                   <div className={styles.toastName}>{toast.name}</div>
                </div>
+               <button
+                  type="button"
+                  className={styles.toastDismiss}
+                  aria-label={`Dismiss ${toast.name} achievement notification`}
+                  disabled={toast.exiting}
+                  onClick={() => onDismiss(toast.id)}
+               >
+                  ×
+               </button>
             </div>
          ))}
       </div>

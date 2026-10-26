@@ -183,6 +183,8 @@
    display: flex;
    flex-direction: column-reverse;
    gap: 10px;
+   width: max-content;
+   max-width: calc(100vw - 32px);
    z-index: 10000;
    pointer-events: none;
 }
@@ -199,7 +201,6 @@
       inset -2px -2px 0px var(--buttonboxshadow);
    animation: toastSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
    pointer-events: auto;
-   white-space: nowrap;
 }
 
 .toastIcon {
@@ -223,6 +224,7 @@
    display: flex;
    flex-direction: column;
    gap: 1px;
+   min-width: 0;
 }
 
 .toastLabel {
@@ -240,6 +242,26 @@
    font-weight: 700;
    letter-spacing: 1px;
    color: var(--header);
+   overflow-wrap: anywhere;
+}
+
+.toastDismiss {
+   margin-left: auto;
+   padding: 4px;
+   background: transparent;
+   border: 0;
+   color: var(--header);
+   font-family: "appFont";
+   font-size: 20px;
+   line-height: 1.15;
+   flex-shrink: 0;
+   cursor: pointer;
+}
+
+.toastDismiss:focus-visible {
+   outline: 2px solid var(--header);
+   outline-offset: 2px;
+   border-radius: 4px;
 }
 
 .toast_exiting {

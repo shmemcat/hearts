@@ -1,4 +1,4 @@
-import { act, renderHook, screen } from "@testing-library/react";
+import { act, fireEvent, renderHook, screen } from "@testing-library/react";
 import { vi } from "vitest";
 import { ToastProvider, useToast } from "./ToastContext";
 import { TOAST_DURATION_MS, TOAST_EXIT_MS } from "@/lib/constants";
@@ -54,4 +54,64 @@ it("does not announce a lower tier when win rate falls below a previously seen t
    );
    act(() => vi.advanceTimersByTime(1));
    expect(screen.queryByText("Sharp")).not.toBeInTheDocument();
+});
+
+it("automatically dismisses after three seconds without pressing the dismiss button", () => {
+   const { result } = renderHook(useToast, { wrapper });
+   act(() => result.current.addToast(toast));
+   act(() => vi.advanceTimersByTime(TOAST_DURATION_MS - 1));
+   expect(
+      screen.getByRole("button", {
+         name: "Dismiss Night Owl achievement notification",
+      })
+   ).toBeEnabled();
+   act(() => vi.advanceTimersByTime(1));
+   expect(
+      screen.getByRole("button", {
+         name: "Dismiss Night Owl achievement notification",
+      })
+   ).toBeDisabled();
+   act(() => vi.advanceTimersByTime(TOAST_EXIT_MS));
+   expect(screen.queryByText("Night Owl")).not.toBeInTheDocument();
+   expect(vi.getTimerCount()).toBe(0);
+});
+
+it("dismisses a toast early with the x and clears its pending timeout", () => {
+   const { result } = renderHook(useToast, { wrapper });
+   act(() => result.current.addToast(toast));
+   act(() => vi.advanceTimersByTime(1000));
+   fireEvent.click(
+      screen.getByRole("button", {
+         name: "Dismiss Night Owl achievement notification",
+      })
+   );
+   act(() => vi.advanceTimersByTime(TOAST_EXIT_MS));
+   expect(screen.queryByText("Night Owl")).not.toBeInTheDocument();
+   expect(vi.getTimerCount()).toBe(0);
+   act(() => result.current.addToast(toast));
+   expect(screen.queryByText("Night Owl")).not.toBeInTheDocument();
+});
+
+it("does not reset another toast's automatic timeout when one is dismissed", () => {
+   const { result } = renderHook(useToast, { wrapper });
+   act(() => {
+      result.current.addToast(toast);
+      result.current.addToast({
+         achievementId: "geezer",
+         name: "Geezer",
+         icon: "music",
+      });
+   });
+   act(() => vi.advanceTimersByTime(1000));
+   fireEvent.click(
+      screen.getByRole("button", {
+         name: "Dismiss Night Owl achievement notification",
+      })
+   );
+   act(() => vi.advanceTimersByTime(TOAST_EXIT_MS));
+   expect(screen.queryByText("Night Owl")).not.toBeInTheDocument();
+   expect(screen.getByText("Geezer")).toBeInTheDocument();
+   act(() => vi.advanceTimersByTime(TOAST_DURATION_MS - 1000));
+   expect(screen.queryByText("Geezer")).not.toBeInTheDocument();
+   expect(vi.getTimerCount()).toBe(0);
 });
