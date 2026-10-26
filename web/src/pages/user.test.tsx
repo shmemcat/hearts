@@ -4,6 +4,8 @@ import { vi, beforeEach, afterEach } from "vitest";
 import UserPage from "./user";
 import { renderWithProviders } from "@/test/helpers";
 import { STORAGE_KEY } from "@/lib/constants";
+import { AuthContext, useAuth } from "@/context/AuthContext";
+import { ToastProvider, useToast } from "@/context/ToastContext";
 
 const mockFetch = vi.fn();
 
@@ -213,6 +215,141 @@ describe("UserPage - Guest", () => {
 });
 
 describe("UserPage - Authenticated", () => {
+   it("does not copy the previous account's achievements while the next profile is loading", async () => {
+      mockFetch.mockImplementation(async (url: string) => ({
+         ok: true,
+         json: async () =>
+            url.endsWith("/stats")
+               ? {
+                    stats: {
+                       games_played: 10,
+                       games_won: 3,
+                       moon_shots: 1,
+                       best_score: 12,
+                       worst_score: 85,
+                       average_score: 45,
+                    },
+                 }
+               : {},
+      }));
+      const dashboard = (id: string) => (
+         <AuthContext.Provider
+            value={{
+               user: { id, email: `${id}@test.com` },
+               token: `${id}-token`,
+               preferences: null,
+               status: "authenticated",
+               login: vi.fn(),
+               logout: vi.fn(),
+               updateUser: vi.fn(),
+            }}
+         >
+            <ToastProvider>
+               <UserPage />
+            </ToastProvider>
+         </AuthContext.Provider>
+      );
+      const view = renderWithProviders(dashboard("alice"), { route: "/user" });
+      await screen.findByText("Achievements");
+      expect(
+         JSON.parse(localStorage.getItem("hearts_seen_achievements_alice")!)
+      ).toContain("newcomer_bronze");
+      mockFetch.mockImplementation(() => new Promise(() => {}));
+      view.rerender(dashboard("bob"));
+      expect(localStorage.getItem("hearts_seen_achievements_bob")).toBeNull();
+      expect(screen.queryByText("Achievements")).not.toBeInTheDocument();
+      expect(
+         screen.queryByText("Achievement Unlocked!")
+      ).not.toBeInTheDocument();
+   });
+
+   it("does not repeat a game achievement when opening the profile afterwards", async () => {
+      function GameAward() {
+         const { user } = useAuth();
+         const { addToast } = useToast();
+         return (
+            <button
+               disabled={!user}
+               onClick={() =>
+                  addToast({
+                     achievementId: "newcomer_bronze",
+                     name: "Newcomer",
+                     icon: "cards",
+                     tier: "bronze",
+                  })
+               }
+            >
+               Finish game
+            </button>
+         );
+      }
+      setAuthToken();
+      localStorage.setItem("hearts_seen_achievements_1", "[]");
+      const user = userEvent.setup();
+      const view = renderWithProviders(<GameAward />, { route: "/user" });
+      await waitFor(() =>
+         expect(
+            screen.getByRole("button", { name: "Finish game" })
+         ).toBeEnabled()
+      );
+      await user.click(screen.getByRole("button", { name: "Finish game" }));
+      await user.click(
+         screen.getByRole("button", {
+            name: "Dismiss Newcomer achievement notification",
+         })
+      );
+      await waitFor(() =>
+         expect(
+            screen.queryByText("Achievement Unlocked!")
+         ).not.toBeInTheDocument()
+      );
+      view.rerender(<UserPage />);
+      await screen.findByText("Achievements");
+      expect(
+         screen.queryByText("Achievement Unlocked!")
+      ).not.toBeInTheDocument();
+      expect(
+         JSON.parse(localStorage.getItem("hearts_seen_achievements_1")!)
+      ).toContain("newcomer_bronze");
+   });
+
+   it("can open the achievement profile when achievement storage is blocked", async () => {
+      setAuthToken();
+      const getItem = localStorage.getItem.bind(localStorage);
+      const setItem = localStorage.setItem.bind(localStorage);
+      vi.spyOn(localStorage, "getItem").mockImplementation((key) => {
+         if (key.startsWith("hearts_seen_achievements_"))
+            throw new Error("blocked");
+         return getItem(key);
+      });
+      vi.spyOn(localStorage, "setItem").mockImplementation((key, value) => {
+         if (key.startsWith("hearts_seen_achievements_"))
+            throw new Error("blocked");
+         setItem(key, value);
+      });
+      renderWithProviders(<UserPage />, { route: "/user" });
+      expect(await screen.findByText("Achievements")).toBeInTheDocument();
+      expect(
+         screen.queryByText("Achievement Unlocked!")
+      ).not.toBeInTheDocument();
+   });
+
+   it.each(['"invalid history"', '{"night_owl":true}', "null"])(
+      "quietly seeds malformed achievement history (%s)",
+      async (history) => {
+         setAuthToken();
+         localStorage.setItem("hearts_seen_achievements_1", history);
+         renderWithProviders(<UserPage />, { route: "/user" });
+         await screen.findByText("Achievements");
+         expect(
+            screen.queryByText("Achievement Unlocked!")
+         ).not.toBeInTheDocument();
+         expect(
+            JSON.parse(localStorage.getItem("hearts_seen_achievements_1")!)
+         ).toContain("newcomer_bronze");
+      }
+   );
+
    it("keeps higher achievement tiers seen when current stats show a lower tier", async () => {
       setAuthToken();
       localStorage.setItem(

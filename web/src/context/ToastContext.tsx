@@ -3,13 +3,15 @@ import React, {
    useCallback,
    useContext,
    useEffect,
+   useLayoutEffect,
+   useMemo,
    useRef,
    useState,
 } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/context/AuthContext";
 import {
-   getSeenAchievements,
+   readSeenAchievements,
    hasSeenAchievement,
    markAchievementsSeen,
 } from "@/lib/achievements";
@@ -40,33 +42,56 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 export function ToastProvider({ children }: { children: React.ReactNode }) {
    const { user } = useAuth();
    const userId = user?.id;
-   const [toasts, setToasts] = useState<AchievementToast[]>([]);
+   const scope = useMemo(() => ({ userId }), [userId]);
+   const activeScopeRef = useRef(scope);
+   const [queue, setQueue] = useState({
+      scope,
+      items: [] as AchievementToast[],
+   });
    const announcedRef = useRef(new Set<string>());
    const timerRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(
       new Map()
    );
 
+   // Reset notifications without remounting the app or its running game.
+   useLayoutEffect(() => {
+      activeScopeRef.current = scope;
+      timerRefs.current.forEach((timer) => clearTimeout(timer));
+      timerRefs.current.clear();
+      setQueue((previous) =>
+         previous.scope === scope ? previous : { scope, items: [] }
+      );
+   }, [scope]);
+
    // Claim and persist before scheduling a toast so socket, HTTP and profile
    // notifications cannot announce the same achievement twice.
    const claimToast = useCallback(
       (achievementId: string) => {
+         if (activeScopeRef.current !== scope) return false;
          const key = `${userId ?? "guest"}:${achievementId}`;
          if (announcedRef.current.has(key)) return false;
+         const seen = userId
+            ? readSeenAchievements(userId) ?? new Set<string>()
+            : new Set<string>();
+         const prefix = `${userId ?? "guest"}:`;
+         announcedRef.current.forEach((id) => {
+            if (id.startsWith(prefix)) seen.add(id.slice(prefix.length));
+         });
+         if (hasSeenAchievement(seen, achievementId)) return false;
          if (userId) {
-            const seen = getSeenAchievements(
-               localStorage.getItem(`hearts_seen_achievements_${userId}`)
-            );
-            if (hasSeenAchievement(seen, achievementId)) return false;
             markAchievementsSeen(userId, [achievementId]);
          }
          announcedRef.current.add(key);
          return true;
       },
-      [userId]
+      [userId, scope]
    );
 
    const removeToast = useCallback((id: string) => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
+      setQueue((prev) => ({
+         ...prev,
+         items: prev.items.filter((t) => t.id !== id),
+      }));
       for (const key of [id, `exit-${id}`]) {
          const timer = timerRefs.current.get(key);
          if (timer !== undefined) clearTimeout(timer);
@@ -80,9 +105,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
          const scheduled = timerRefs.current.get(id);
          if (scheduled !== undefined) clearTimeout(scheduled);
          timerRefs.current.delete(id);
-         setToasts((prev) =>
-            prev.map((t) => (t.id === id ? { ...t, exiting: true } : t))
-         );
+         setQueue((prev) => ({
+            ...prev,
+            items: prev.items.map((t) =>
+               t.id === id ? { ...t, exiting: true } : t
+            ),
+         }));
          const timer = setTimeout(() => removeToast(id), TOAST_EXIT_MS);
          timerRefs.current.set(`exit-${id}`, timer);
       },
@@ -97,14 +125,28 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       [startExit]
    );
 
+   useEffect(() => {
+      if (queue.scope !== scope) return;
+      // Only visible entries use their three seconds; queued awards wait their turn.
+      queue.items.slice(0, MAX_VISIBLE_TOASTS).forEach((toast) => {
+         if (!toast.exiting && !timerRefs.current.has(toast.id))
+            scheduleRemoval(toast.id);
+      });
+   }, [queue, scope, scheduleRemoval]);
+
    const addToast = useCallback(
       (toast: Omit<AchievementToast, "id">) => {
          if (!claimToast(toast.achievementId)) return;
          const id = `${toast.achievementId}-${Date.now()}`;
-         setToasts((prev) => [...prev, { ...toast, id }]);
-         scheduleRemoval(id);
+         setQueue((prev) => ({
+            scope,
+            items: [
+               ...(prev.scope === scope ? prev.items : []),
+               { ...toast, id },
+            ],
+         }));
       },
-      [scheduleRemoval, claimToast]
+      [scope, claimToast]
    );
 
    const addToasts = useCallback(
@@ -114,36 +156,30 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
          );
          if (unseen.length === 0) return;
 
-         const toShow =
-            unseen.length > MAX_VISIBLE_TOASTS
-               ? unseen.slice(0, MAX_VISIBLE_TOASTS)
-               : unseen;
-         const extra = unseen.length - toShow.length;
-
-         toShow.forEach((toast, i) => {
+         unseen.forEach((toast, i) => {
             const timer = setTimeout(() => {
+               timerRefs.current.delete(`stagger-${toast.achievementId}`);
+               if (activeScopeRef.current !== scope) return;
                const id = `${toast.achievementId}-${Date.now()}`;
-               const isLast = i === toShow.length - 1 && extra > 0;
-               const entry: AchievementToast = isLast
-                  ? {
-                       ...toast,
-                       id,
-                       name: `${toast.name} (+${extra} more)`,
-                    }
-                  : { ...toast, id };
-               setToasts((prev) => [...prev, entry]);
-               scheduleRemoval(id);
+               setQueue((prev) => ({
+                  scope,
+                  items: [
+                     ...(prev.scope === scope ? prev.items : []),
+                     { ...toast, id },
+                  ],
+               }));
             }, i * TOAST_STAGGER_MS);
             timerRefs.current.set(`stagger-${toast.achievementId}`, timer);
          });
       },
-      [scheduleRemoval, claimToast]
+      [scope, claimToast]
    );
 
    useEffect(() => {
       const timers = timerRefs.current;
       return () => {
          timers.forEach((timer) => clearTimeout(timer));
+         timers.clear();
       };
    }, []);
 
@@ -152,7 +188,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
          {children}
          {typeof document !== "undefined" &&
             createPortal(
-               <ToastStack toasts={toasts} onDismiss={startExit} />,
+               <ToastStack
+                  toasts={queue.scope === scope ? queue.items : []}
+                  onDismiss={startExit}
+               />,
                document.body
             )}
       </ToastContext.Provider>
@@ -169,8 +208,13 @@ function ToastStack({
    if (toasts.length === 0) return null;
 
    return (
-      <div className={styles.toastStack}>
-         {toasts.map((toast) => (
+      <div
+         className={styles.toastStack}
+         role="status"
+         aria-live="polite"
+         aria-atomic="true"
+      >
+         {toasts.slice(0, MAX_VISIBLE_TOASTS).map((toast) => (
             <div
                key={toast.id}
                className={`${styles.toast} ${

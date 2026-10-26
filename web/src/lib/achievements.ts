@@ -600,12 +600,26 @@ export function resolveUnlockId(unlockId: string): {
    return null;
 }
 
-function parseSeenAchievements(raw: string | null): Set<string> {
-   if (!raw) return new Set();
+function parseSeenAchievements(raw: string | null): Set<string> | null {
+   if (!raw) return null;
    try {
-      return new Set<string>(JSON.parse(raw));
+      const parsed: unknown = JSON.parse(raw);
+      return Array.isArray(parsed)
+         ? new Set(parsed.filter((id): id is string => typeof id === "string"))
+         : null;
    } catch {
-      return new Set();
+      return null;
+   }
+}
+
+/** Null means this browser has no usable achievement history yet. */
+export function readSeenAchievements(userId: string): Set<string> | null {
+   try {
+      return parseSeenAchievements(
+         localStorage.getItem(`hearts_seen_achievements_${userId}`)
+      );
+   } catch {
+      return null;
    }
 }
 
@@ -620,11 +634,15 @@ export function markAchievementsSeen(
 ): void {
    if (typeof window === "undefined" || achievementIds.length === 0) return;
    const storageKey = `hearts_seen_achievements_${userId}`;
-   const seen = parseSeenAchievements(localStorage.getItem(storageKey));
+   const seen = readSeenAchievements(userId) ?? new Set<string>();
    for (const id of achievementIds) {
       seen.add(id);
    }
-   localStorage.setItem(storageKey, JSON.stringify([...seen]));
+   try {
+      localStorage.setItem(storageKey, JSON.stringify([...seen]));
+   } catch {
+      // ToastProvider also remembers announcements for the current session.
+   }
 }
 
 /**
@@ -632,7 +650,7 @@ export function markAchievementsSeen(
  * Returns an empty set if the key is missing or the stored value is malformed.
  */
 export function getSeenAchievements(raw: string | null): Set<string> {
-   return parseSeenAchievements(raw);
+   return parseSeenAchievements(raw) ?? new Set();
 }
 
 /** A previously celebrated higher tier also covers a lower displayed tier. */

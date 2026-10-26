@@ -32,7 +32,7 @@ import {
 } from "@/lib/gameApi";
 import {
    computeAchievements,
-   getSeenAchievements,
+   readSeenAchievements,
    hasSeenAchievement,
    markAchievementsSeen,
    type ComputedAchievement,
@@ -544,8 +544,7 @@ function AchievementsPanel({
    useEffect(() => {
       if (!stats) return;
       const achievements = computeAchievements(stats);
-      const storageKey = `hearts_seen_achievements_${userId}`;
-      const storedSeen = localStorage.getItem(storageKey);
+      const seen = readSeenAchievements(userId);
 
       const achievementKey = (a: ComputedAchievement) =>
          a.def.tiers && a.tier ? `${a.def.id}_${a.tier}` : a.def.id;
@@ -553,11 +552,10 @@ function AchievementsPanel({
       const unlocked = achievements.filter((a) => a.unlocked);
       const allKeys = unlocked.map(achievementKey);
 
-      if (!storedSeen) {
+      if (!seen) {
          // New browser — seed the seen list so old achievements don't re-toast
          markAchievementsSeen(userId, allKeys);
       } else {
-         const seen = getSeenAchievements(storedSeen);
          const unseen = unlocked.filter(
             (a) => !hasSeenAchievement(seen, achievementKey(a))
          );
