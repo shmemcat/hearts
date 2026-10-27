@@ -40,4 +40,5 @@ yarn-error.log*
 *.db
 
 # Deploy docs (local reference only)
+docs/
 DEPLOY.md
