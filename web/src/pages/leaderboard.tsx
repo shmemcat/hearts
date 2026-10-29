@@ -30,6 +30,7 @@ const TOP_TABS = [
          </>
       ),
    },
+   { key: "achievements", label: "Achievements", mobileLabel: null },
 ] as const;
 
 const MOM_SUB_TABS = [
@@ -45,7 +46,8 @@ type ApiCategory =
    | "hard"
    | "harder"
    | "hardest"
-   | "multiplayer";
+   | "multiplayer"
+   | "achievements";
 
 function EntryRow({ entry }: { entry: LeaderboardEntry }) {
    return (
@@ -56,7 +58,13 @@ function EntryRow({ entry }: { entry: LeaderboardEntry }) {
          </span>
          <span className={styles.username}>{entry.username}</span>
          <span className={styles.wins}>
-            {entry.games_won} {entry.games_won === 1 ? "win" : "wins"}
+            {"achievement_count" in entry
+               ? `${entry.achievement_count} ${
+                    entry.achievement_count === 1
+                       ? "achievement"
+                       : "achievements"
+                 }`
+               : `${entry.games_won} ${entry.games_won === 1 ? "win" : "wins"}`}
          </span>
       </div>
    );
@@ -65,15 +73,19 @@ function EntryRow({ entry }: { entry: LeaderboardEntry }) {
 function LeaderboardColumn({
    title,
    entries,
+   achievements = false,
 }: {
    title: string;
    entries: LeaderboardEntry[];
+   achievements?: boolean;
 }) {
    return (
       <div className={styles.column}>
          <div className={styles.columnTitle}>{title}</div>
          {entries.length === 0 ? (
-            <div className={styles.empty}>No winners yet</div>
+            <div className={styles.empty}>
+               {achievements ? "No achievements yet" : "No winners yet"}
+            </div>
          ) : (
             <div className={styles.list}>
                {entries.map((e) => (
@@ -90,6 +102,8 @@ export default function LeaderboardPage() {
    const [momSub, setMomSub] = useState<"hard" | "harder" | "hardest">("hard");
    const [data, setData] = useState<LeaderboardResponse | null>(null);
    const [loading, setLoading] = useState(false);
+   const [error, setError] = useState("");
+   const [attempt, setAttempt] = useState(0);
 
    const apiCategory: ApiCategory = topTab === "my_mom" ? momSub : topTab;
 
@@ -97,15 +111,23 @@ export default function LeaderboardPage() {
       let cancelled = false;
       setLoading(true);
       setData(null);
-      fetchLeaderboard(apiCategory).then((res) => {
-         if (cancelled) return;
-         if (res.ok) setData(res.data);
-         setLoading(false);
-      });
+      setError("");
+      fetchLeaderboard(apiCategory)
+         .then((res) => {
+            if (cancelled) return;
+            if (res.ok) setData(res.data);
+            else setError(res.error);
+            setLoading(false);
+         })
+         .catch(() => {
+            if (cancelled) return;
+            setError("Unable to load the leaderboard.");
+            setLoading(false);
+         });
       return () => {
          cancelled = true;
       };
-   }, [apiCategory]);
+   }, [apiCategory, attempt]);
 
    return (
       <>
@@ -113,7 +135,11 @@ export default function LeaderboardPage() {
             <title>Leaderboard | Hearts</title>
          </Helmet>
          <PageLayout title="LEADERBOARD">
-            <div className={containers["stats-tabs"]}>
+            <div
+               className={`${containers["stats-tabs"]} ${styles.tabs}`}
+               role="group"
+               aria-label="Leaderboard category"
+            >
                {TOP_TABS.map(({ key, label, mobileLabel }) => (
                   <button
                      key={key}
@@ -123,6 +149,7 @@ export default function LeaderboardPage() {
                            : ""
                      }`}
                      onClick={() => setTopTab(key)}
+                     aria-pressed={topTab === key}
                   >
                      {mobileLabel ? (
                         <>
@@ -160,17 +187,39 @@ export default function LeaderboardPage() {
 
             {loading && !data ? (
                <div className={styles.empty}>Loading...</div>
-            ) : (
-               <div className={styles.columns}>
-                  <LeaderboardColumn
-                     title="Monthly"
-                     entries={data?.monthly ?? []}
+            ) : error ? (
+               <div className="button-stack">
+                  <p role="alert">{error}</p>
+                  <Button
+                     name="Try Again"
+                     onClick={() => setAttempt((n) => n + 1)}
                   />
+               </div>
+            ) : (
+               <div
+                  className={`${styles.columns} ${
+                     topTab === "achievements"
+                        ? styles.achievementStandings
+                        : ""
+                  }`}
+               >
+                  {topTab !== "achievements" && (
+                     <LeaderboardColumn
+                        title="Monthly"
+                        entries={data?.monthly ?? []}
+                     />
+                  )}
                   <LeaderboardColumn
                      title="All-Time"
                      entries={data?.all_time ?? []}
+                     achievements={topTab === "achievements"}
                   />
                </div>
+            )}
+            {topTab === "achievements" && (
+               <p className={styles.note}>
+                  Each earned tier counts separately.
+               </p>
             )}
 
             <ButtonGroup padding="loose">

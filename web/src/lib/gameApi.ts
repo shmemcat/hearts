@@ -400,8 +400,7 @@ export type LeaderboardEntry = {
    rank: number;
    username: string;
    profile_icon: string;
-   games_won: number;
-};
+} & ({ games_won: number } | { achievement_count: number });
 
 export type LeaderboardResponse = {
    monthly: LeaderboardEntry[];

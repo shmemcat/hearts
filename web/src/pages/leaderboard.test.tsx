@@ -44,6 +44,57 @@ afterEach(() => {
 });
 
 describe("LeaderboardPage", () => {
+   it("loads achievements as a single all-time ranking with achievement totals", async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<LeaderboardPage />, { route: "/leaderboard" });
+      await screen.findAllByText("No winners yet");
+      mockFetchLeaderboard.mockResolvedValue({
+         ok: true,
+         data: {
+            monthly: [],
+            all_time: [
+               {
+                  rank: 1,
+                  username: "Collector",
+                  profile_icon: "cat",
+                  achievement_count: 21,
+               },
+               {
+                  rank: 2,
+                  username: "Starter",
+                  profile_icon: "cat",
+                  achievement_count: 1,
+               },
+            ],
+         },
+      });
+      await user.click(screen.getByRole("button", { name: "Achievements" }));
+      expect(await screen.findByText("21 achievements")).toBeInTheDocument();
+      expect(screen.getByText("1 achievement")).toBeInTheDocument();
+      expect(screen.queryByText("Monthly")).not.toBeInTheDocument();
+      expect(mockFetchLeaderboard).toHaveBeenLastCalledWith("achievements");
+      expect(
+         screen.getByRole("button", { name: "Achievements" })
+      ).toHaveAttribute("aria-pressed", "true");
+   });
+
+   it("offers a retry if the achievement leaderboard fails", async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<LeaderboardPage />, { route: "/leaderboard" });
+      await screen.findAllByText("No winners yet");
+      mockFetchLeaderboard.mockResolvedValueOnce({
+         ok: false,
+         error: "Accounts unavailable",
+      });
+      await user.click(screen.getByRole("button", { name: "Achievements" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+         "Accounts unavailable"
+      );
+      await user.click(screen.getByRole("button", { name: "Try Again" }));
+      expect(
+         await screen.findByText("No achievements yet")
+      ).toBeInTheDocument();
+   });
    it("renders top-level tabs", async () => {
       renderWithProviders(<LeaderboardPage />, { route: "/leaderboard" });
       await waitFor(() => {
