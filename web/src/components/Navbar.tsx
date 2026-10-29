@@ -64,7 +64,7 @@ export const Navbar: React.FC = () => {
          logoControls.start({
             opacity: 1,
             transition: shouldFadeIn
-               ? { duration: 0.3, ease: "easeOut", delay: 0.15 }
+               ? { duration: 0.25, ease: "easeOut" }
                : { duration: 0 },
          });
          _fadeOutLogo = () => {
@@ -87,11 +87,19 @@ export const Navbar: React.FC = () => {
    };
 
    return (
-      <div className="flex flex-row justify-between">
+      <nav
+         aria-label="Main navigation"
+         className="site-nav flex flex-row justify-between items-center min-h-7"
+      >
          {location.pathname === "/" ? (
             <div />
          ) : (
-            <Link to="/" className="no-underline" onClick={handleHomeClick}>
+            <Link
+               to="/"
+               className="nav-home no-underline"
+               aria-label="Hearts home"
+               onClick={handleHomeClick}
+            >
                <motion.div
                   id="nav-home"
                   className="flex gap-[12px] items-center"
@@ -105,12 +113,12 @@ export const Navbar: React.FC = () => {
                </motion.div>
             </Link>
          )}
-         <div className="flex justify-end flex-row-reverse gap-5">
+         <div className="nav-actions flex justify-end flex-row-reverse items-center gap-5">
             <UserButton />
             <NightModeButton />
             <SoundButton />
          </div>
-      </div>
+      </nav>
    );
 };
 
@@ -125,11 +133,12 @@ const UserButton: React.FC = () => {
    };
 
    return (
-      <Link to="/user" className="no-underline">
-         <div id="nav-home" className="flex gap-2.5">
+      <Link to="/user" className="nav-user no-underline">
+         <div id="nav-home" className="flex items-center gap-2.5">
             <div
                role="button"
                aria-label="Login/User Settings"
+               className="flex items-center justify-center"
                onClick={() => onClickHandler()}
             >
                <FontAwesomeIcon
@@ -169,6 +178,7 @@ const NightModeButton: React.FC = () => {
       <div
          role="button"
          aria-label="Toggle between light and dark mode"
+         className="icon-button flex items-center justify-center w-7 h-7 text-[18px]"
          onClick={() => onClickHandler()}
       >
          <FontAwesomeIcon
@@ -298,6 +308,7 @@ const SoundButton: React.FC = () => {
          <div
             role="button"
             aria-label="Sound and music settings"
+            className="icon-button flex items-center justify-center w-7 h-7 text-[18px]"
             onClick={onClickHandler}
          >
             <FontAwesomeIcon

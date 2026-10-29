@@ -38,6 +38,7 @@
 .badgeIcon {
    font-size: 16px;
    line-height: 1;
+   color: var(--buttontext);
 }
 
 .badgeIcon_bronze {
@@ -206,6 +207,7 @@
 .toastIcon {
    font-size: 18px;
    flex-shrink: 0;
+   color: var(--buttontext);
 }
 
 .toastIcon_bronze {

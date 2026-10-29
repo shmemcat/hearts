@@ -107,7 +107,7 @@ class RemoteAccounts:
         cache = request.environ.setdefault("cards.remote_accounts", {})
         if "session" not in cache:
             # Anonymous guests must remain playable during an accounts outage.
-            name = (
+            name = current_app.config.get("CARDS_COOKIE_NAME") or (
                 "__Host-cards_session"
                 if current_app.config["CARDS_COOKIE_SECURE"]
                 else "cards_session"

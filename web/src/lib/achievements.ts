@@ -565,7 +565,7 @@ export function computeAchievements(
    for (const { def, unlocked } of secretChecks) {
       results.push({
          def,
-         tier: unlocked ? "gold" : null,
+         tier: null,
          unlocked,
       });
    }
@@ -593,7 +593,7 @@ export function resolveUnlockId(unlockId: string): {
 
    for (const def of SECRET_ACHIEVEMENTS) {
       if (def.id === unlockId) {
-         return { def, tier: "gold", name: def.singleName ?? def.id };
+         return { def, tier: null, name: def.singleName ?? def.id };
       }
    }
 

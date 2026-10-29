@@ -1,5 +1,4 @@
-import { Routes, Route, useLocation } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { CardStyleProvider } from "@/context/CardStyleContext";
@@ -31,8 +30,6 @@ import Leaderboard from "@/pages/leaderboard";
 import NotFound from "@/pages/404";
 
 export default function App() {
-   const location = useLocation();
-
    return (
       <ThemeProvider>
          <AuthProvider>
@@ -43,85 +40,69 @@ export default function App() {
                         <MobileLayoutProvider>
                            <ToastProvider>
                               <div style={{ position: "relative" }}>
-                                 <AnimatePresence mode="wait">
-                                    <motion.div key={location.pathname}>
-                                       <Routes location={location}>
-                                          <Route path="/" element={<Home />} />
-                                          <Route
-                                             path="/user"
-                                             element={<User />}
-                                          />
-                                          <Route
-                                             path="/about"
-                                             element={<About />}
-                                          />
-                                          <Route
-                                             path="/options"
-                                             element={<Options />}
-                                          />
-                                          <Route
-                                             path="/profile"
-                                             element={<Profile />}
-                                          />
-                                          <Route
-                                             path="/rules"
-                                             element={<Rules />}
-                                          />
-                                          <Route
-                                             path="/register"
-                                             element={<Register />}
-                                          />
-                                          <Route
-                                             path="/forgot-password"
-                                             element={<ForgotPassword />}
-                                          />
-                                          <Route
-                                             path="/reset-password"
-                                             element={<ResetPassword />}
-                                          />
-                                          <Route
-                                             path="/verify-email"
-                                             element={<VerifyEmail />}
-                                          />
-                                          <Route
-                                             path="/resend-verification"
-                                             element={<ResendVerification />}
-                                          />
-                                          <Route
-                                             path="/play"
-                                             element={<PlayMenu />}
-                                          />
-                                          <Route
-                                             path="/leaderboard"
-                                             element={<Leaderboard />}
-                                          />
-                                          <Route
-                                             path="/game/create"
-                                             element={<CreateGame />}
-                                          />
-                                          <Route
-                                             path="/game/join"
-                                             element={<JoinGame />}
-                                          />
-                                          <Route
-                                             path="/game/single-play"
-                                             element={<PlayGame />}
-                                          />
-                                          <Route
-                                             path="/game/lobby/:code"
-                                             element={<LobbyPage />}
-                                          />
-                                          <Route
-                                             path="/game/multi-play"
-                                             element={<MultiPlayPage />}
-                                          />
-                                          <Route
-                                             path="*"
-                                             element={<NotFound />}
-                                          />
-                                       </Routes>
-                                    </motion.div>
-                                 </AnimatePresence>
+                                 <Routes>
+                                    <Route path="/" element={<Home />} />
+                                    <Route path="/user" element={<User />} />
+                                    <Route path="/about" element={<About />} />
+                                    <Route
+                                       path="/options"
+                                       element={<Options />}
+                                    />
+                                    <Route
+                                       path="/profile"
+                                       element={<Profile />}
+                                    />
+                                    <Route path="/rules" element={<Rules />} />
+                                    <Route
+                                       path="/register"
+                                       element={<Register />}
+                                    />
+                                    <Route
+                                       path="/forgot-password"
+                                       element={<ForgotPassword />}
+                                    />
+                                    <Route
+                                       path="/reset-password"
+                                       element={<ResetPassword />}
+                                    />
+                                    <Route
+                                       path="/verify-email"
+                                       element={<VerifyEmail />}
+                                    />
+                                    <Route
+                                       path="/resend-verification"
+                                       element={<ResendVerification />}
+                                    />
+                                    <Route
+                                       path="/play"
+                                       element={<PlayMenu />}
+                                    />
+                                    <Route
+                                       path="/leaderboard"
+                                       element={<Leaderboard />}
+                                    />
+                                    <Route
+                                       path="/game/create"
+                                       element={<CreateGame />}
+                                    />
+                                    <Route
+                                       path="/game/join"
+                                       element={<JoinGame />}
+                                    />
+                                    <Route
+                                       path="/game/single-play"
+                                       element={<PlayGame />}
+                                    />
+                                    <Route
+                                       path="/game/lobby/:code"
+                                       element={<LobbyPage />}
+                                    />
+                                    <Route
+                                       path="/game/multi-play"
+                                       element={<MultiPlayPage />}
+                                    />
+                                    <Route path="*" element={<NotFound />} />
+                                 </Routes>
                                  <GearOverlay />
                               </div>
                            </ToastProvider>

@@ -62,7 +62,7 @@ html {
    --buttonboxshadowdisabled: hsla(342, 22%, 44%, 0.1);
    --selectionbgcolor: hsla(342, 36%, 64%, 0.6);
    --link: hsl(342, 36%, 64%);
-   --linkbox: hsla(340, 82%, 59%, 0.2);
+   --link-highlight-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20rx%3D%225%22%20fill%3D%22hsl(340%2C%2082%25%2C%2059%25)%22%20fill-opacity%3D%220.2%22%2F%3E%3C%2Fsvg%3E");
    --transparent: hsla(0, 0%, 0%, 0);
    --inputbox: hsl(0, 0%, 100%);
    --inputboxborder: hsl(342, 60%, 84%);
@@ -126,7 +126,7 @@ html {
    --buttonboxshadowdisabled: hsla(342, 22%, 44%, 0.2);
    --selectionbgcolor: hsla(341, 81%, 84%, 0.6);
    --link: hsl(0, 60%, 90%);
-   --linkbox: hsla(342, 36%, 64%, 0.5);
+   --link-highlight-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20rx%3D%225%22%20fill%3D%22hsl(342%2C%2036%25%2C%2064%25)%22%20fill-opacity%3D%220.5%22%2F%3E%3C%2Fsvg%3E");
    --inputbox: hsl(231, 16%, 29%);
    --inputboxborder: hsl(231, 16%, 29%);
    --radiobutton: hsl(212, 60%, 80%);
@@ -213,36 +213,48 @@ body {
    border: 3px solid var(--background);
 }
 
+@property --link-highlight-progress {
+   syntax: "<number>";
+   inherits: false;
+   initial-value: 0;
+}
+
 .link {
+   --link-highlight-inset: calc(10px - 8px * var(--link-highlight-progress));
    font-family: "appFont";
-   position: relative;
-   overflow: hidden;
    color: var(--link);
    font-weight: 700;
    text-decoration: none;
-   z-index: 1;
    cursor: pointer;
+   /* Keep the text in place while leaving room for the highlight to bounce. */
+   margin: 0 -2px;
+   padding: 2px;
+   /* One rounded image stays seamless throughout the bounce. */
+   background-image: var(--link-highlight-image);
+   background-repeat: no-repeat;
+   background-position: var(--link-highlight-inset) var(--link-highlight-inset);
+   background-size: calc(100% - var(--link-highlight-inset) - 2px)
+      calc(100% - var(--link-highlight-inset) - 2px);
+   /* Paint the highlight separately on each line of a wrapped link. */
+   -webkit-box-decoration-break: clone;
+   box-decoration-break: clone;
+   transition: --link-highlight-progress 0.35s cubic-bezier(0.25, 0.1, 0, 2.05);
 }
 
-.link::after {
-   content: "";
-   background: var(--linkbox);
-   position: absolute;
-   left: 8px;
-   bottom: -3px;
-   border-radius: 5px;
-   width: calc(100% - 6px);
-   height: calc(100% - 8px);
-   z-index: -1;
-   transition: 0.35s cubic-bezier(0.25, 0.1, 0, 2.05);
-   pointer-events: none;
+.link:hover,
+.link:focus-visible {
+   --link-highlight-progress: 1;
 }
 
-.link:hover:after {
-   left: 0;
-   bottom: -2px;
-   width: 100%;
-   height: 100%;
+.navhearts,
+.navtext,
+.icon {
+   transition: color 0.15s ease;
+}
+
+/* Inherited icon color should follow the parent without another fade. */
+.icon * {
+   transition: none;
 }
 
 .navhearts {
@@ -410,7 +422,63 @@ h3 {
 /* for mobile and mobile-sized windows */
 @media only screen and (max-width: 768px) {
    html {
-      overflow-y: none;
+      overflow-y: auto;
+   }
+
+   .site-nav {
+      width: 100%;
+      min-height: 44px;
+      gap: 12px;
+   }
+
+   .site-nav .nav-home .icon,
+   .site-nav .nav-home svg {
+      width: 24px;
+      height: 24px;
+   }
+
+   .site-nav .nav-actions {
+      min-width: 0;
+      gap: 16px;
+   }
+
+   .site-nav .icon-button {
+      flex-shrink: 0;
+      width: 28px;
+      min-width: 28px;
+      height: 44px;
+      min-height: 44px;
+   }
+
+   .site-nav .nav-user {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      max-width: min(160px, 39vw);
+      min-height: 44px;
+      font-size: 16px;
+      line-height: 24px;
+   }
+
+   .site-nav .nav-user #nav-home {
+      min-width: 0;
+   }
+
+   .site-nav .nav-user [role="button"] {
+      flex-shrink: 0;
+   }
+
+   .site-nav .navtext {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+   }
+
+   .site-nav .icon-button svg,
+   .site-nav .nav-user svg {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
    }
 
    ::selection {

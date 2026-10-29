@@ -9,7 +9,7 @@
 }
 
 .menu-button-container {
-   margin-top: -20px;
+   margin-top: -4px;
    margin-left: 200px;
    display: flex;
    flex-direction: column;
@@ -61,6 +61,10 @@
 
 .cards-hub-link:hover {
    color: var(--hoverpink);
+}
+
+.cards-hub-link * {
+   transition: none;
 }
 
 .cards-hub-link:focus-visible {
@@ -385,15 +389,16 @@
    }
 
    .content-border-container {
-      width: 95vw;
-      padding-top: 25px;
-      padding-bottom: 10px;
+      width: 100%;
+      margin: 0;
+      padding: 20px 20px 10px;
       background-color: transparent;
    }
 
    .content-border-container-menu {
-      width: 95vw;
-      padding-top: 25px;
+      width: 100%;
+      margin: 0;
+      padding: 20px 20px 120px;
       background-color: transparent;
    }
 

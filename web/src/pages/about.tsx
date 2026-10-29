@@ -32,13 +32,34 @@ export default function About() {
                         <span className="sparkle">shmemcat</span>
                      </span>
                   </span>
-                  . I&apos;m a software engineer developing this web application
-                  in React and Python. You can play Hearts locally with bots, or
-                  online with friends. This has been a fun project to work on;
-                  it&apos;s been a decade and a half since I&apos;ve been
-                  immersed in web development (as you can imagine, a lot&apos;s
-                  changed since then) so learning an array of new technologies
-                  has been an exceptionally fun challenge. Check out my{" "}
+                  .
+               </span>
+               <span className="block mt-4">
+                  For as long as I can remember, my mom played Hearts on Yahoo
+                  Games when I was growing up. She&apos;s excellent at it, and
+                  playing with her and her brothers is nothing short of
+                  punishing. My mom mentioned on more than one occasion how the
+                  Hearts apps she&apos;s always used have the tendency to be{" "}
+                  <span className="text-xs">*ahem*</span> homely, so I wanted to
+                  create for her an aesthetically pleasing experience of her
+                  favorite card game.
+               </span>
+               <span className="block mt-4">
+                  Hearts is part of my{" "}
+                  <StyledLink href="https://cards.shmem.dev/">Cards</StyledLink>{" "}
+                  project, alongside{" "}
+                  <StyledLink href="https://cards.shmem.dev/euchre/">
+                     Euchre
+                  </StyledLink>
+                  ,{" "}
+                  <StyledLink href="https://cards.shmem.dev/golf/">
+                     Golf
+                  </StyledLink>
+                  , and{" "}
+                  <StyledLink href="https://cards.shmem.dev/hand-and-foot/">
+                     Hand and Foot
+                  </StyledLink>
+                  . Check out my{" "}
                   <StyledLink
                      href="https://github.com/shmemcat/hearts"
                      target="_blank"
@@ -53,31 +74,8 @@ export default function About() {
                   <span className="bold">Art of Play</span> playing cards
                   design, <span className="bold">Flourish</span>. Flourish is a
                   delightful bakery themed set, which instantly inspired me with
-                  its whimsical yet balanced design. I&apos;m looking forward to
-                  making this app a proper tribute to this fantastic deck.
-               </span>
-               <span className="block mt-4">
-                  For as long as I can remember, my mom played Hearts on Yahoo
-                  Games when I was growing up. She&apos;s excellent at it, and
-                  playing with her and her brothers is nothing short of
-                  punishing. My mom mentioned on more than one occasion how the
-                  Hearts apps she&apos;s always used have the tendency to be{" "}
-                  <span className="text-xs">*ahem*</span> homely, so I&apos;d
-                  love to create for her an aesthetically pleasing experience of
-                  her favorite card game.
-               </span>
-               <span className="block mt-4">
-                  If you have any feedback or suggestions, please feel free to
-                  open an issue on my{" "}
-                  <StyledLink
-                     href="https://github.com/shmemcat/hearts"
-                     target="_blank"
-                     rel="noreferrer"
-                  >
-                     github
-                  </StyledLink>
-                  &nbsp;or shoot me an email at&nbsp;
-                  <span className="bold">emily@shmem.dev</span>.
+                  its whimsical yet balanced design. I hope I&apos;ve made this
+                  app a proper tribute to this fantastic deck.
                </span>
                <span className="block mt-4">
                   Credit for this lovely music you're listening to goes to{" "}
