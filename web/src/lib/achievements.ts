@@ -48,6 +48,7 @@ export type AchievementDef = {
    } | null;
    singleName?: string;
    singleDescription?: string;
+   flavorText?: string;
 };
 
 export type ComputedAchievement = {
@@ -292,8 +293,9 @@ const SECRET_ACHIEVEMENTS: AchievementDef[] = [
       secret: true,
       icon: faVolumeXmark,
       tiers: null,
-      singleName: "Geezer",
+      singleName: "Locked in",
       singleDescription: "Turn the music off",
+      flavorText: "Gotta turn the music down to see better",
    },
    // ── Holidays (calendar order) ─────────────────────────────────────
    {

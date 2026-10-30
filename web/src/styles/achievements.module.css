@@ -167,6 +167,12 @@
    font-weight: 600;
 }
 
+.tooltipFlavor {
+   font-size: 11px;
+   opacity: 0.6;
+   font-weight: 500;
+}
+
 .tooltipProgress {
    font-size: 11px;
    opacity: 0.5;

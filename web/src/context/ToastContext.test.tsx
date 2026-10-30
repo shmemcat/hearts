@@ -111,7 +111,7 @@ it("does not reset another toast's automatic timeout when one is dismissed", () 
       result.current.addToast(toast);
       result.current.addToast({
          achievementId: "geezer",
-         name: "Geezer",
+         name: "Locked in",
          icon: "music",
       });
    });
@@ -123,9 +123,9 @@ it("does not reset another toast's automatic timeout when one is dismissed", () 
    );
    act(() => vi.advanceTimersByTime(TOAST_EXIT_MS));
    expect(screen.queryByText("Night Owl")).not.toBeInTheDocument();
-   expect(screen.getByText("Geezer")).toBeInTheDocument();
+   expect(screen.getByText("Locked in")).toBeInTheDocument();
    act(() => vi.advanceTimersByTime(TOAST_DURATION_MS - 1000));
-   expect(screen.queryByText("Geezer")).not.toBeInTheDocument();
+   expect(screen.queryByText("Locked in")).not.toBeInTheDocument();
    expect(vi.getTimerCount()).toBe(0);
 });
 
@@ -169,7 +169,7 @@ it("clears visible and pending toasts on account changes and rejects stale callb
    act(() =>
       result.current.addToasts([
          toast,
-         { achievementId: "geezer", name: "Geezer", icon: "music" },
+         { achievementId: "geezer", name: "Locked in", icon: "music" },
       ])
    );
    act(() => vi.advanceTimersByTime(1));
@@ -178,7 +178,7 @@ it("clears visible and pending toasts on account changes and rejects stale callb
    rerender();
    expect(screen.queryByText("Night Owl")).not.toBeInTheDocument();
    act(() => vi.advanceTimersByTime(TOAST_STAGGER_MS));
-   expect(screen.queryByText("Geezer")).not.toBeInTheDocument();
+   expect(screen.queryByText("Locked in")).not.toBeInTheDocument();
    act(() =>
       oldAddToast({ ...toast, achievementId: "early_bird", name: "Early Bird" })
    );

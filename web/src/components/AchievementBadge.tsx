@@ -83,6 +83,9 @@ function getTooltipContent(a: ComputedAchievement) {
          <div className={styles.tooltipContent}>
             <span className={styles.tooltipName}>{def.singleName}</span>
             <span className={styles.tooltipDesc}>{def.singleDescription}</span>
+            {def.flavorText && (
+               <span className={styles.tooltipFlavor}>{def.flavorText}</span>
+            )}
          </div>
       );
    }
