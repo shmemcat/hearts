@@ -1,0 +1,80 @@
+.section {
+   width: 100%;
+   max-width: 760px;
+   margin: 32px auto 4px;
+   text-align: left;
+}
+.section > h2 {
+   margin: 0 0 18px;
+   font-size: 24px;
+   letter-spacing: 1px;
+}
+.grid {
+   display: grid;
+   grid-template-columns: repeat(2, minmax(0, 1fr));
+   gap: 18px;
+}
+.card {
+   display: flex;
+   flex-direction: column;
+   gap: 12px;
+   min-width: 0;
+   padding: 22px;
+   border: 1px solid var(--inputboxborder, var(--line));
+   border-radius: 16px;
+   background: var(--contentbox, var(--panel));
+   color: var(--text);
+   overflow-wrap: anywhere;
+}
+.top {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   gap: 12px;
+   font-size: 14px;
+   color: var(--text);
+   opacity: 0.8;
+}
+.top svg {
+   flex-shrink: 0;
+}
+.card h3 {
+   margin: 0;
+   font-size: 22px;
+   font-weight: 600;
+   letter-spacing: 0.5px;
+}
+.card p {
+   margin: 0;
+   font-size: 16px;
+   line-height: 1.5;
+   letter-spacing: 0.25px;
+}
+.progress {
+   flex: 1;
+}
+.status {
+   color: var(--header, var(--text));
+}
+.confirm {
+   padding-top: 10px;
+   border-top: 1px solid var(--inputboxborder, var(--line));
+}
+.actions {
+   display: flex;
+   justify-content: flex-end;
+   align-items: center;
+   gap: 12px;
+   margin-top: 8px;
+}
+@media (max-width: 600px) {
+   .grid {
+      grid-template-columns: 1fr;
+   }
+   .card {
+      padding: 18px;
+   }
+   .section > h2 {
+      font-size: 22px;
+   }
+}

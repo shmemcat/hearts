@@ -124,6 +124,8 @@ def create_app(config=None, *, accounts=None):
     register_game_socket(socketio)
     register_lobby_socket(socketio, app)
     register_multiplayer_socket(socketio)
+    from hearts_server.storage_cleanup import register_maintenance
+    register_maintenance(app, socketio)
 
     @app.errorhandler(AccountsUnavailable)
     def unavailable(error):
@@ -179,4 +181,6 @@ def create_app(config=None, *, accounts=None):
             status="ready" if good else "not-ready", component="hearts-game"
         ), (200 if good else 503)
 
+    from .game_limits import register_limits
+    register_limits(app)
     return app

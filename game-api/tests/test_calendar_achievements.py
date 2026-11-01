@@ -1,4 +1,5 @@
 """Calendar badges follow each player's local game start, including multiplayer."""
+import json
 
 from dataclasses import replace
 from datetime import datetime, timedelta
@@ -73,9 +74,6 @@ def test_multiplayer_awards_local_badges_before_start_record_is_deleted(
     row = ActiveGame.query.filter_by(game_id="saved-multi").one()
     row.created_at = utc_start
     db.session.commit()
-    monkeypatch.setattr(
-        mp, "_start_idle_timers_for_actionable_seats", lambda *args: None
-    )
     io = app.extensions["socketio"]
     sockets = [
         io.test_client(
@@ -95,7 +93,7 @@ def test_multiplayer_awards_local_badges_before_start_record_is_deleted(
     assert [seat.utc_offset_minutes for seat in runner.seats[:2]] == list(offsets)
     runner._state = replace(runner.state, game_over=True, scores=(10, 30, 50, 100))
     mp._on_game_complete("saved-multi", runner, io)
-    assert not ActiveGame.query.filter_by(game_id="saved-multi").first()
+    assert json.loads(ActiveGame.query.filter_by(game_id="saved-multi").one().state_json)["_closed"] == "completed"
     for uid, socket, badge in zip((42, 43), sockets, expected):
         stats = UserStats.query.filter_by(user_id=uid).one()
         unlocked = [
@@ -131,9 +129,6 @@ def test_reconnect_preserves_original_offset(app, monkeypatch):
     runner = multiplayer(app)
     runner.seats[0].utc_offset_minutes = 420
     mp._save_to_db("saved-multi", runner)
-    monkeypatch.setattr(
-        mp, "_start_idle_timers_for_actionable_seats", lambda *args: None
-    )
     socket = app.extensions["socketio"].test_client(
         app,
         namespace="/multi",

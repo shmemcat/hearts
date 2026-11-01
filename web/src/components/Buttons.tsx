@@ -2,28 +2,43 @@ import React from "react";
 import button from "@/styles/buttons.module.css";
 import colors from "@/styles/designTokens";
 
-export interface ButtonProps {
+export interface ButtonProps
+   extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "name"> {
    name: string;
    disabled?: boolean;
    onClick?: () => void;
    style?: React.CSSProperties;
    type?: "button" | "submit" | "reset";
    children?: React.ReactNode;
+   variant?: "primary" | "secondary";
+   size?: "menu" | "compact";
 }
 
-export const Button: React.FC<ButtonProps> = (props) => {
+export const Button: React.FC<ButtonProps> = ({
+   name,
+   variant = "primary",
+   size = "menu",
+   className = "",
+   children,
+   ...props
+}) => {
    return (
       <button
-         className={button["menu-button"]}
-         disabled={props.disabled}
-         onClick={props.onClick}
-         type={props.type}
-         style={props.style}
-         aria-label={props.name}
-         tabIndex={-1}
+         type={size === "compact" ? "button" : undefined}
+         aria-label={name}
+         tabIndex={size === "compact" ? 0 : -1}
+         {...props}
+         className={[
+            button["menu-button"],
+            variant === "secondary" ? button["button-secondary"] : "",
+            size === "compact" ? button["button-compact"] : "",
+            className,
+         ]
+            .filter(Boolean)
+            .join(" ")}
       >
          <ButtonShine />
-         {props.children ?? props.name}
+         {children ?? name}
       </button>
    );
 };

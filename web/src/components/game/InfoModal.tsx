@@ -45,6 +45,23 @@ export const InfoModal: React.FC<InfoModalProps> = ({
    return (
       <div className={styles.backdrop} onClick={onClose}>
          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button
+               type="button"
+               className={styles.closeBtn}
+               aria-label="Close round info"
+               onClick={onClose}
+            >
+               <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+               >
+                  <path d="m6 6 12 12M6 18 18 6" />
+               </svg>
+            </button>
             <span className={styles.title}>Round {round}</span>
 
             <div className={styles.row}>
@@ -98,7 +115,6 @@ export const InfoModal: React.FC<InfoModalProps> = ({
                </tbody>
             </table>
 
-            <Button name="Close" onClick={onClose} />
             {onConcede && !gameOver && (
                <Button
                   name="Concede Game"

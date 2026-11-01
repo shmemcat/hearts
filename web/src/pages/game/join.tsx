@@ -8,7 +8,6 @@ import { LoginWarning } from "@/components/LoginWarning";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
-import { useActiveGameModals } from "@/hooks/useActiveGameModals";
 import { getLobbyState } from "@/lib/lobbyApi";
 
 export default function JoinGamePage() {
@@ -17,7 +16,6 @@ export default function JoinGamePage() {
    const [lobbyCode, setLobbyCode] = React.useState("");
    const [submitting, setSubmitting] = React.useState(false);
    const [error, setError] = React.useState<string | null>(null);
-   const activeGameModals = useActiveGameModals();
 
    async function handleJoin() {
       const code = lobbyCode.trim().toUpperCase();
@@ -90,7 +88,6 @@ export default function JoinGamePage() {
                </Link>
             </ButtonGroup>
          </PageLayout>
-         {activeGameModals}
       </>
    );
 }

@@ -1,10 +1,11 @@
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/Buttons";
 import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
-import { useActiveGameModals } from "@/hooks/useActiveGameModals";
+import { useSavedGames } from "@/hooks/useSavedGames";
+import { InProgressGames } from "@/components/InProgressGames";
 import styles from "@/styles/play-menu.module.css";
 
 const CHOICES = [
@@ -21,7 +22,8 @@ const CHOICES = [
 ] as const;
 
 export default function PlayPage() {
-   const activeGameModals = useActiveGameModals();
+   const saved = useSavedGames();
+   const navigate = useNavigate();
 
    return (
       <>
@@ -37,13 +39,23 @@ export default function PlayPage() {
                   </Link>
                ))}
             </div>
+            <InProgressGames
+               games={saved.games}
+               loading={saved.loading}
+               error={saved.error}
+               onRetry={saved.retry}
+               onResume={(id) => {
+                  const path = saved.resume(id);
+                  if (path) navigate(path);
+               }}
+               onConcede={saved.concede}
+            />
             <ButtonGroup padding="loose">
                <Link to="/" onClick={() => triggerLogoFadeOut()}>
                   <Button name="Home" />
                </Link>
             </ButtonGroup>
          </PageLayout>
-         {activeGameModals}
       </>
    );
 }

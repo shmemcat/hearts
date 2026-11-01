@@ -244,18 +244,18 @@ class TestSubmitPlay:
 
 class TestConcedePlayer:
     def test_concede_returns_conceded(self):
-        runner = _make_runner(num_humans=2)
+        runner = _make_runner(num_humans=3)
         result = runner.concede_player(0)
         assert result == "conceded"
         assert runner.seats[0].conceded is True
         assert "(Bot)" in runner.seats[0].name
 
-    def test_all_concede_returns_terminated(self):
+    def test_one_remaining_human_returns_terminated(self):
         runner = _make_runner(num_humans=2)
-        runner.concede_player(0)
-        result = runner.concede_player(1)
+        result = runner.concede_player(0)
         assert result == "terminated"
         assert runner.state.game_over is True
+        assert runner.terminated and not runner.seats[1].conceded
 
     def test_raises_for_bot_seat(self):
         runner = _make_runner(num_humans=2)
@@ -277,9 +277,10 @@ class TestConcedePlayer:
         assert 0 not in runner.pending_passes
 
     def test_concede_during_passing_triggers_apply_if_remaining_done(self):
-        runner = _find_runner_at_phase(Phase.PASSING)
+        runner = _find_runner_at_phase(Phase.PASSING, num_humans=3)
         hand1 = list(runner.state.hands[1])
         runner.submit_pass(1, hand1[:3])
+        runner.submit_pass(2, list(runner.state.hands[2])[:3])
         runner.concede_player(0)
         assert runner.state.phase == Phase.PLAYING
 

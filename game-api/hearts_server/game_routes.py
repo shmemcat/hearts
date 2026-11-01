@@ -18,6 +18,8 @@ from hearts_server.ai.factory import create_strategies
 from hearts_server.jwt_utils import get_current_user
 from hearts_server.models import ActiveGame, UserStats
 from hearts_server.stats_routes import _valid_utc_offset
+from hearts_server.storage_cleanup import data_for, retire_game
+from hearts_server.game_limits import check_creation, open_games, principal
 
 games_bp = Blueprint("games", __name__, url_prefix="/games")
 
@@ -47,6 +49,8 @@ def _get_runner(game_id: str) -> Optional[GameRunner]:
     row = ActiveGame.query.filter_by(game_id=game_id).first()
     if row is None:
         return None
+    if data_for(row).get("_closed"):
+        return None
     runner = GameRunner.from_json(row.state_json)
     _store[game_id] = runner
     return runner
@@ -59,6 +63,7 @@ def _save_to_db(
     from datetime import datetime
 
     row = ActiveGame.query.filter_by(game_id=game_id).first()
+    guest_key = data_for(row).get("_guest_key") if row else None
     if row is None:
         row = ActiveGame(
             game_id=game_id,
@@ -68,16 +73,24 @@ def _save_to_db(
         )
         db.session.add(row)
     else:
+        if data_for(row).get("_closed"):
+            return
         row.state_json = runner.to_json()
         row.updated_at = datetime.utcnow()
+    import json
+    from flask import has_request_context
+    data = json.loads(row.state_json)
+    if has_request_context() and not row.user_id:
+        data["_guest_key"] = guest_key or getattr(runner, "_quota_guest", None) or principal()
+    elif guest_key:
+        data["_guest_key"] = guest_key
+    row.state_json = json.dumps(data)
     db.session.commit()
 
 
 def _delete_game(game_id: str) -> None:
-    """Remove a game from both the cache and the database."""
-    _store.pop(game_id, None)
-    ActiveGame.query.filter_by(game_id=game_id).delete()
-    db.session.commit()
+    """Close gameplay while retaining a compactable receipt for old requests."""
+    retire_game(game_id, reason="conceded")
 
 
 def _evict_from_cache(game_id: str) -> None:
@@ -100,6 +113,9 @@ def start_game():
     if utc_offset_minutes is not None and not _valid_utc_offset(utc_offset_minutes):
         return jsonify({"error": "Invalid local time offset"}), 400
     difficulty = data.get("difficulty", "easy")
+    user = get_current_user()
+    key = principal(user.id if user else None)
+    check_creation(key, open_games(key))
     game_id = uuid.uuid4().hex
     rng = None
     if current_app.config.get("TESTING") and "seed" in data:
@@ -117,13 +133,11 @@ def start_game():
     )
     _store[game_id] = runner
     runner.utc_offset_minutes = utc_offset_minutes
+    if not user:
+        runner._quota_guest = key
 
     user = get_current_user()
     user_id = user.id if user else None
-
-    if user_id is not None:
-        ActiveGame.query.filter_by(user_id=user_id).delete()
-        db.session.commit()
 
     _save_to_db(game_id, runner, user_id=user_id)
 
@@ -136,8 +150,41 @@ def get_active_game():
     user = get_current_user()
     if not user:
         return jsonify({"error": "Authentication required"}), 401
-    row = ActiveGame.query.filter_by(user_id=user.id).first()
+    row = next((row for row in ActiveGame.query.filter_by(user_id=user.id).order_by(ActiveGame.updated_at.desc())
+                if not data_for(row).get("state", {}).get("game_over")), None)
     return jsonify({"game_id": row.game_id if row else None})
+
+
+@games_bp.get("/saved")
+def saved_games():
+    import json
+
+    user = get_current_user()
+    if not user:
+        return jsonify(error="Sign in to see your saved games."), 401
+    games = []
+    for row in ActiveGame.query.order_by(ActiveGame.updated_at.desc()).all():
+        data = json.loads(row.state_json)
+        state = data.get("state", {})
+        if state.get("game_over"):
+            continue
+        mine = None
+        if row.is_multiplayer:
+            mine = next((i for i, seat in enumerate(data.get("seats", [])) if seat.get("user_id") == user.id
+                         and seat.get("is_human") and not seat.get("conceded")), None)
+            if mine is None:
+                continue
+        elif row.user_id != user.id:
+            continue
+        item = dict(id=row.game_id, multiplayer=row.is_multiplayer, code=row.lobby_code,
+                    difficulty=row.difficulty, round=state.get("round", 1), scores=state.get("scores", []),
+                    your_turn=state.get("whose_turn") == (mine if mine is not None else 0))
+        if mine is not None:
+            item.update(player_token=data["seats"][mine].get("player_token"), seat=mine)
+        games.append(item)
+    response = jsonify(games=games)
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @games_bp.route("/<game_id>", methods=["GET"])
@@ -147,6 +194,44 @@ def get_game(game_id: str):
     if runner is None:
         return jsonify({"error": "Game not found"}), 404
     return jsonify(_inject_player_icons(runner.get_state_for_frontend(), game_id))
+
+
+@games_bp.post("/saved-guest")
+def saved_guest_games():
+    import json
+
+    values = (request.get_json() or {}).get("memberships", [])
+    if not isinstance(values, list) or len(values) > 100:
+        return jsonify(error="Invalid saved games."), 400
+    games = []
+    for value in values:
+        if not isinstance(value, dict):
+            continue
+        if value.get("lobby"):
+            continue
+        game_id = value.get("id")
+        if not isinstance(game_id, str):
+            continue
+        row = ActiveGame.query.filter_by(game_id=game_id).first()
+        if row is None or row.user_id:
+            continue
+        data = json.loads(row.state_json)
+        state = data.get("state", {})
+        if state.get("game_over"):
+            continue
+        mine = None
+        if row.is_multiplayer:
+            mine = next((i for i, s in enumerate(data.get("seats", [])) if s.get("player_token") == value.get("token")
+                         and not s.get("user_id") and s.get("is_human") and not s.get("conceded")), None)
+            if mine is None:
+                continue
+        games.append(dict(id=row.game_id, multiplayer=row.is_multiplayer, code=row.lobby_code, difficulty=row.difficulty,
+                          round=state.get("round", 1), scores=state.get("scores", []), seat=mine,
+                          your_turn=state.get("whose_turn") == (mine if mine is not None else 0),
+                          player_token=value.get("token") if row.is_multiplayer else None))
+    response = jsonify(games=games)
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @games_bp.route("/<game_id>/pass", methods=["POST"])
@@ -190,6 +275,7 @@ def advance_game(game_id: str):
     payload["intermediate_plays"] = runner.get_last_play_events()
     payload["round_just_ended"] = runner.get_last_round_ended()
     if runner.state.game_over:
+        _save_to_db(game_id, runner)
         _evict_from_cache(game_id)
     else:
         _save_to_db(game_id, runner)
@@ -218,6 +304,7 @@ def submit_play(game_id: str):
     payload["intermediate_plays"] = runner.get_last_play_events()
     payload["round_just_ended"] = runner.get_last_round_ended()
     if runner.state.game_over:
+        _save_to_db(game_id, runner)
         _evict_from_cache(game_id)
     else:
         _save_to_db(game_id, runner)

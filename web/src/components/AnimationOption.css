@@ -1,0 +1,46 @@
+.animation-option {
+   margin: 32px auto 0;
+   width: 100%;
+   text-align: center;
+}
+.animation-option-hint {
+   margin: 10px 0 16px;
+   font-size: 14px;
+   line-height: 1.5;
+   letter-spacing: normal;
+}
+.animation-option-choices {
+   display: grid;
+   grid-template-columns: repeat(2, minmax(0, 1fr));
+   gap: 10px;
+   text-align: left;
+}
+.animation-option-choices label {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   min-height: 48px;
+   padding: 12px 16px;
+   border-radius: 12px;
+   background: var(--mediumpink, var(--panel));
+   cursor: pointer;
+   font-size: 14px;
+   line-height: 1.5;
+   letter-spacing: normal;
+}
+.animation-option-choices input {
+   width: 20px;
+   height: 20px;
+   flex-shrink: 0;
+   accent-color: var(--cardhighlight, var(--primary));
+   cursor: pointer;
+}
+.animation-option-choices input:focus-visible {
+   outline: 2px solid currentColor;
+   outline-offset: 4px;
+}
+@media (max-width: 768px) {
+   .animation-option-choices {
+      grid-template-columns: minmax(0, 1fr);
+   }
+}

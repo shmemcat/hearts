@@ -54,6 +54,12 @@ html {
    --white: hsl(0, 0%, 100%);
    --mediumpink: hsl(350, 100%, 94%);
    --buttontextdisabled: hsla(0, 0%, 6%, 0.3);
+   --button-label-size: 13px;
+   --button-secondary-background: hsl(214, 44%, 86%);
+   --button-secondary-hover: hsl(214, 40%, 79%);
+   --button-secondary-active: hsl(214, 40%, 79%);
+   --button-secondary-shadow: hsla(214, 28%, 48%, 0.25);
+   --button-secondary-shine: hsla(0, 0%, 100%, 0.6);
    --buttonshine: hsla(334, 100%, 96%, 0.6);
    --buttonshinehover: hsla(332, 45%, 76%, 0.6);
    --buttonshinedisabled: hsla(334, 100%, 96%, 0.251);
@@ -104,6 +110,11 @@ html {
 }
 
 [data-theme="dark"] {
+   --button-secondary-background: hsl(217, 20%, 32%);
+   --button-secondary-hover: hsl(217, 20%, 39%);
+   --button-secondary-active: hsl(217, 20%, 39%);
+   --button-secondary-shadow: hsla(217, 30%, 12%, 0.4);
+   --button-secondary-shine: hsla(214, 35%, 80%, 0.3);
    --background: hsl(231, 13%, 11%);
    --contentbox: hsl(232, 15%, 19%);
    --header: hsl(341, 80%, 84%);
@@ -512,5 +523,15 @@ h3 {
 
    .navhearts {
       display: none;
+   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+   :where(:root:not([data-motion-override="true"])) *,
+   :where(:root:not([data-motion-override="true"])) *::before,
+   :where(:root:not([data-motion-override="true"])) *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
    }
 }

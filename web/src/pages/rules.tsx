@@ -1,3 +1,7 @@
+import {
+   animationsOverridden,
+   prefersReducedMotion,
+} from "../lib/motionPreference";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import React, { useRef, useCallback } from "react";
@@ -222,6 +226,9 @@ function Scoring() {
 
    const handleShootTheMoonHover = useCallback(
       (e: React.MouseEvent<HTMLElement>) => {
+         if (prefersReducedMotion()) return;
+         if (party.settings)
+            party.settings.respectReducedMotion = !animationsOverridden();
          const now = Date.now();
          if (now - lastConfettiTime.current < CONFETTI_COOLDOWN_MS) return;
          lastConfettiTime.current = now;

@@ -9,9 +9,9 @@ import { triggerLogoFadeOut } from "@/components/Navbar";
 import { PageLayout, ButtonGroup } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useHardLevel } from "@/context/HardLevelContext";
-import { useActiveGameModals } from "@/hooks/useActiveGameModals";
 import { startGame } from "@/lib/gameApi";
 import { createLobby } from "@/lib/lobbyApi";
+import { rememberBotGame } from "@/lib/savedGames";
 
 export default function CreateGamePage() {
    const navigate = useNavigate();
@@ -21,7 +21,6 @@ export default function CreateGamePage() {
    const [difficulty, setDifficulty] = React.useState("Easy");
    const [submitting, setSubmitting] = React.useState(false);
    const [error, setError] = React.useState<string | null>(null);
-   const activeGameModals = useActiveGameModals();
 
    async function handleCreateGame() {
       setError(null);
@@ -61,6 +60,7 @@ export default function CreateGamePage() {
          );
          if (result.ok) {
             const gameId = result.data.game_id;
+            rememberBotGame(gameId, user?.id ?? "guest");
             navigate(`/game/single-play?game_id=${encodeURIComponent(gameId)}`);
          } else {
             setError(result.error);
@@ -108,7 +108,6 @@ export default function CreateGamePage() {
                </ButtonGroup>
             </div>
          </PageLayout>
-         {activeGameModals}
       </>
    );
 }

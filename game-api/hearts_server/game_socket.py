@@ -55,6 +55,7 @@ def _make_callbacks(runner, game_id, human_icon: str = "user"):
         _inject_icons(payload, human_icon)
         emit("state", payload, namespace="/game")
         if runner.state.game_over:
+            _save_to_db(game_id, runner)
             _evict_from_cache(game_id)
         else:
             _save_to_db(game_id, runner)

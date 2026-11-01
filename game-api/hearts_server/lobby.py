@@ -3,7 +3,7 @@ In-memory lobby store for multiplayer games.
 
 Each lobby holds up to 4 seats (the creator starts in seat 0). AI seats fill
 counter-clockwise (3, 2, 1); guests fill clockwise (1, 2, 3) and replace AI seats
-when needed. Membership survives network disconnects until an explicit leave.
+when needed. Waiting seats allow two minutes to reconnect after a disconnect.
 """
 
 from hearts_server.runtime import runtime_state
@@ -30,6 +30,7 @@ class Seat:
     is_ai: bool = False
     icon: str = "user"
     user_id: Optional[int] = None
+    guest_key: Optional[str] = None
 
 
 @dataclass

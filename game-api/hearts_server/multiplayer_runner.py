@@ -11,6 +11,7 @@ differences from GameRunner:
 
 import json
 import random
+from dataclasses import replace
 from typing import Any, Callable, Dict, List, Optional
 
 from hearts_server.game.card import Card, Suit, deck_52, shuffle_deck, deal_into_4_hands
@@ -41,6 +42,7 @@ class SeatConfig:
         "icon",
         "user_id",
         "utc_offset_minutes",
+        "guest_key",
     )
 
     def __init__(
@@ -52,6 +54,7 @@ class SeatConfig:
         icon: str = "user",
         user_id: Optional[int] = None,
         utc_offset_minutes: Optional[int] = None,
+        guest_key: Optional[str] = None,
     ):
         self.name = name
         self.is_human = is_human
@@ -60,6 +63,7 @@ class SeatConfig:
         self.icon = icon
         self.user_id = user_id
         self.utc_offset_minutes = utc_offset_minutes
+        self.guest_key = guest_key
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -70,6 +74,7 @@ class SeatConfig:
             "icon": self.icon,
             "user_id": self.user_id,
             "utc_offset_minutes": self.utc_offset_minutes,
+            "guest_key": self.guest_key,
         }
 
     @classmethod
@@ -82,6 +87,7 @@ class SeatConfig:
             icon=d.get("icon", "user"),
             user_id=d.get("user_id"),
             utc_offset_minutes=d.get("utc_offset_minutes"),
+            guest_key=d.get("guest_key"),
         )
 
 
@@ -103,6 +109,7 @@ class MultiplayerRunner:
         self._rng = rng or random.Random()
         self._difficulty = difficulty
         self._account_links_version = 1
+        self._terminated = False
         self._pending_passes: Dict[int, List[Card]] = {}
         self._last_play_events: List[Dict[str, Any]] = []
         self._last_round_ended: bool = False
@@ -116,6 +123,11 @@ class MultiplayerRunner:
     @property
     def seats(self) -> List[SeatConfig]:
         return self._seats
+
+    @property
+    def terminated(self) -> bool:
+        """A conceded game is closed without recording a completed result."""
+        return self._terminated
 
     @property
     def difficulty(self) -> str:
@@ -161,9 +173,6 @@ class MultiplayerRunner:
     def apply_all_passes(self) -> None:
         """Collect AI passes for any seats that haven't submitted, then apply."""
         self._apply_all_passes()
-
-    def _all_humans_conceded(self) -> bool:
-        return not any(self.is_active_human(i) for i in range(4))
 
     # ── Pass phase ──────────────────────────────────────────────────────
 
@@ -335,6 +344,16 @@ class MultiplayerRunner:
 
     # ── Concede ─────────────────────────────────────────────────────────
 
+    def _close_if_uncontested(self) -> bool:
+        if self._state.game_over:
+            return self._terminated
+        if any(seat.conceded for seat in self._seats) and sum(
+            self.is_active_human(i) for i in range(4)
+        ) <= 1:
+            self._terminated = True
+            self._state = replace(self._state, game_over=True, winner_index=None)
+        return self._terminated
+
     def concede_player(self, seat_index: int) -> str:
         """Mark a player as conceded (AI takeover). Returns 'conceded' or 'terminated'."""
         seat = self._seats[seat_index]
@@ -346,20 +365,7 @@ class MultiplayerRunner:
         # Remove any pending pass from this player (AI will generate it)
         self._pending_passes.pop(seat_index, None)
 
-        if self._all_humans_conceded():
-            self._state = GameState(
-                round=self._state.round,
-                phase=self._state.phase,
-                pass_direction=self._state.pass_direction,
-                hands=self._state.hands,
-                current_trick=self._state.current_trick,
-                whose_turn=self._state.whose_turn,
-                scores=self._state.scores,
-                round_scores=self._state.round_scores,
-                hearts_broken=self._state.hearts_broken,
-                game_over=True,
-                winner_index=None,
-            )
+        if self._close_if_uncontested():
             return "terminated"
 
         # If it was this player's turn to pass and all remaining humans have
@@ -509,6 +515,7 @@ class MultiplayerRunner:
             "account_links_version": self._account_links_version,
             "difficulty": self._difficulty,
             "pending_passes": pending,
+            "terminated": self._terminated,
             "rng_state": [rng_state[0], list(rng_state[1]), rng_state[2]],
             "moon_shots": {str(k): v for k, v in self._moon_shots.items()},
             "hearts_broken_count": {
@@ -552,6 +559,7 @@ class MultiplayerRunner:
             state, pass_strategy, play_strategy, seats, rng=rng, difficulty=difficulty
         )
         runner._account_links_version = data.get("account_links_version", 0)
+        runner._terminated = data.get("terminated", False)
 
         pending_raw = data.get("pending_passes", {})
         for k, v in pending_raw.items():
@@ -562,6 +570,7 @@ class MultiplayerRunner:
         for k, v in data.get("hearts_broken_count", {}).items():
             runner._hearts_broken_count[int(k)] = int(v)
 
+        runner._close_if_uncontested()
         return runner
 
     @classmethod

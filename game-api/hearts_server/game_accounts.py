@@ -158,6 +158,15 @@ def _cleanup_hearts(user_id):
     rows = {row.game_id: row for row in ActiveGame.query.filter_by(is_multiplayer=True)}
     for game_id in set(rows) | set(mp._runners) | set(mp._game_auth):
         row = rows.get(game_id)
+        if row is not None:
+            retired = json.loads(row.state_json)
+            if retired.get("_closed"):
+                retired["_recorded_users"] = [uid for uid in retired.get("_recorded_users", []) if uid != user_id]
+                for seat in retired.get("seats", []):
+                    if seat.get("user_id") == user_id:
+                        seat.update(user_id=None, player_token=None, name="Deleted player")
+                row.state_json = json.dumps(retired)
+                continue
         runner = mp._runners.get(game_id)
         if runner is None:
             if row is None:
@@ -231,6 +240,9 @@ def resume_cleaned_games(app, game_ids):
         for game_id in game_ids:
             runner = mp._runners.get(game_id)
             if runner is None:
+                continue
+            if runner.terminated:
+                mp._on_game_complete(game_id, runner, socketio)
                 continue
             mp._emit_state_to_all(game_id, runner, socketio)
             if runner.state.game_over:

@@ -1,4 +1,5 @@
 """The independent runtime owns Hearts data and delegates every identity check."""
+import json
 
 import io
 import json
@@ -289,7 +290,7 @@ def test_signed_socket_revocation_and_guest_continuity_on_outage(app):
     guest.disconnect(namespace="/game")
 
 
-def test_account_deletion_unblocks_other_players_waiting_for_a_pass(app, monkeypatch):
+def test_account_deletion_closes_the_game_when_one_human_remains(app, monkeypatch):
     from hearts_server import multiplayer_socket as mp
     from hearts_server.game_accounts import is_deleted
 
@@ -312,18 +313,15 @@ def test_account_deletion_unblocks_other_players_waiting_for_a_pass(app, monkeyp
     )
     assert cleanup(client).json["deleted"]
     assert is_deleted(42)
-    assert runner.state.phase.value == "playing"
+    assert runner.terminated and runner.state.game_over
     assert len(tasks) == 1
     fn, args = tasks.pop()
     fn(*args)
-    view = [
-        event["args"][0]
-        for event in guest.get_received("/multi")
-        if event["name"] == "state"
-    ][-1]
+    events = guest.get_received("/multi")
     assert guest.is_connected("/multi")
-    assert view["players"][0]["name"] == "Bot 1"
-    assert view["whose_turn"] == 1 and view["legal_plays"]
+    assert any(event["name"] == "game_terminated" for event in events)
+    assert json.loads(ActiveGame.query.filter_by(game_id="saved-multi").one().state_json)["_closed"] == "cancelled"
+    assert GameResult.query.count() == 0
     assert UserStats.query.filter_by(user_id=42).first() is None
     guest.disconnect(namespace="/multi")
 
@@ -343,83 +341,49 @@ def test_profiles_filter_missing_accounts_and_preserve_leaderboard_awards(app):
     ]
 
 
-def test_idle_timer_grants_recovery_after_account_outage(app, monkeypatch):
+def test_pending_human_decisions_never_schedule_a_kick_even_during_account_outages(app, monkeypatch):
     from hearts_server import multiplayer_socket as mp
-
-    signed(app)
-    runner = multiplayer(app)
-    scheduled = []
-
-    class Timer:
-        def cancel(self):
-            pass
-
-    def schedule(seconds, callback, *args):
-        scheduled.append((seconds, callback, args))
-        return Timer()
-
-    monkeypatch.setattr(mp.eventlet, "spawn_after", schedule)
-    mp._start_idle_timer("saved-multi", 0, app.extensions["socketio"], app)
-    peer = app.extensions["accounts"]
-    peer.unavailable = True
-    _, callback, args = scheduled[-1]
-    callback(*args)
-    assert scheduled[-1][0] == 30 and scheduled[-1][2] == (True,)
-    peer.unavailable = False
-    _, callback, args = scheduled[-1]
-    callback(*args)
-    assert scheduled[-1][0] == 30 and scheduled[-1][2] == (False,)
-    assert runner.seats[0].is_human and not runner.seats[0].conceded
-
-
-def test_sleeping_phone_rejoins_same_seat_without_restarting_its_decision_timer(
-    app, monkeypatch
-):
-    from hearts_server import multiplayer_socket as mp
-
     client = signed(app)
     runner = multiplayer(app)
     scheduled = []
+    monkeypatch.setattr(mp.eventlet, "spawn_after", lambda *args: scheduled.append(args))
+    socket = app.extensions["socketio"].test_client(app, namespace="/multi", flask_test_client=client,
+        query_string="game_id=saved-multi&player_token=private-seat")
+    assert socket.is_connected("/multi")
+    app.extensions["accounts"].unavailable = True
+    socket.disconnect(namespace="/multi")
+    assert scheduled == []
+    assert runner.is_active_human(0) and not runner.state.game_over
 
-    class Timer:
-        def __init__(self):
-            self.cancelled = False
 
-        def cancel(self):
-            self.cancelled = True
-
-    def schedule(seconds, callback, *args):
-        timer = Timer()
-        scheduled.append((seconds, callback, args, timer))
-        return timer
-
-    monkeypatch.setattr(mp.eventlet, "spawn_after", schedule)
+def test_sleeping_phone_restores_its_original_game_after_a_year_without_a_timeout(app, monkeypatch):
+    from datetime import datetime, timedelta
+    from hearts_server import multiplayer_socket as mp
+    client = signed(app)
+    runner = multiplayer(app)
+    scheduled = []
+    monkeypatch.setattr(mp.eventlet, "spawn_after", lambda *args: scheduled.append(args))
     socketio = app.extensions["socketio"]
-
     def connect():
-        return socketio.test_client(
-            app,
-            namespace="/multi",
-            flask_test_client=client,
-            query_string="game_id=saved-multi&player_token=private-seat",
-        )
-
+        return socketio.test_client(app, namespace="/multi", flask_test_client=client,
+            query_string="game_id=saved-multi&player_token=private-seat")
     socket = connect()
     assert socket.is_connected("/multi")
-    warning, expiry = scheduled[:2]
-    assert (warning[0], expiry[0]) == (540, 600)
     socket.disconnect(namespace="/multi")
-    assert not warning[3].cancelled and not expiry[3].cancelled
-    assert len(scheduled) == 2 and not mp._disconnect_timers
-    warning[1](*warning[2])
+    row = ActiveGame.query.filter_by(game_id="saved-multi").one()
+    row.updated_at = datetime.utcnow() - timedelta(days=365)
+    db.session.commit()
+    snapshot = runner.to_json()
+    mp._runners.clear()
+    assert client.get("/lobbies/game/saved-multi/active").json["active"]
+    assert mp.cleanup_stale_multiplayer_games() == 0
     returning = connect()
     events = returning.get_received("/multi")
     assert any(e["name"] == "state" and e["args"][0]["my_seat"] == 0 for e in events)
-    assert any(e["name"] == "idle_warning" for e in events)
-    assert len(scheduled) == 2
+    assert not any(e["name"] == "idle_warning" for e in events)
+    assert mp._get_runner("saved-multi").to_json() == snapshot
+    assert not scheduled and not mp._idle_timers and not mp._disconnect_timers
     returning.disconnect(namespace="/multi")
-    expiry[1](*expiry[2])
-    assert runner.seats[0].conceded
 
 
 def test_first_multiplayer_finish_records_defaults_and_achievements_once(app):

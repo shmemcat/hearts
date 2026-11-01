@@ -82,11 +82,11 @@ class TestCheckGameActive:
         assert resp.status_code == 200
         assert resp.get_json()["active"] is True
 
-    def test_returns_false_for_stale_game(self, client):
+    def test_unfinished_game_remains_active_after_a_year(self, client):
         from hearts_server.extensions import db
         from hearts_server.models import ActiveGame
 
-        stale_time = datetime.utcnow() - timedelta(minutes=45)
+        stale_time = datetime.utcnow() - timedelta(days=365)
         game = ActiveGame(
             game_id="stale1",
             is_multiplayer=True,
@@ -99,10 +99,10 @@ class TestCheckGameActive:
 
         resp = client.get("/lobbies/game/stale1/active")
         assert resp.status_code == 200
-        assert resp.get_json()["active"] is False
+        assert resp.get_json()["active"] is True
 
         row = ActiveGame.query.filter_by(game_id="stale1").first()
-        assert row is None
+        assert row is not None
 
 
 class TestConcedeMultiplayer:
@@ -116,7 +116,7 @@ class TestConcedeMultiplayer:
             SeatConfig(name="Alice", is_human=True, player_token="tok_alice"),
             SeatConfig(name="Bot 1", is_human=False),
             SeatConfig(name="Bob", is_human=True, player_token="tok_bob"),
-            SeatConfig(name="Bot 2", is_human=False),
+            SeatConfig(name="Carol", is_human=True, player_token="tok_carol"),
         ]
         runner = MultiplayerRunner.new_game(seats, difficulty="easy")
         _runners["game-abc"] = runner

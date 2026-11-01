@@ -1,3 +1,7 @@
+import {
+   animationsOverridden,
+   prefersReducedMotion,
+} from "../../lib/motionPreference";
 import React, { useEffect, useRef } from "react";
 import party from "party-js";
 
@@ -28,7 +32,9 @@ export const ShootTheMoonOverlay: React.FC<ShootTheMoonOverlayProps> = ({
 
    useEffect(() => {
       const timer = setTimeout(() => {
-         if (confettiRef.current) {
+         if (confettiRef.current && !prefersReducedMotion()) {
+            if (party.settings)
+               party.settings.respectReducedMotion = !animationsOverridden();
             party.confetti(confettiRef.current, {
                count: party.variation.range(60, 120),
             });

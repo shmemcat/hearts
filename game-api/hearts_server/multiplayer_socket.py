@@ -9,6 +9,7 @@ own hand). Play/trick events are broadcast to the entire room.
 from hearts_server.runtime import runtime_state
 
 import logging
+import json
 import eventlet
 from typing import Any, Dict, Optional, Set, Tuple
 
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 from hearts_server.extensions import db
 from hearts_server.game.card import Card
-from hearts_server.lobby import get_lobby, cancel_disconnect_timer, migrate_host
+from hearts_server.lobby import get_lobby, close_lobby, cancel_disconnect_timer, migrate_host
 from hearts_server.models import ActiveGame, DifficultyStats, GameResult, UserStats
 from hearts_server.multiplayer_runner import MultiplayerRunner, SeatConfig
 from hearts_server.multiplayer_game_ops import (
@@ -29,7 +30,7 @@ from hearts_server.multiplayer_game_ops import (
 )
 from hearts_server.jwt_utils import get_current_user, get_user_from_token
 from hearts_server.account_contracts import AccountsUnavailable
-from hearts_server.game_accounts import game_lock, is_deleted, accounts_available
+from hearts_server.game_accounts import game_lock, is_deleted
 from hearts_server.stats_routes import (
     _calendar_achievements,
     _compute_newly_unlocked,
@@ -37,10 +38,9 @@ from hearts_server.stats_routes import (
     _recorded_games,
     _valid_utc_offset,
 )
+from hearts_server.storage_cleanup import RETENTION_SECONDS, close_data, data_for, retire_game
 
-_IDLE_TIMEOUT_SECONDS = 600
-_IDLE_WARNING_SECONDS = 540
-_STALE_GAME_SECONDS = 30 * 60  # 30 minutes with no DB update â†’ game is abandoned
+_FINISHED_GAME_RETENTION_SECONDS = RETENTION_SECONDS
 
 
 def _get_user_from_query_token():
@@ -73,7 +73,8 @@ _disconnect_timers: Dict[str, Any] = runtime_state(
 # game_id -> {seat_index -> jwt_user_id} â€” tracked at connect time
 _game_auth: Dict[str, Dict[int, int]] = runtime_state("hearts_server.multi_game_auth")
 
-# game_id -> {seat_index -> eventlet.GreenThread} for idle kick timers
+# Legacy handles are retained only to cancel jobs created by older code.
+# Started games never schedule warning or kick timers.
 _idle_timers: Dict[str, Dict[int, Any]] = runtime_state(
     "hearts_server.multi_idle_timers"
 )
@@ -92,6 +93,8 @@ def _get_runner(game_id: str) -> Optional[MultiplayerRunner]:
     row = ActiveGame.query.filter_by(game_id=game_id, is_multiplayer=True).first()
     if row is None:
         return None
+    if data_for(row).get("_closed"):
+        return None
     runner = MultiplayerRunner.from_json(row.state_json)
     _runners[game_id] = runner
     _game_auth[game_id] = {
@@ -101,53 +104,26 @@ def _get_runner(game_id: str) -> Optional[MultiplayerRunner]:
 
 
 def is_game_stale(row: ActiveGame) -> bool:
-    """Check whether a game has had no activity for _STALE_GAME_SECONDS."""
+    """Only finished snapshots are eligible for age-based cleanup."""
     from datetime import datetime, timedelta
 
-    threshold = datetime.utcnow() - timedelta(seconds=_STALE_GAME_SECONDS)
+    if not json.loads(row.state_json).get("state", {}).get("game_over"):
+        return False
+    threshold = datetime.utcnow() - timedelta(seconds=_FINISHED_GAME_RETENTION_SECONDS)
     last_activity = row.updated_at or row.created_at
     return last_activity is not None and last_activity < threshold
 
 
 def cleanup_game_if_stale(game_id: str) -> bool:
-    """If a single multiplayer game is stale, clean it up. Returns True if deleted."""
+    from hearts_server.storage_cleanup import cleanup_closed_games
+    cleanup_closed_games(multiplayer_only=True)
     row = ActiveGame.query.filter_by(game_id=game_id, is_multiplayer=True).first()
-    if row is None:
-        return False
-    if not is_game_stale(row):
-        return False
-    _runners.pop(game_id, None)
-    _cancel_all_idle_timers(game_id)
-    db.session.delete(row)
-    db.session.commit()
-    return True
+    return bool(row and data_for(row).get("_closed"))
 
 
 def cleanup_stale_multiplayer_games() -> int:
-    """Delete multiplayer games that have been inactive for too long. Returns count deleted."""
-    from datetime import datetime, timedelta
-
-    threshold = datetime.utcnow() - timedelta(seconds=_STALE_GAME_SECONDS)
-    stale_rows = ActiveGame.query.filter(
-        ActiveGame.is_multiplayer == True,  # noqa: E712
-        db.or_(
-            db.and_(
-                ActiveGame.updated_at != None, ActiveGame.updated_at < threshold
-            ),  # noqa: E711
-            db.and_(
-                ActiveGame.updated_at == None, ActiveGame.created_at < threshold
-            ),  # noqa: E711
-        ),
-    ).all()
-    count = 0
-    for row in stale_rows:
-        _runners.pop(row.game_id, None)
-        _cancel_all_idle_timers(row.game_id)
-        db.session.delete(row)
-        count += 1
-    if count:
-        db.session.commit()
-    return count
+    from hearts_server.storage_cleanup import cleanup_closed_games
+    return cleanup_closed_games(multiplayer_only=True)["games_compacted"]
 
 
 def _save_to_db(
@@ -166,15 +142,15 @@ def _save_to_db(
         )
         db.session.add(row)
     else:
+        if data_for(row).get("_closed"):
+            return
         row.state_json = runner.to_json()
         row.updated_at = datetime.utcnow()
     db.session.commit()
 
 
-def _delete_game(game_id: str) -> None:
-    _runners.pop(game_id, None)
-    ActiveGame.query.filter_by(game_id=game_id).delete()
-    db.session.commit()
+def _delete_game(game_id: str, *, runner=None, reason="completed", recorded_users=()) -> None:
+    retire_game(game_id, reason=reason, runner=runner, recorded_users=recorded_users)
 
 
 def _room(game_id: str) -> str:
@@ -213,137 +189,6 @@ def _cancel_all_idle_timers(game_id: str) -> None:
                 t.cancel()
 
 
-def _start_idle_timer(game_id: str, seat_idx: int, socketio, app) -> None:
-    """Start the 9-min warning + 10-min kick timers for one seat."""
-    _cancel_idle_timer(game_id, seat_idx)
-
-    runner = _get_runner(game_id)
-    if runner is None:
-        return
-    seat = runner.seats[seat_idx]
-    if not seat.is_human or seat.conceded:
-        return
-
-    token = seat.player_token
-
-    def _on_idle_warning():
-        try:
-            with app.app_context(), game_lock():
-                if not token:
-                    return
-                _idle_warned.add((game_id, seat_idx))
-                sid = _token_to_sid.get(token)
-                if sid:
-                    socketio.emit("idle_warning", {}, to=sid, namespace="/multi")
-        except Exception:
-            logger.exception(
-                "Error in idle warning callback: game=%s seat=%d",
-                game_id,
-                seat_idx,
-            )
-
-    def _on_idle_timeout(recovering=False):
-        try:
-            with app.app_context():
-                user_id = _game_auth.get(game_id, {}).get(seat_idx)
-                available = accounts_available(user_id)
-                if not available or recovering:
-                    with game_lock():
-                        _idle_timers.setdefault(game_id, {})[seat_idx] = (
-                            eventlet.spawn_after(30, _on_idle_timeout, not available)
-                        )
-                    return
-            with app.app_context(), game_lock():
-                _idle_timers.get(game_id, {}).pop(seat_idx, None)
-                _idle_warning_timers.get(game_id, {}).pop(seat_idx, None)
-                r = _get_runner(game_id)
-                if r is None:
-                    return
-                s = r.seats[seat_idx]
-                if not s.is_human or s.conceded:
-                    return
-
-                result = r.concede_player(seat_idx)
-                socketio.emit(
-                    "player_conceded",
-                    {
-                        "seat_index": seat_idx,
-                        "name": r.seats[seat_idx].name,
-                        "reason": "idle",
-                    },
-                    room=_room(game_id),
-                    namespace="/multi",
-                )
-
-                # Move the idle player to spectator if still connected
-                if token:
-                    sid = _token_to_sid.pop(token, None)
-                    if sid:
-                        _sid_to_game[sid] = {
-                            "game_id": game_id,
-                            "spectator": True,
-                        }
-                        specs = _spectator_sids.setdefault(game_id, set())
-                        specs.add(sid)
-
-                if result == "terminated":
-                    socketio.emit(
-                        "game_terminated",
-                        {},
-                        room=_room(game_id),
-                        namespace="/multi",
-                    )
-                    _cancel_all_idle_timers(game_id)
-                    _on_game_complete(game_id, r, socketio)
-                else:
-                    _emit_state_to_all(game_id, r, socketio)
-                    _save_to_db(game_id, r)
-
-                    advance_if_bot_turn(game_id, r, _build_ops(socketio, app))
-        except Exception:
-            logger.exception(
-                "Error in idle timeout callback: game=%s seat=%d",
-                game_id,
-                seat_idx,
-            )
-
-    warn_store = _idle_warning_timers.setdefault(game_id, {})
-    warn_store[seat_idx] = eventlet.spawn_after(_IDLE_WARNING_SECONDS, _on_idle_warning)
-
-    kick_store = _idle_timers.setdefault(game_id, {})
-    kick_store[seat_idx] = eventlet.spawn_after(_IDLE_TIMEOUT_SECONDS, _on_idle_timeout)
-
-
-def _start_idle_timers_for_actionable_seats(
-    game_id: str, runner: MultiplayerRunner, socketio, app
-) -> None:
-    """Start idle timers only for human seats that currently need to act."""
-    if runner.state.game_over:
-        _cancel_all_idle_timers(game_id)
-        return
-
-    phase = runner.state.phase.value
-
-    if phase == "passing":
-        for i in range(4):
-            if runner.is_active_human(i) and i not in runner.pending_passes:
-                existing = _idle_timers.get(game_id, {}).get(i)
-                if existing is None:
-                    _start_idle_timer(game_id, i, socketio, app)
-            else:
-                _cancel_idle_timer(game_id, i)
-
-    elif phase == "playing":
-        whose_turn = runner.state.whose_turn
-        for i in range(4):
-            if i == whose_turn and runner.is_active_human(i):
-                existing = _idle_timers.get(game_id, {}).get(i)
-                if existing is None:
-                    _start_idle_timer(game_id, i, socketio, app)
-            else:
-                _cancel_idle_timer(game_id, i)
-
-
 def _emit_state_to_all(game_id: str, runner: MultiplayerRunner, socketio) -> None:
     """Send personalized state to each connected player and public state to spectators."""
     for token, sid in list(_token_to_sid.items()):
@@ -369,6 +214,24 @@ def _emit_state_to_all(game_id: str, runner: MultiplayerRunner, socketio) -> Non
 def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None:
     """Record stats for authenticated players and clean up."""
     _cancel_all_idle_timers(game_id)
+    existing = ActiveGame.query.filter_by(game_id=game_id).first()
+    previous = data_for(existing)
+    if previous.get("_closed") and (previous["_closed"] != "completed" or previous.get("_completion_handled")):
+        return
+    if runner.terminated:
+        active = ActiveGame.query.filter_by(game_id=game_id).first()
+        if active is None:
+            return
+        if active.lobby_code:
+            lobby = get_lobby(active.lobby_code)
+            if lobby:
+                lobby.status = "waiting"
+                close_lobby(lobby.code, lobby.host_token)
+                socketio.emit("lobby_closed", {}, room=f"lobby:{lobby.code}", namespace="/lobby")
+        socketio.emit("game_terminated", {}, room=_room(game_id), namespace="/multi")
+        _delete_game(game_id, runner=runner, reason="cancelled")
+        _game_auth.pop(game_id, None)
+        return
     auth_map = _game_auth.get(game_id, {})
     logger.info(
         "_on_game_complete: game=%s auth_map=%s scores=%s",
@@ -391,6 +254,8 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
         unlocked_per_seat: Dict[int, list] = {}
 
         for seat_idx, user_id in auth_map.items():
+            if user_id in previous.get("_recorded_users", []):
+                continue
             if is_deleted(user_id):
                 continue
             seat = runner.seats[seat_idx]
@@ -525,6 +390,11 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
 
             committed_user_ids.append(user_id)
 
+        if active:
+            active.state_json = json.dumps(close_data(
+                {**runner.to_dict(), "_completion_handled": True}, "completed",
+                recorded_users=[*previous.get("_recorded_users", []), *committed_user_ids]
+            ))
         db.session.commit()
 
         # Only mark as recorded AFTER the commit succeeds so the HTTP
@@ -560,6 +430,7 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
             game_id,
         )
         db.session.rollback()
+        committed_user_ids = []
 
     if active and active.lobby_code:
         lobby = get_lobby(active.lobby_code)
@@ -603,7 +474,7 @@ def _on_game_complete(game_id: str, runner: MultiplayerRunner, socketio) -> None
                         lobby, token, socketio, current_app._get_current_object()
                     )
 
-    _delete_game(game_id)
+    _delete_game(game_id, runner=runner, recorded_users=committed_user_ids)
     _game_auth.pop(game_id, None)
 
 
@@ -616,7 +487,6 @@ def _build_ops(socketio, app) -> GameOps:
         save_to_db=_save_to_db,
         cancel_all_idle_timers=_cancel_all_idle_timers,
         on_game_complete=_on_game_complete,
-        start_idle_timers=_start_idle_timers_for_actionable_seats,
     )
 
 
@@ -664,7 +534,6 @@ def concede_multiplayer_by_token(
         specs.add(sid)
 
     if result == "terminated":
-        socketio.emit("game_terminated", {}, room=_room(game_id), namespace="/multi")
         _cancel_all_idle_timers(game_id)
         _on_game_complete(game_id, runner, socketio)
     else:
@@ -696,6 +565,7 @@ def create_multiplayer_game(
                 player_token=sd.get("player_token"),
                 icon=sd.get("icon", "robot" if sd["is_ai"] else "user"),
                 user_id=sd.get("user_id"),
+                guest_key=sd.get("guest_key"),
             )
         )
 
@@ -781,6 +651,9 @@ def register_multiplayer_socket(socketio):
                 return False
 
             join_room(_room(game_id))
+            if runner.terminated:
+                _on_game_complete(game_id, runner, socketio)
+                return
 
             if player_token:
                 seat_idx = _find_seat_by_token(runner, player_token)
@@ -828,20 +701,13 @@ def register_multiplayer_socket(socketio):
                             seat_idx,
                         )
 
-                    # Restart idle timer if this seat has an actionable move
-                    if runner.is_active_human(seat_idx):
-                        app = current_app._get_current_object()
-                        _start_idle_timers_for_actionable_seats(
-                            game_id, runner, socketio, app
-                        )
+                    _cancel_all_idle_timers(game_id)
 
                     emit(
                         "state",
                         runner.get_state_for_player(seat_idx),
                         namespace="/multi",
                     )
-                    if (game_id, seat_idx) in _idle_warned:
-                        emit("idle_warning", {}, namespace="/multi")
                     return
 
             _sid_to_game[request.sid] = {"game_id": game_id, "spectator": True}
@@ -862,6 +728,9 @@ def register_multiplayer_socket(socketio):
         game_id = info["game_id"]
         runner = _get_runner(game_id)
         if runner is None:
+            return
+        if runner.terminated:
+            _on_game_complete(game_id, runner, socketio)
             return
         if info.get("spectator"):
             emit("state", runner.get_state_for_spectator(), namespace="/multi")
@@ -912,12 +781,9 @@ def register_multiplayer_socket(socketio):
 
         token = seat.player_token
 
-        # Presence changes do not concede a seat or restart its decision clock.
+        # Started seats remain owned indefinitely when their connection drops.
         if token and _token_to_sid.get(token) == request.sid:
             _token_to_sid.pop(token, None)
-        _start_idle_timers_for_actionable_seats(
-            game_id, runner, socketio, current_app._get_current_object()
-        )
 
     @socketio.on("pass", namespace="/multi")
     def on_pass(data):
@@ -1051,9 +917,6 @@ def register_multiplayer_socket(socketio):
             _token_to_sid.pop(token, None)
 
         if result == "terminated":
-            socketio.emit(
-                "game_terminated", {}, room=_room(game_id), namespace="/multi"
-            )
             _cancel_all_idle_timers(game_id)
             _on_game_complete(game_id, runner, socketio)
         else:

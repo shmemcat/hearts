@@ -20,6 +20,8 @@ def socket_env(default_test_app):
     from hearts_server.extensions import db
 
     app = default_test_app
+    # These engine/socket tests search many deals to find a particular leader.
+    app.config.update(MAX_IN_PROGRESS_GAMES=1000, GAME_CREATIONS_PER_MINUTE=1000)
     socketio = app.extensions["socketio"]
     with app.app_context():
         db.create_all()

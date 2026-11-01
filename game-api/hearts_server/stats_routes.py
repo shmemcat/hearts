@@ -270,12 +270,37 @@ def record_game():
         return jsonify({"error": "Invalid numeric values"}), 400
 
     dedup_key = f"{g.current_user.id}:{game_id}"
-    if dedup_key in _recorded_games:
+    from hearts_server.storage_cleanup import close_data, data_for, evict
+
+    active_game = ActiveGame.query.filter_by(game_id=game_id).first()
+    receipt = data_for(active_game)
+    if active_game and active_game.user_id not in (None, g.current_user.id):
+        return jsonify(error="This game belongs to another player."), 403
+    if receipt.get("_closed") in ("conceded", "cancelled"):
+        return jsonify(error="This game closed without being completed."), 409
+    if g.current_user.id in receipt.get("_recorded_users", []) or (
+        active_game is None and dedup_key in _recorded_games
+    ):
         stats = _get_or_create_stats(g.current_user.id)
         newly_unlocked: list[str] = []
         utc_off = data.get("utc_offset_minutes")
-        active_game = ActiveGame.query.filter_by(game_id=game_id).first()
-        if active_game and active_game.created_at and utc_off is not None:
+        if active_game and active_game.is_multiplayer:
+            utc_off = next(
+                (
+                    seat.get("utc_offset_minutes")
+                    for seat in receipt.get("seats", [])
+                    if seat.get("user_id") == g.current_user.id
+                ),
+                None,
+            )
+        elif _valid_utc_offset(receipt.get("utc_offset_minutes")):
+            utc_off = receipt["utc_offset_minutes"]
+        if (
+            active_game
+            and active_game.created_at
+            and not receipt.get("_unknown_start")
+            and _valid_utc_offset(utc_off)
+        ):
             utc_dt = active_game.created_at.replace(tzinfo=timezone.utc)
             local_dt = utc_dt.astimezone(timezone(timedelta(minutes=-int(utc_off))))
             hour = local_dt.hour
@@ -315,8 +340,6 @@ def record_game():
             jsonify({"stats": stats.to_dict(), "newly_unlocked": newly_unlocked}),
             200,
         )
-    _recorded_games.add(dedup_key)
-
     active_game = ActiveGame.query.filter_by(game_id=game_id).first()
     difficulty = (
         active_game.difficulty if active_game else (data.get("difficulty") or "easy")
@@ -357,9 +380,6 @@ def record_game():
         is_halloween = m == 10 and d == 31
         is_thanksgiving = date(y, m, d) == _thanksgiving_date(y)
         is_christmas = m == 12 and d == 25
-
-    if active_game and not active_game.is_multiplayer:
-        db.session.delete(active_game)
 
     opponent_scores = [s for s in all_scores if s != final_score] if all_scores else []
     if len(opponent_scores) == len(all_scores) and all_scores:
@@ -510,7 +530,36 @@ def record_game():
 
     newly_unlocked = _compute_newly_unlocked(old_snapshot, stats, won, final_score)
 
+    if active_game is None:
+        active_game = ActiveGame(
+            game_id=game_id,
+            difficulty=difficulty,
+            user_id=None if difficulty == "multiplayer" else g.current_user.id,
+            is_multiplayer=difficulty == "multiplayer",
+            state_json="{}",
+        )
+        db.session.add(active_game)
+    receipt = data_for(active_game)
+    if not receipt:
+        receipt = {
+            "_unknown_start": True,
+            "account_links_version": 1,
+            "state": {
+                "game_over": True,
+                "scores": all_scores or [final_score],
+                "round": round_count,
+                "winner_index": 0 if won else None,
+            },
+            "human_moon_shots": moon_shot_count,
+            "human_hearts_broken": hearts_broken_count,
+            "utc_offset_minutes": utc_offset_minutes,
+        }
+    active_game.state_json = json.dumps(
+        close_data(receipt, "completed", recorded_users=[g.current_user.id])
+    )
     db.session.commit()
+    evict(game_id)
+    _recorded_games.add(dedup_key)
     return jsonify({"stats": stats.to_dict(), "newly_unlocked": newly_unlocked}), 200
 
 

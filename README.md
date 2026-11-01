@@ -102,12 +102,12 @@ Multiplayer uses a lobby-based flow:
 
 Additional multiplayer features:
 
-- 120-second reconnect window before auto-concede
+- Unlimited reconnect time during a started game; waiting-lobby seats allow two minutes
 - When the host leaves the lobby, hosting passes to the earliest remaining
   player to join, regardless of seat choice. Disconnects transfer hosting after
-  the lobby's 30-second reconnect window.
+  the lobby's two-minute reconnect window.
 - Spectator support
-- AI takeover on concede
+- AI takeover on concede while at least two humans remain; otherwise the game closes
 
 ## Getting Started
 

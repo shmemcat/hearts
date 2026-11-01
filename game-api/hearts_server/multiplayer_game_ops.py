@@ -25,7 +25,6 @@ class GameOps:
     save_to_db: Callable  # (game_id, runner, **kw) -> None
     cancel_all_idle_timers: Callable  # (game_id) -> None
     on_game_complete: Callable  # (game_id, runner, socketio) -> None
-    start_idle_timers: Callable  # (game_id, runner, socketio, app) -> None
 
 
 def make_game_callbacks(game_id: str, runner: MultiplayerRunner, ops: GameOps):
@@ -43,6 +42,9 @@ def make_game_callbacks(game_id: str, runner: MultiplayerRunner, ops: GameOps):
         )
 
     def on_done(d):
+        if runner.terminated:
+            ops.on_game_complete(game_id, runner, ops.socketio)
+            return
         ops.emit_state_to_all(game_id, runner, ops.socketio)
         if runner.state.game_over:
             ops.socketio.emit(
@@ -66,15 +68,13 @@ def make_game_callbacks(game_id: str, runner: MultiplayerRunner, ops: GameOps):
                     on_trick_complete=on_trick_complete,
                     on_done=on_done,
                 )
-            else:
-                ops.start_idle_timers(game_id, runner, ops.socketio, ops.app)
 
     return on_play, on_trick_complete, on_done
 
 
 def advance_if_bot_turn(game_id: str, runner: MultiplayerRunner, ops: GameOps) -> None:
     """If the current turn belongs to a bot, advance to the next human turn.
-    Otherwise just start idle timers for the actionable seat.
+    Human turns wait until their owner acts or concedes.
     """
     if (
         runner.state.phase.value == "playing"
@@ -87,5 +87,3 @@ def advance_if_bot_turn(game_id: str, runner: MultiplayerRunner, ops: GameOps) -
             on_trick_complete=on_trick_complete,
             on_done=on_done,
         )
-    else:
-        ops.start_idle_timers(game_id, runner, ops.socketio, ops.app)

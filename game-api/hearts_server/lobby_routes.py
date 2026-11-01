@@ -7,28 +7,29 @@ from flask import Blueprint, request, jsonify, current_app
 from hearts_server.extensions import limiter
 from hearts_server.lobby import create_lobby, get_lobby
 from hearts_server.models import ActiveGame
+from hearts_server.game_limits import check_creation, open_games, principal
 from hearts_server.multiplayer_socket import (
     concede_multiplayer_by_token,
-    cleanup_stale_multiplayer_games,
-    cleanup_game_if_stale,
 )
 
 lobby_bp = Blueprint("lobbies", __name__, url_prefix="/lobbies")
 
 
 @lobby_bp.route("/create", methods=["POST"])
-@limiter.limit("5/minute")
 def create():
     """Create a new multiplayer lobby.
 
     Body: { "host_name": "Alice", "num_ai": 0 }
     Returns: { "code": "ABC123", "url": "https://…/game/lobby/ABC123", "player_token": "…" }
     """
-    cleanup_stale_multiplayer_games()
     data = request.get_json() or {}
     host_name = (data.get("host_name") or "Host").strip() or "Host"
     num_ai = min(max(int(data.get("num_ai", 0)), 0), 3)
     host_icon = (data.get("host_icon") or "user").strip() or "user"
+    from hearts_server.jwt_utils import get_current_user
+    user = get_current_user()
+    key = principal(user.id if user else None)
+    check_creation(key, open_games(key))
 
     try:
         lobby = create_lobby(host_name, num_ai, host_icon=host_icon)
@@ -38,6 +39,7 @@ def create():
 
     user = get_current_user()
     lobby.seats[0].user_id = user.id if user else None
+    lobby.seats[0].guest_key = key if not user else None
     from hearts_server.lobby_socket import schedule_lobby_disconnect
 
     schedule_lobby_disconnect(
@@ -80,12 +82,12 @@ def get_lobby_state(code: str):
 def check_game_active(game_id: str):
     """Return whether a multiplayer game is still active.
 
-    Also cleans up the game if it has been inactive for too long.
+    Unfinished games remain active regardless of their last move's age.
     """
-    if cleanup_game_if_stale(game_id):
-        return jsonify({"active": False})
     row = ActiveGame.query.filter_by(game_id=game_id, is_multiplayer=True).first()
-    return jsonify({"active": row is not None})
+    import json
+    saved = json.loads(row.state_json) if row else {}
+    return jsonify({"active": bool(row and not saved.get("_closed") and not saved.get("state", {}).get("game_over"))})
 
 
 @lobby_bp.route("/game/<game_id>/concede", methods=["POST"])

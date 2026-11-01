@@ -24,10 +24,14 @@ from hearts_server.lobby import (
 from hearts_server.multiplayer_socket import create_multiplayer_game
 from hearts_server.jwt_utils import get_current_user
 
+LOBBY_RECONNECT_SECONDS = 120
+
 # SID -> (lobby_code, player_token or None)
 _sid_to_lobby: Dict[str, Tuple[str, Optional[str]]] = runtime_state(
     "hearts_server.lobby_sids"
 )
+_empty_lobbies = runtime_state("hearts_server.empty_lobbies")
+_lobby_departures = runtime_state("hearts_server.lobby_departures")
 
 
 def _broadcast_lobby_update(lobby: Lobby) -> None:
@@ -40,9 +44,60 @@ def _emit_lobby_update_to(lobby: Lobby, sid: str) -> None:
     emit("lobby_update", lobby.to_dict(), to=sid, namespace="/lobby")
 
 
-def schedule_lobby_disconnect(lobby: Lobby, player_token: str, socketio, app) -> None:
-    """A transport disconnect never ends server-owned lobby membership."""
-    cancel_disconnect_timer(lobby, player_token)
+def _lobby_connections(lobby: Lobby):
+    from hearts_server.multiplayer_socket import _sid_to_game
+
+    connections = {
+        (code, token) for code, token in _sid_to_lobby.values() if code == lobby.code
+    }
+    # A player viewing completed results can still choose Play Again. Count
+    # every tab, including results tabs that use the gameplay namespace.
+    connections.update(
+        (lobby.code, info["player_token"])
+        for info in _sid_to_game.values()
+        if info.get("lobby_code") == lobby.code
+        and not info.get("spectator")
+        and info.get("player_token") in lobby.player_tokens
+    )
+    return connections
+
+
+def schedule_lobby_disconnect(lobby: Lobby, player_token: Optional[str], socketio, app) -> None:
+    """Release an absent member, or the whole empty lobby, after two minutes."""
+    membership = (lobby.code, player_token)
+    if lobby.status != "waiting" or (player_token and player_token not in lobby.player_tokens):
+        return
+    connections = _lobby_connections(lobby)
+    if membership in connections:
+        return
+    marker = object()
+    _lobby_departures[membership] = marker
+    if not connections:
+        _empty_lobbies[lobby.code] = marker
+
+    def close_empty():
+        socketio.sleep(LOBBY_RECONNECT_SECONDS)
+        with app.app_context():
+            if _lobby_departures.get(membership) is not marker:
+                return
+            _lobby_departures.pop(membership, None)
+            last_departure = _empty_lobbies.get(lobby.code) is marker
+            if last_departure:
+                _empty_lobbies.pop(lobby.code, None)
+            current = get_lobby(lobby.code)
+            if not current or current.status != "waiting":
+                return
+            connections = _lobby_connections(current)
+            if membership in connections:
+                return
+            empty = last_departure and not connections
+            if empty or (player_token in current.player_tokens and len(current.player_tokens) == 1):
+                close_lobby(lobby.code, current.host_token)
+                socketio.emit("lobby_closed", {}, room=f"lobby:{lobby.code}", namespace="/lobby")
+            elif player_token:
+                if leave_lobby(lobby.code, player_token) is not None:
+                    socketio.emit("lobby_update", current.to_dict(), room=f"lobby:{lobby.code}", namespace="/lobby")
+    socketio.start_background_task(close_empty)
 
 
 def register_lobby_socket(socketio, app):
@@ -67,6 +122,7 @@ def register_lobby_socket(socketio, app):
 
         join_room(f"lobby:{code}")
         _sid_to_lobby[request.sid] = (code, None)
+        _empty_lobbies.pop(code, None)
 
         if lobby.status == "finished":
             emit("lobby_closed", {}, namespace="/lobby")
@@ -85,6 +141,7 @@ def register_lobby_socket(socketio, app):
                 ):
                     return False
                 _sid_to_lobby[request.sid] = (code, player_token)
+                _lobby_departures.pop((code, player_token), None)
                 seat.sid = request.sid
                 user = get_current_user()
                 if user:
@@ -131,9 +188,6 @@ def register_lobby_socket(socketio, app):
         lobby = get_lobby(code)
         if lobby is None or lobby.status != "waiting":
             return
-        if player_token is None:
-            return
-
         schedule_lobby_disconnect(lobby, player_token, socketio, app)
 
     @socketio.on("join", namespace="/lobby")
@@ -156,6 +210,10 @@ def register_lobby_socket(socketio, app):
             seat_preference = None
 
         try:
+            from hearts_server.game_limits import ensure_capacity, open_games, principal
+            user = get_current_user()
+            key = principal(user.id if user else None)
+            ensure_capacity(open_games(key))
             seat_idx, token = join_lobby(
                 code, name, icon=icon, seat_preference=seat_preference
             )
@@ -171,6 +229,7 @@ def register_lobby_socket(socketio, app):
             seat.sid = request.sid
             user = get_current_user()
             seat.user_id = user.id if user else None
+            seat.guest_key = key if not user else None
 
         _sid_to_lobby[request.sid] = (code, token)
 
@@ -250,6 +309,15 @@ def register_lobby_socket(socketio, app):
         ) or "easy"
 
         try:
+            from hearts_server.game_limits import check_creation, ensure_capacity, open_games
+            for seat in lobby.seats:
+                if seat and not seat.is_ai:
+                    key = f"account:{seat.user_id}" if seat.user_id else seat.guest_key
+                    if key:
+                        ensure_capacity(open_games(key), player=seat.name)
+            if lobby.previous_game_id:
+                host = lobby.seats[lobby.player_tokens[player_token]]
+                check_creation(f"account:{host.user_id}" if host.user_id else host.guest_key or player_token)
             game_id = start_game(code, difficulty)
         except ValueError as e:
             emit("error", {"message": str(e)}, namespace="/lobby")
@@ -270,6 +338,7 @@ def register_lobby_socket(socketio, app):
                         "player_token": seat.player_token,
                         "icon": seat.icon,
                         "user_id": seat.user_id,
+                        "guest_key": seat.guest_key,
                     }
                 )
 

@@ -94,7 +94,7 @@ describe("InfoModal", () => {
       expect(names).toEqual(["Alice", "You", "Carol", "Bob"]);
    });
 
-   it("clicking Close calls onClose", async () => {
+   it("clicking the close icon calls onClose", async () => {
       const user = userEvent.setup();
       const onClose = vi.fn();
       render(
@@ -106,7 +106,9 @@ describe("InfoModal", () => {
             onClose={onClose}
          />
       );
-      await user.click(screen.getByRole("button", { name: "Close" }));
+      await user.click(
+         screen.getByRole("button", { name: "Close round info" })
+      );
       expect(onClose).toHaveBeenCalled();
    });
 

@@ -506,3 +506,57 @@ button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
       box-shadow: inset -3px -3px 0px var(--buttonboxshadow);
    }
 }
+/* Size and appearance variants extend the existing button and its shine. */
+.button-compact {
+   letter-spacing: 1px;
+   text-indent: 0;
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   gap: 8px;
+   width: auto;
+   height: auto;
+   min-width: 68px;
+   min-height: 44px;
+   padding: 10px 18px;
+   box-sizing: border-box;
+   font-size: calc(var(--button-label-size) + 2px);
+   line-height: 1.2;
+   white-space: nowrap;
+}
+.button-compact .button-shine {
+   top: 4px;
+   left: 5px;
+   width: 11px;
+   height: 5px;
+   pointer-events: none;
+}
+.menu-button.button-secondary {
+   background-color: var(--button-secondary-background);
+   color: var(--text);
+   box-shadow: inset -3px -3px 0 var(--button-secondary-shadow);
+}
+.menu-button.button-secondary:not(:disabled):hover {
+   background-color: var(--button-secondary-hover);
+   box-shadow: inset -3px -3px 0 var(--button-secondary-shadow);
+}
+.menu-button.button-secondary:not(:disabled):active {
+   background-color: var(--button-secondary-active);
+   box-shadow: inset 3px 3px 0 var(--button-secondary-shadow);
+}
+.menu-button.button-secondary:disabled {
+   background-color: color-mix(
+      in srgb,
+      var(--button-secondary-background) 62%,
+      var(--contentbox)
+   );
+   color: var(--buttontextdisabled);
+   box-shadow: none;
+}
+.button-secondary:disabled .button-shine {
+   display: none;
+}
+.button-secondary .button-shine,
+.button-secondary:not(:disabled):hover .button-shine {
+   background-color: var(--button-secondary-shine);
+}

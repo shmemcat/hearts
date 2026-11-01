@@ -14,9 +14,10 @@
 }
 
 .modal {
+   position: relative;
    background: var(--contentbox);
    border-radius: 16px;
-   padding: 24px 28px;
+   padding: 32px;
    min-width: 260px;
    max-width: 320px;
    display: flex;
@@ -28,9 +29,45 @@
 }
 
 .title {
+   padding: 0 24px;
    font-size: 1.5rem;
    font-weight: 700;
    color: var(--header);
+}
+
+.closeBtn {
+   position: absolute;
+   top: 20px;
+   right: 20px;
+   display: grid;
+   place-items: center;
+   width: 24px;
+   height: 24px;
+   padding: 0;
+   border: 0;
+   border-radius: 6px;
+   background: transparent;
+   color: var(--text);
+   cursor: pointer;
+}
+.closeBtn:hover {
+   background: var(--infopillbg);
+}
+.closeBtn:focus-visible {
+   outline: 2px solid var(--header);
+   outline-offset: 2px;
+}
+.closeBtn svg {
+   width: 18px;
+   height: 18px;
+}
+@media (pointer: coarse) {
+   .closeBtn {
+      top: 11px;
+      right: 11px;
+      width: 44px;
+      height: 44px;
+   }
 }
 
 .row {

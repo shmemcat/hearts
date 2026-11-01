@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
    play: null as ((data: PlayEvent) => void) | null,
    trick: null as (() => void) | null,
    again: null as ((data: GameStartedEvent) => void) | null,
+   terminated: null as (() => void) | null,
    sound: vi.fn(),
    connect: vi.fn(),
    leave: vi.fn(),
@@ -53,7 +54,10 @@ vi.mock("@/lib/multiplayerSocket", () => ({
    onPassReceived: vi.fn(() => vi.fn()),
    onPlayerConceded: vi.fn(() => vi.fn()),
    onIdleWarning: vi.fn(() => vi.fn()),
-   onGameTerminated: vi.fn(() => vi.fn()),
+   onGameTerminated: (cb: typeof mocks.terminated) => {
+      mocks.terminated = cb;
+      return vi.fn();
+   },
    onGameOver: vi.fn(() => vi.fn()),
    onError: vi.fn(() => vi.fn()),
    onAchievementsUnlocked: vi.fn(() => vi.fn()),
@@ -152,6 +156,16 @@ beforeEach(() => {
    localStorage.setItem("hearts_mp_token_first", "player-token");
    localStorage.setItem("hearts_mp_seat_first", "1");
    localStorage.setItem("hearts_mp_lobby_first", "ABCDEF");
+});
+
+it("explains a game closed by concessions and returns to Play without a lobby request", () => {
+   start();
+   act(() => mocks.terminated?.());
+   expect(screen.getByText("Game Closed")).toBeInTheDocument();
+   expect(screen.getByText(/wasn't counted as completed/)).toBeInTheDocument();
+   fireEvent.click(screen.getByRole("button", { name: "Back to Play" }));
+   expect(mocks.leave).not.toHaveBeenCalled();
+   expect(localStorage.getItem("hearts_mp_token_first")).toBeNull();
 });
 
 it.each([0, 1])(

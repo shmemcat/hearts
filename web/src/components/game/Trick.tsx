@@ -1,3 +1,4 @@
+import { useReducedMotion } from "../../lib/motionPreference";
 import React, { useRef, useEffect, useCallback, useMemo } from "react";
 
 import { Card } from "@/components/game/Card";
@@ -94,6 +95,7 @@ export const Trick: React.FC<TrickProps> = ({
    slotLabels,
 }) => {
    const isMobile = useIsMobile();
+   const reduced = useReducedMotion();
    const labels = playerNames ?? ["You", "Top", "Left", "Right"];
    const cardRefs = useRef<(HTMLDivElement | null)[]>([null, null, null, null]);
    const collectAnimsRef = useRef<Animation[]>([]);
@@ -129,27 +131,28 @@ export const Trick: React.FC<TrickProps> = ({
          const ep = endpoints[i];
          if (!el || !ep) continue;
 
-         const keyframes: Keyframe[] =
-            ep.midX != null
-               ? [
-                    { opacity: 1, transform: "translate(0, 0)" },
-                    {
-                       opacity: 0.5,
-                       transform: `translate(${ep.midX}px, ${ep.midY}px)`,
-                       offset: 0.4,
-                    },
-                    {
-                       opacity: 0,
-                       transform: `translate(${ep.x}px, ${ep.y}px)`,
-                    },
-                 ]
-               : [
-                    { opacity: 1, transform: "translate(0, 0)" },
-                    {
-                       opacity: 0,
-                       transform: `translate(${ep.x}px, ${ep.y}px)`,
-                    },
-                 ];
+         const keyframes: Keyframe[] = reduced
+            ? [{ opacity: 1 }, { opacity: 0 }]
+            : ep.midX != null
+            ? [
+                 { opacity: 1, transform: "translate(0, 0)" },
+                 {
+                    opacity: 0.5,
+                    transform: `translate(${ep.midX}px, ${ep.midY}px)`,
+                    offset: 0.4,
+                 },
+                 {
+                    opacity: 0,
+                    transform: `translate(${ep.x}px, ${ep.y}px)`,
+                 },
+              ]
+            : [
+                 { opacity: 1, transform: "translate(0, 0)" },
+                 {
+                    opacity: 0,
+                    transform: `translate(${ep.x}px, ${ep.y}px)`,
+                 },
+              ];
 
          collectAnimsRef.current.push(
             el.animate(keyframes, {
@@ -164,7 +167,7 @@ export const Trick: React.FC<TrickProps> = ({
          collectAnimsRef.current.forEach((a) => a.cancel());
          collectAnimsRef.current = [];
       };
-   }, [collectTarget, isMobile]);
+   }, [collectTarget, isMobile, reduced]);
 
    if (layout === "table") {
       return (

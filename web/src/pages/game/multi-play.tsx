@@ -37,7 +37,6 @@ import {
    onTrickComplete as onMultiTrickComplete,
    onPassReceived as onMultiPassReceived,
    onPlayerConceded as onMultiPlayerConceded,
-   onIdleWarning as onMultiIdleWarning,
    onGameTerminated as onMultiGameTerminated,
    onGameOver as onMultiGameOver,
    onError as onMultiError,
@@ -124,7 +123,6 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
    const [concedeModalOpen, setConcedeModalOpen] = useState(false);
    const [conceded, setConceded] = useState(false);
    const [idleKicked, setIdleKicked] = useState(false);
-   const [idleWarning, setIdleWarning] = useState(false);
    const [terminated, setTerminated] = useState(false);
    const [passSelection, setPassSelection] = useState<Set<string>>(new Set());
    const [passSubmitted, setPassSubmitted] = useState(false);
@@ -366,7 +364,7 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
          (p: { score: number }) => p.score
       );
       setPassSubmitted(pending.pass_submitted ?? false);
-      setIdleWarning(false);
+
       if (pending.phase === "passing") {
          resetRef.current();
       }
@@ -520,16 +518,11 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
          ) {
             setConceded(true);
             setIdleKicked(true);
-            setIdleWarning(false);
             // Don't remove localStorage here -- playerToken is a dependency
             // of the connect effect, so changing it would trigger a socket
             // reconnect and drop the game_terminated event that follows.
             // The game_terminated handler handles localStorage cleanup.
          }
-      });
-
-      const unsubIdleWarning = onMultiIdleWarning(() => {
-         setIdleWarning(true);
       });
 
       const unsubTerminated = onMultiGameTerminated(() => {
@@ -600,7 +593,6 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
          unsubTrick();
          unsubPassReceived();
          unsubConceded();
-         unsubIdleWarning();
          unsubTerminated();
          unsubGameOver();
          unsubError();
@@ -1054,7 +1046,7 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
 
       sendMultiPass(cards);
       setPassSubmitted(true);
-      setIdleWarning(false);
+
       setNudgeResetKey((k) => k + 1);
    }, [passSelection, isSpectator, conceded]);
 
@@ -1113,7 +1105,7 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
          );
 
          sendMultiPlay(code);
-         setIdleWarning(false);
+
          setNudgeResetKey((k) => k + 1);
       },
       [
@@ -1167,7 +1159,6 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
       );
 
       sendMultiPlay(code);
-      setIdleWarning(false);
    }, [
       stateWhoseTurn,
       statePhase,
@@ -1372,12 +1363,6 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
             hideTitleBlock
             className={PLAY_PAGE_LAYOUT_CLASS}
          >
-            {idleWarning && (
-               <div className={styles.idleWarningBanner}>
-                  You&apos;ll be removed for inactivity in 1 minute. Make a move
-                  to stay in the game.
-               </div>
-            )}
             {state && (
                <div className={styles.playContent}>
                   {!roundSummary && !isMobile && (
@@ -1875,16 +1860,15 @@ function MultiplayerGame({ gameId }: { gameId: string }) {
          {/* Game terminated */}
          {terminated && (
             <GameOverBlock
-               title="Game Terminated"
-               subtitle="All players have left the game."
+               title="Game Closed"
+               subtitle="Not enough players remain. This game wasn't counted as completed."
                players={state?.players ?? []}
                mySeatIndex={conceded || isSpectator ? -1 : mySeat ?? 0}
             >
                <ButtonGroup padding="tight">
                   <Button
-                     name="Leave Lobby"
-                     disabled={leavingLobby}
-                     onClick={handleLeaveLobby}
+                     name="Back to Play"
+                     onClick={() => navigate("/play")}
                      style={{ width: "250px" }}
                   />
                </ButtonGroup>
