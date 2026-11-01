@@ -1,6 +1,9 @@
 .grid {
    display: flex;
-   gap: 32px;
+   width: 100%;
+   max-width: 760px;
+   margin-inline: auto;
+   gap: 18px;
    justify-content: center;
    align-items: stretch;
    flex-wrap: wrap;
@@ -50,12 +53,15 @@
 
 @media only screen and (max-width: 768px) {
    .grid {
+      flex-direction: column;
       gap: 20px;
    }
 
    .choice {
       padding: 28px 24px 22px;
-      min-width: 140px;
+      min-width: 0;
+      flex: none;
+      box-sizing: border-box;
    }
 
    .choiceLabel {

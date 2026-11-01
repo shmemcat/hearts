@@ -1,4 +1,6 @@
 .card {
+   -webkit-user-select: none;
+   user-select: none;
    --card-radius: 8px;
    width: 72px;
    min-width: 72px;
