@@ -56,11 +56,16 @@ export function InProgressGames({
          setBusy(null);
       }
    }
-   if (!games.length && !loading && !error) return null;
+   if (!games.length && !error) return null;
    return (
-      <section className={styles.section} aria-labelledby={heading}>
-         <h2 id={heading}>Games in progress</h2>
-         {loading && <p role="status">Checking your saved games…</p>}
+      <section
+         className={styles.section}
+         aria-labelledby={games.length ? heading : undefined}
+      >
+         {!!games.length && <h2 id={heading}>Games in progress</h2>}
+         {loading && !!games.length && (
+            <p role="status">Checking your saved games…</p>
+         )}
          {error && (
             <div role="alert">
                <p>{error}</p>
