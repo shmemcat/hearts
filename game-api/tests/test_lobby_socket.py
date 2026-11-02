@@ -277,3 +277,22 @@ def test_returning_member_receives_game_start_missed_while_asleep(
     event = received(friend, "game_started")[0]
     assert event["game_id"] == lobby.game_id
     assert event["seat_assignments"] == [dict(seat_index=1, player_token=token)]
+
+
+def test_started_invite_opens_spectator_without_assigning_a_seat(lobby_sockets, monkeypatch):
+    from hearts_server import lobby_socket
+
+    monkeypatch.setattr(lobby_socket, "create_multiplayer_game", lambda *args: None)
+    connect, _ = lobby_sockets
+    lobby = create_lobby("Host")
+    host = connect(lobby, lobby.host_token)
+    host.emit("start_game", {"difficulty": "easy"}, namespace="/lobby")
+    tokens = dict(lobby.player_tokens)
+    spectator = connect(lobby)
+    events = spectator.get_received("/lobby")
+    start = next(e["args"][0] for e in events if e["name"] == "game_started")
+    assert start["game_id"] == lobby.game_id
+    assert start["seat_assignments"] == []
+    assert next(e["args"][0] for e in events if e["name"] == "lobby_session")["player_token"] is None
+    assert lobby.player_tokens == tokens
+    assert lobby.host_token not in str(start)

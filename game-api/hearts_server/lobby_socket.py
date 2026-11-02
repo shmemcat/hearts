@@ -176,6 +176,13 @@ def register_lobby_socket(socketio, app):
             namespace="/lobby",
         )
         _emit_lobby_update_to(lobby, request.sid)
+        if lobby.status == "playing" and lobby.game_id:
+            emit(
+                "game_started",
+                {"game_id": lobby.game_id, "difficulty": lobby.difficulty,
+                 "seat_assignments": [], "seats": lobby.to_dict()["seats"]},
+                namespace="/lobby",
+            )
 
     @socketio.on("disconnect", namespace="/lobby")
     def on_disconnect():
