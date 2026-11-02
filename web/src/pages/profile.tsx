@@ -4,7 +4,7 @@ import {
    sharedAccountRequest,
 } from "@/lib/sharedAccount";
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -48,16 +48,7 @@ function ProfileContent() {
    }
 
    if (!user || !token) {
-      return (
-         <div className="mt-8 flex flex-col items-center gap-4">
-            <div role="status">
-               {profileNotice || "Sign in to customize your profile."}
-            </div>
-            <Link to="/user">
-               <Button name="Sign In" />
-            </Link>
-         </div>
-      );
+      return <Navigate to="/user" replace state={{ notice: profileNotice }} />;
    }
 
    return (

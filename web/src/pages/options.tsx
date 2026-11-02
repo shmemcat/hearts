@@ -1,7 +1,8 @@
 import { AnimationOption } from "../components/AnimationOption";
 import { TurnSoundOption } from "@/context/TurnSoundContext";
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 import { Button } from "@/components/Buttons";
 import { triggerLogoFadeOut } from "@/components/Navbar";
@@ -29,6 +30,9 @@ const HARD_LEVELS: { id: HardLevel; label: string; description: string }[] = [
 ];
 
 export default function OptionsPage() {
+   const { user, token, status } = useAuth();
+   if (status === "loading") return <p role="status">Loading…</p>;
+   if (!user || !token) return <Navigate to="/user" replace />;
    return (
       <>
          <Helmet>
