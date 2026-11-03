@@ -41,7 +41,6 @@ export default function PlayPage() {
             </div>
             <InProgressGames
                games={saved.games}
-               loading={saved.loading}
                error={saved.error}
                onRetry={saved.retry}
                onResume={(id) => {
