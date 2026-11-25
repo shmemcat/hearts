@@ -42,3 +42,6 @@ yarn-error.log*
 # Deploy docs (local reference only)
 docs/
 DEPLOY.md
+
+# Local agent runbook
+/AGENT_RUNBOOK.md
